@@ -28,7 +28,7 @@ function NavButton({ isActive, onClick, icon, label }: NavButtonProps) {
   return (
     <Button
       variant={isActive ? 'secondary' : 'ghost'}
-      className="w-full justify-start"
+      className="w-full justify-start h-8 text-xs"
       onClick={onClick}
     >
       {icon}
@@ -51,14 +51,14 @@ function ServerNavItem({ server, isSelected, onSelect }: ServerNavItemProps) {
     <button
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors',
         'hover:bg-accent hover:text-accent-foreground',
         isSelected && 'bg-accent text-accent-foreground'
       )}
     >
       <span
         className={cn(
-          'h-2 w-2 rounded-full',
+          'h-1.5 w-1.5 rounded-full',
           server.status === 'running' ? 'bg-green-500' : 'bg-muted-foreground'
         )}
       />
@@ -85,33 +85,33 @@ export function Sidebar({
   const { t } = useTranslation();
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r bg-muted/20 shrink-0">
+    <aside className="flex h-full w-56 flex-col border-r bg-muted/20 shrink-0">
       {/* Logo 區域 */}
-      <div className="mb-6 px-4 pt-4">
-        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Server className="h-5 w-5 text-primary" />
-          {t('appName')}
+      <div className="mb-3 px-3 pt-3">
+        <h1 className="text-base font-bold tracking-tight flex items-center gap-2">
+          <Server className="h-4 w-4 text-primary" />
+          Lumix
         </h1>
       </div>
 
       {/* 伺服器列表 */}
       <div className="flex-1 overflow-auto px-2">
-        <div className="mb-2 flex items-center justify-between px-2">
-          <span className="text-sm font-medium text-muted-foreground">
+        <div className="mb-1 flex items-center justify-between px-2">
+          <span className="text-xs font-medium text-muted-foreground">
             {t('sidebar.servers')}
           </span>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="h-5 w-5"
             onClick={onCreateServer}
             title={t('sidebar.addServer')}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3 w-3" />
           </Button>
         </div>
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-0.5">
           {servers.map((server) => (
             <ServerNavItem
               key={server.id}
@@ -122,7 +122,7 @@ export function Sidebar({
           ))}
 
           {servers.length === 0 && (
-            <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+            <div className="px-2 py-6 text-center text-xs text-muted-foreground">
               {t('welcome.description')}
             </div>
           )}
@@ -134,7 +134,7 @@ export function Sidebar({
         <NavButton
           isActive={false}
           onClick={() => onOpenSettings?.()}
-          icon={<Settings className="mr-2 h-4 w-4" />}
+          icon={<Settings className="mr-2 h-3.5 w-3.5" />}
           label={t('sidebar.settings')}
         />
       </div>

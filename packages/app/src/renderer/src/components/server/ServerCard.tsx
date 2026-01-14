@@ -72,39 +72,40 @@ export function ServerCard({
       )}
       onClick={onSelect}
     >
-      <CardHeader className="pb-2">
+      <CardHeader className="p-4 pb-2">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-base font-medium truncate">
+          <CardTitle className="text-sm font-medium truncate">
             {server.name}
           </CardTitle>
           <StatusIndicator status={server.status} />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <CardContent className="p-4 pt-0">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="capitalize">{t(`coreType.${server.coreType}`)}</span>
             <span>{server.mcVersion}</span>
           </div>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <MemoryStick className="h-3.5 w-3.5" />
-            <span>{server.ramMax} MB</span>
-          </div>
-          <div className="flex justify-end pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MemoryStick className="h-3 w-3" />
+              <span>{server.ramMax} MB</span>
+            </div>
             <Button
               size="sm"
               variant={isRunning ? 'destructive' : 'default'}
               disabled={isTransitioning}
               onClick={handleActionClick}
+              className="h-7 text-xs"
             >
               {isRunning ? (
                 <>
-                  <Square className="mr-1" />
+                  <Square className="mr-1 h-3 w-3" />
                   {t('server.stop')}
                 </>
               ) : (
                 <>
-                  <Play className="mr-1" />
+                  <Play className="mr-1 h-3 w-3" />
                   {t('server.start')}
                 </>
               )}

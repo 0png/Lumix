@@ -85,12 +85,12 @@ export function ServerDetail({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 標題區域 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">{server.name}</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight">{server.name}</h2>
+          <p className="text-sm text-muted-foreground">
             {t(`coreType.${server.coreType}`)} • {server.mcVersion}
           </p>
         </div>
@@ -100,31 +100,33 @@ export function ServerDetail({
       {/* 操作按鈕 */}
       <div className="flex gap-2">
         {isRunning ? (
-          <Button variant="destructive" onClick={onStop} disabled={isTransitioning}>
-            <Square className="mr-2" />
+          <Button variant="destructive" size="sm" onClick={onStop} disabled={isTransitioning}>
+            <Square className="mr-1" />
             {t('server.stop')}
           </Button>
         ) : (
-          <Button onClick={onStart} disabled={isTransitioning}>
-            <Play className="mr-2" />
+          <Button size="sm" onClick={onStart} disabled={isTransitioning}>
+            <Play className="mr-1" />
             {t('server.start')}
           </Button>
         )}
         <Button
           variant="outline"
+          size="sm"
           onClick={() => setIsEditing(true)}
           disabled={isRunning}
         >
-          <Settings2 className="mr-2" />
+          <Settings2 className="mr-1" />
           {t('common.edit')}
         </Button>
         <Button
           variant="outline"
+          size="sm"
           className="text-destructive hover:text-destructive"
           onClick={() => setShowDeleteDialog(true)}
           disabled={isRunning}
         >
-          <Trash2 className="mr-2" />
+          <Trash2 className="mr-1" />
           {t('common.delete')}
         </Button>
       </div>
@@ -133,25 +135,25 @@ export function ServerDetail({
 
       {/* 設定卡片 */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('server.config')}</CardTitle>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-sm">{t('server.config')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="p-4 pt-0 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-muted-foreground">{t('server.coreType')}</Label>
-              <p className="font-medium">{t(`coreType.${server.coreType}`)}</p>
+              <Label className="text-xs text-muted-foreground">{t('server.coreType')}</Label>
+              <p className="text-sm font-medium">{t(`coreType.${server.coreType}`)}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">{t('server.version')}</Label>
-              <p className="font-medium">{server.mcVersion}</p>
+              <Label className="text-xs text-muted-foreground">{t('server.version')}</Label>
+              <p className="text-sm font-medium">{server.mcVersion}</p>
             </div>
           </div>
           <div>
-            <Label className="text-muted-foreground">{t('server.ram')}</Label>
-            <div className="flex items-center gap-2">
-              <MemoryStick className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium">{server.ramMax} MB</p>
+            <Label className="text-xs text-muted-foreground">{t('server.ram')}</Label>
+            <div className="flex items-center gap-1">
+              <MemoryStick className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-sm font-medium">{server.ramMax} MB</p>
             </div>
           </div>
         </CardContent>

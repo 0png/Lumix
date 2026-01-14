@@ -4,7 +4,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import { Server, Upload } from 'lucide-react';
+import { Server } from 'lucide-react';
 import { ServerCard } from './ServerCard';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
@@ -35,12 +35,12 @@ function EmptyState() {
 
   return (
     <div className="flex-1 border-2 border-dashed rounded-lg flex flex-col items-center justify-center border-muted-foreground/25 bg-muted/50">
-      <div className="text-center p-8">
-        <div className="rounded-full bg-background p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-sm">
-          <Server className="h-8 w-8 text-muted-foreground" />
+      <div className="text-center p-6">
+        <div className="rounded-full bg-background p-3 w-12 h-12 mx-auto mb-3 flex items-center justify-center shadow-sm">
+          <Server className="h-6 w-6 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold">{t('welcome.title')}</h3>
-        <p className="text-sm text-muted-foreground mt-2 max-w-sm">
+        <h3 className="text-base font-semibold">{t('welcome.title')}</h3>
+        <p className="text-sm text-muted-foreground mt-1 max-w-xs">
           {t('welcome.description')}
         </p>
       </div>
@@ -63,7 +63,7 @@ export function ServerList({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 grid-cols-2 xl:grid-cols-3">
       {servers.map((server) => (
         <ServerCard
           key={server.id}
