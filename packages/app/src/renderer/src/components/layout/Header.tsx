@@ -33,9 +33,9 @@ export function Header() {
   ];
 
   return (
-    <header className="flex h-10 lg:h-12 items-center justify-between border-b px-3 lg:px-4">
+    <header className="flex h-12 lg:h-14 items-center justify-between border-b px-3 lg:px-4">
       <div>
-        <h2 className="text-sm lg:text-base font-semibold">{t('header.title')}</h2>
+        <h2 className="text-base lg:text-lg font-semibold">{t('header.title')}</h2>
       </div>
 
       <div className="flex items-center gap-0.5 lg:gap-1">

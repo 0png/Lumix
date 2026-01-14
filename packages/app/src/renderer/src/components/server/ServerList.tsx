@@ -64,7 +64,7 @@ export function ServerList({
   }
 
   return (
-    <div className="grid gap-2 lg:gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
       {servers.map((server) => (
         <ServerCard
           key={server.id}
