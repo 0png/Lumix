@@ -1,0 +1,106 @@
+import { useTranslation } from 'react-i18next';
+import { Play, Square, MemoryStick } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import type { ServerInstance, ServerStatus } from './ServerList';
+
+interface ServerCardProps {
+  server: ServerInstance;
+  isSelected?: boolean;
+  onSelect?: () => void;
+  onStart?: () => void;
+  onStop?: () => void;
+}
+
+function StatusIndicator({ status }: { status: ServerStatus }) {
+  const { t } = useTranslation();
+
+  const statusConfig = {
+    stopped: { color: 'bg-muted-foreground', label: t('server.stopped') },
+    starting: { color: 'bg-yellow-500 animate-pulse', label: t('server.starting') },
+    running: { color: 'bg-green-500', label: t('server.running') },
+    stopping: { color: 'bg-yellow-500 animate-pulse', label: t('server.stopping') },
+  };
+
+  const config = statusConfig[status];
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn('h-2 w-2 rounded-full', config.color)} />
+      <span className="text-xs text-muted-foreground">{config.label}</span>
+    </div>
+  );
+}
+
+export function ServerCard({
+  server,
+  isSelected,
+  onSelect,
+  onStart,
+  onStop,
+}: ServerCardProps) {
+  const { t } = useTranslation();
+  const isRunning = server.status === 'running';
+  const isTransitioning = server.status === 'starting' || server.status === 'stopping';
+
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isRunning) {
+      onStop?.();
+    } else if (server.status === 'stopped') {
+      onStart?.();
+    }
+  };
+
+  return (
+    <Card
+      className={cn(
+        'cursor-pointer transition-colors hover:bg-accent/50',
+        isSelected && 'ring-2 ring-primary'
+      )}
+      onClick={onSelect}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-base font-medium truncate">
+            {server.name}
+          </CardTitle>
+          <StatusIndicator status={server.status} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="capitalize">{t(`coreType.${server.coreType}`)}</span>
+            <span>{server.mcVersion}</span>
+          </div>
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MemoryStick className="h-3.5 w-3.5" />
+            <span>{server.ramMax} MB</span>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button
+              size="sm"
+              variant={isRunning ? 'destructive' : 'default'}
+              disabled={isTransitioning}
+              onClick={handleActionClick}
+            >
+              {isRunning ? (
+                <>
+                  <Square className="h-4 w-4 mr-1" />
+                  {t('server.stop')}
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-1" />
+                  {t('server.start')}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
