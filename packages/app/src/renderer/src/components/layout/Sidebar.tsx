@@ -14,29 +14,6 @@ interface ServerItem {
   status: 'stopped' | 'running';
 }
 
-interface NavButtonProps {
-  isActive: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}
-
-/**
- * 導航按鈕元件
- */
-function NavButton({ isActive, onClick, icon, label }: NavButtonProps) {
-  return (
-    <Button
-      variant={isActive ? 'secondary' : 'ghost'}
-      className="w-full justify-start h-8 text-xs"
-      onClick={onClick}
-    >
-      {icon}
-      {label}
-    </Button>
-  );
-}
-
 interface ServerNavItemProps {
   server: ServerItem;
   isSelected: boolean;
@@ -130,13 +107,15 @@ export function Sidebar({
       </div>
 
       {/* 底部設定按鈕 */}
-      <div className="border-t p-2">
-        <NavButton
-          isActive={false}
+      <div className="border-t p-1.5">
+        <Button
+          variant="ghost"
+          className="w-full justify-start h-7 text-xs px-2"
           onClick={() => onOpenSettings?.()}
-          icon={<Settings className="mr-2 h-3.5 w-3.5" />}
-          label={t('sidebar.settings')}
-        />
+        >
+          <Settings className="mr-1.5 h-3.5 w-3.5" />
+          {t('sidebar.settings')}
+        </Button>
       </div>
     </aside>
   );
