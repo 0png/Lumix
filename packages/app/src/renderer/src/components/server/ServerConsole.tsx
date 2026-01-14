@@ -1,3 +1,8 @@
+/**
+ * ServerConsole 元件 - 伺服器控制台
+ * 支援響應式設計
+ */
+
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Terminal } from 'lucide-react';
@@ -48,25 +53,25 @@ export function ServerConsole({ logs, onClear, className }: ServerConsoleProps) 
 
   return (
     <Card className={cn('flex flex-col', className)}>
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Terminal className="h-4 w-4" />
+      <CardHeader className="flex-row items-center justify-between space-y-0 p-3 lg:p-4 pb-1.5 lg:pb-2">
+        <CardTitle className="text-sm lg:text-base flex items-center gap-1.5 lg:gap-2">
+          <Terminal className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
           {t('server.console')}
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={onClear}>
-          <Trash2 className="h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={onClear} className="h-7 lg:h-8 w-7 lg:w-8 p-0">
+          <Trash2 className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
         </Button>
       </CardHeader>
       <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-[400px] rounded-b-lg" ref={scrollRef}>
-          <div className="p-4 font-mono text-sm bg-secondary/50">
+        <ScrollArea className="h-[200px] lg:h-[400px] rounded-b-lg" ref={scrollRef}>
+          <div className="p-3 lg:p-4 font-mono text-[10px] lg:text-sm bg-secondary/50">
             {logs.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
+              <p className="text-muted-foreground text-center py-6 lg:py-8">
                 {t('server.console')}
               </p>
             ) : (
               logs.map((log) => (
-                <div key={log.id} className="flex gap-2 py-0.5">
+                <div key={log.id} className="flex gap-1.5 lg:gap-2 py-0.5">
                   <span className="text-muted-foreground shrink-0">
                     [{formatTimestamp(log.timestamp)}]
                   </span>

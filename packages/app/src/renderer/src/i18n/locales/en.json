@@ -17,7 +17,9 @@
   "sidebar": {
     "servers": "Servers",
     "addServer": "Add Server",
-    "settings": "Settings"
+    "settings": "Settings",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "theme": {
     "light": "Light",

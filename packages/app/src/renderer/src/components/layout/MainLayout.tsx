@@ -1,3 +1,8 @@
+/**
+ * MainLayout 元件 - 主要佈局容器
+ * 支援響應式設計：動態適應全螢幕和小視窗 (1000x600)
+ */
+
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -18,16 +23,16 @@ export function MainLayout({
   onOpenSettings,
 }: MainLayoutProps) {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar
         selectedServerId={selectedServerId}
         onSelectServer={onSelectServer}
         onCreateServer={onCreateServer}
         onOpenSettings={onOpenSettings}
       />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header />
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-3 lg:p-6">
           {children}
         </main>
       </div>

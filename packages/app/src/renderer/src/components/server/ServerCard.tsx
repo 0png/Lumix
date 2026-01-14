@@ -1,6 +1,7 @@
 /**
  * ServerCard 元件 - 伺服器卡片
  * 設計語言與 Lumix 保持一致
+ * 支援響應式設計
  */
 
 import { useTranslation } from 'react-i18next';
@@ -34,9 +35,9 @@ function StatusIndicator({ status }: { status: ServerStatus }) {
   const config = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-2">
-      <span className={cn('h-2 w-2 rounded-full', config.color)} />
-      <span className="text-xs text-muted-foreground">{config.label}</span>
+    <div className="flex items-center gap-1.5 lg:gap-2">
+      <span className={cn('h-1.5 w-1.5 lg:h-2 lg:w-2 rounded-full', config.color)} />
+      <span className="text-[10px] lg:text-xs text-muted-foreground">{config.label}</span>
     </div>
   );
 }
@@ -72,23 +73,23 @@ export function ServerCard({
       )}
       onClick={onSelect}
     >
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-sm font-medium truncate">
+      <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-xs lg:text-sm font-medium truncate">
             {server.name}
           </CardTitle>
           <StatusIndicator status={server.status} />
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <CardContent className="p-3 lg:p-4 pt-0">
+        <div className="space-y-1.5 lg:space-y-2">
+          <div className="flex items-center gap-2 lg:gap-3 text-[10px] lg:text-xs text-muted-foreground">
             <span className="capitalize">{t(`coreType.${server.coreType}`)}</span>
             <span>{server.mcVersion}</span>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MemoryStick className="h-3 w-3" />
+            <div className="flex items-center gap-1 text-[10px] lg:text-xs text-muted-foreground">
+              <MemoryStick className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
               <span>{server.ramMax} MB</span>
             </div>
             <Button
@@ -96,16 +97,16 @@ export function ServerCard({
               variant={isRunning ? 'destructive' : 'default'}
               disabled={isTransitioning}
               onClick={handleActionClick}
-              className="h-7 text-xs"
+              className="h-6 lg:h-7 text-[10px] lg:text-xs px-2 lg:px-3"
             >
               {isRunning ? (
                 <>
-                  <Square className="mr-1 h-3 w-3" />
+                  <Square className="mr-1 h-2.5 w-2.5 lg:h-3 lg:w-3" />
                   {t('server.stop')}
                 </>
               ) : (
                 <>
-                  <Play className="mr-1 h-3 w-3" />
+                  <Play className="mr-1 h-2.5 w-2.5 lg:h-3 lg:w-3" />
                   {t('server.start')}
                 </>
               )}

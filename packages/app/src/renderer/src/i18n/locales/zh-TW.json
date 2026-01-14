@@ -17,7 +17,9 @@
   "sidebar": {
     "servers": "伺服器",
     "addServer": "新增伺服器",
-    "settings": "設定"
+    "settings": "設定",
+    "collapse": "收縮",
+    "expand": "展開"
   },
   "theme": {
     "light": "淺色",
