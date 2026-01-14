@@ -1,0 +1,22 @@
+{
+  "name": "lumix",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A cross-platform Minecraft server launcher",
+  "author": "Lumix Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm --filter @lumix/app dev",
+    "build": "pnpm --filter @lumix/core build && pnpm --filter @lumix/app build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

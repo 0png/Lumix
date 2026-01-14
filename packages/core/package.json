@@ -1,0 +1,23 @@
+{
+  "name": "@lumix/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lumix core module - server management logic",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "fast-check": "^3.15.0"
+  }
+}
