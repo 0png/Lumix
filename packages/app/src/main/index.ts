@@ -4,9 +4,9 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
+    width: 800,
+    height: 600,
+    minWidth: 800,
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
