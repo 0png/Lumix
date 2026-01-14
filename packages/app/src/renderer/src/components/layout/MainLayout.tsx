@@ -1,11 +1,12 @@
 /**
  * MainLayout 元件 - 主要佈局容器
- * 支援響應式設計：動態適應全螢幕和小視窗 (1000x600)
+ * 支援響應式設計：動態適應全螢幕和小視窗 (1000x650)
  */
 
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -32,9 +33,11 @@ export function MainLayout({
       />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header />
-        <main className="flex-1 overflow-auto p-3 lg:p-6">
-          {children}
-        </main>
+        <ScrollArea className="flex-1">
+          <main className="p-4 lg:p-6">
+            {children}
+          </main>
+        </ScrollArea>
       </div>
     </div>
   );
