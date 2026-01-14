@@ -1,18 +1,19 @@
 import { Toaster } from '@/components/ui/sonner';
+import { MainLayout } from '@/components/layout';
 
 function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="flex items-center justify-center h-screen">
+    <MainLayout>
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Lumix</h1>
+          <h1 className="text-4xl font-bold mb-4">Welcome to Lumix</h1>
           <p className="text-muted-foreground">
-            Minecraft Server Launcher
+            Select a server from the sidebar or create a new one
           </p>
         </div>
       </div>
-      <Toaster />
-    </div>
+      <Toaster position="bottom-right" richColors />
+    </MainLayout>
   );
 }
 
