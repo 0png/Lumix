@@ -1,3 +1,8 @@
+/**
+ * ServerCard 元件 - 伺服器卡片
+ * 設計語言與 Lumix 保持一致
+ */
+
 import { useTranslation } from 'react-i18next';
 import { Play, Square, MemoryStick } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +18,9 @@ interface ServerCardProps {
   onStop?: () => void;
 }
 
+/**
+ * 狀態指示器元件
+ */
 function StatusIndicator({ status }: { status: ServerStatus }) {
   const { t } = useTranslation();
 
@@ -33,6 +41,9 @@ function StatusIndicator({ status }: { status: ServerStatus }) {
   );
 }
 
+/**
+ * 伺服器卡片元件
+ */
 export function ServerCard({
   server,
   isSelected,
@@ -88,12 +99,12 @@ export function ServerCard({
             >
               {isRunning ? (
                 <>
-                  <Square className="h-4 w-4 mr-1" />
+                  <Square className="mr-1" />
                   {t('server.stop')}
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 mr-1" />
+                  <Play className="mr-1" />
                   {t('server.start')}
                 </>
               )}

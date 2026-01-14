@@ -1,6 +1,11 @@
+/**
+ * ServerList 元件 - 伺服器列表
+ * 設計語言與 Lumix 保持一致
+ */
+
 import { useTranslation } from 'react-i18next';
+import { Server, Upload } from 'lucide-react';
 import { ServerCard } from './ServerCard';
-import { Server } from 'lucide-react';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type CoreType = 'vanilla' | 'paper' | 'fabric' | 'forge';
@@ -22,6 +27,30 @@ interface ServerListProps {
   onStopServer?: (id: string) => void;
 }
 
+/**
+ * 空狀態元件
+ */
+function EmptyState() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex-1 border-2 border-dashed rounded-lg flex flex-col items-center justify-center border-muted-foreground/25 bg-muted/50">
+      <div className="text-center p-8">
+        <div className="rounded-full bg-background p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-sm">
+          <Server className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold">{t('welcome.title')}</h3>
+        <p className="text-sm text-muted-foreground mt-2 max-w-sm">
+          {t('welcome.description')}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 伺服器列表元件
+ */
 export function ServerList({
   servers,
   selectedServerId,
@@ -29,18 +58,8 @@ export function ServerList({
   onStartServer,
   onStopServer,
 }: ServerListProps) {
-  const { t } = useTranslation();
-
   if (servers.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center py-16">
-        <Server className="h-16 w-16 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">{t('welcome.title')}</h3>
-        <p className="text-muted-foreground max-w-sm">
-          {t('welcome.description')}
-        </p>
-      </div>
-    );
+    return <EmptyState />;
   }
 
   return (

@@ -38,3 +38,6 @@ release/
 
 # Spec and steering files
 .kiro/
+
+# Reference files (Lumix design language)
+/components/

@@ -1,3 +1,8 @@
+/**
+ * ServerDetail 元件 - 伺服器詳細資訊
+ * 設計語言與 Lumix 保持一致
+ */
+
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play, Square, Trash2, Settings2, MemoryStick } from 'lucide-react';
@@ -26,6 +31,9 @@ interface ServerDetailProps {
   onUpdate?: (updates: Partial<ServerInstance>) => void;
 }
 
+/**
+ * 狀態徽章元件
+ */
 function StatusBadge({ status }: { status: ServerStatus }) {
   const { t } = useTranslation();
 
@@ -46,7 +54,9 @@ function StatusBadge({ status }: { status: ServerStatus }) {
   );
 }
 
-
+/**
+ * 伺服器詳細資訊元件
+ */
 export function ServerDetail({
   server,
   onStart,
@@ -76,9 +86,10 @@ export function ServerDetail({
 
   return (
     <div className="space-y-6">
+      {/* 標題區域 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{server.name}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{server.name}</h2>
           <p className="text-muted-foreground">
             {t(`coreType.${server.coreType}`)} • {server.mcVersion}
           </p>
@@ -86,15 +97,16 @@ export function ServerDetail({
         <StatusBadge status={server.status} />
       </div>
 
+      {/* 操作按鈕 */}
       <div className="flex gap-2">
         {isRunning ? (
           <Button variant="destructive" onClick={onStop} disabled={isTransitioning}>
-            <Square className="h-4 w-4 mr-2" />
+            <Square className="mr-2" />
             {t('server.stop')}
           </Button>
         ) : (
           <Button onClick={onStart} disabled={isTransitioning}>
-            <Play className="h-4 w-4 mr-2" />
+            <Play className="mr-2" />
             {t('server.start')}
           </Button>
         )}
@@ -103,7 +115,7 @@ export function ServerDetail({
           onClick={() => setIsEditing(true)}
           disabled={isRunning}
         >
-          <Settings2 className="h-4 w-4 mr-2" />
+          <Settings2 className="mr-2" />
           {t('common.edit')}
         </Button>
         <Button
@@ -112,13 +124,14 @@ export function ServerDetail({
           onClick={() => setShowDeleteDialog(true)}
           disabled={isRunning}
         >
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="mr-2" />
           {t('common.delete')}
         </Button>
       </div>
 
       <Separator />
 
+      {/* 設定卡片 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('server.config')}</CardTitle>
@@ -144,7 +157,7 @@ export function ServerDetail({
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* 編輯對話框 */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent>
           <DialogHeader>
@@ -182,7 +195,7 @@ export function ServerDetail({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* 刪除確認對話框 */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
