@@ -1,3 +1,8 @@
+﻿/**
+ * SettingsDialog 元件 - 設定對話框
+ * 設計語言與 Lumix 保持一致，優化 1000x600 視窗
+ */
+
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sun, Moon, Monitor, FolderOpen, Plus, Trash2 } from 'lucide-react';
@@ -20,7 +25,6 @@ import {
 } from '@/components/ui/select';
 import { useTheme, type Theme } from '@/contexts';
 import { useLanguage, type Language } from '@/contexts';
-import { cn } from '@/lib/utils';
 
 interface JavaInstallation {
   path: string;
@@ -38,12 +42,40 @@ interface SettingsDialogProps {
   onRemoveJavaPath?: (path: string) => void;
 }
 
-const themeIcons = {
-  light: Sun,
-  dark: Moon,
-  system: Monitor,
-};
+const themeIcons = { light: Sun, dark: Moon, system: Monitor };
 
+const themeOptions: { value: Theme; labelKey: string }[] = [
+  { value: 'light', labelKey: 'theme.light' },
+  { value: 'dark', labelKey: 'theme.dark' },
+  { value: 'system', labelKey: 'theme.system' },
+];
+
+const languageOptions: { value: Language; label: string }[] = [
+  { value: 'zh-TW', label: '繁體中文' },
+  { value: 'en', label: 'English' },
+];
+
+function JavaItem({ java, onRemove }: { java: JavaInstallation; onRemove: () => void }) {
+  return (
+    <div className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
+      <div className="flex items-center gap-2 min-w-0">
+        <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <div className="min-w-0">
+          <p className="text-xs font-medium">Java {java.majorVersion}</p>
+          <p className="text-[10px] text-muted-foreground truncate">{java.path}</p>
+        </div>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 h-6 w-6 text-destructive hover:text-destructive"
+        onClick={onRemove}
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
 
 export function SettingsDialog({
   open,
@@ -67,33 +99,20 @@ export function SettingsDialog({
     }
   };
 
-  const themeOptions: { value: Theme; labelKey: string }[] = [
-    { value: 'light', labelKey: 'theme.light' },
-    { value: 'dark', labelKey: 'theme.dark' },
-    { value: 'system', labelKey: 'theme.system' },
-  ];
-
-  const languageOptions: { value: Language; label: string }[] = [
-    { value: 'zh-TW', label: '繁體中文' },
-    { value: 'en', label: 'English' },
-  ];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{t('settings.title')}</DialogTitle>
+      <DialogContent className="sm:max-w-md max-h-[500px] overflow-y-auto">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base">{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Appearance Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">{t('settings.appearance')}</h3>
-            
-            {/* Theme Selection */}
-            <div className="space-y-2">
-              <Label>{t('settings.theme')}</Label>
-              <div className="flex gap-2">
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-muted-foreground">{t('settings.appearance')}</h3>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('settings.theme')}</Label>
+              <div className="flex gap-1.5">
                 {themeOptions.map((option) => {
                   const Icon = themeIcons[option.value];
                   return (
@@ -102,9 +121,9 @@ export function SettingsDialog({
                       variant={theme === option.value ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setTheme(option.value)}
-                      className="flex-1"
+                      className="flex-1 h-8 text-xs"
                     >
-                      <Icon className="h-4 w-4 mr-2" />
+                      <Icon className="mr-1.5 h-3.5 w-3.5" />
                       {t(option.labelKey)}
                     </Button>
                   );
@@ -112,16 +131,15 @@ export function SettingsDialog({
               </div>
             </div>
 
-            {/* Language Selection */}
-            <div className="space-y-2">
-              <Label>{t('settings.language')}</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('settings.language')}</Label>
               <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {languageOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem key={option.value} value={option.value} className="text-xs">
                       {option.label}
                     </SelectItem>
                   ))}
@@ -132,15 +150,13 @@ export function SettingsDialog({
 
           <Separator />
 
-          {/* Defaults Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">{t('settings.defaults')}</h3>
-            
-            {/* Default RAM */}
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-muted-foreground">{t('settings.defaults')}</h3>
+
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label>{t('settings.defaultRam')}</Label>
-                <span className="text-sm text-muted-foreground">{ramMax} MB</span>
+                <Label className="text-xs">{t('settings.defaultRam')}</Label>
+                <span className="text-xs text-muted-foreground">{ramMax} MB</span>
               </div>
               <Slider
                 value={[ramMax]}
@@ -149,7 +165,7 @@ export function SettingsDialog({
                 max={16384}
                 step={512}
               />
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>512 MB</span>
                 <span>16 GB</span>
               </div>
@@ -158,48 +174,27 @@ export function SettingsDialog({
 
           <Separator />
 
-          {/* Java Management Section */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">{t('settings.java')}</h3>
-              <Button variant="outline" size="sm" onClick={onAddJavaPath}>
-                <Plus className="h-4 w-4 mr-1" />
+              <h3 className="text-xs font-medium text-muted-foreground">{t('settings.java')}</h3>
+              <Button variant="outline" size="sm" onClick={onAddJavaPath} className="h-7 text-xs">
+                <Plus className="mr-1 h-3 w-3" />
                 {t('common.create')}
               </Button>
             </div>
-            
+
             {javaInstallations.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p className="text-xs text-muted-foreground text-center py-3">
                 {t('settings.javaPath')}
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5 max-h-24 overflow-y-auto">
                 {javaInstallations.map((java) => (
-                  <div
+                  <JavaItem
                     key={java.path}
-                    className={cn(
-                      'flex items-center justify-between p-3 rounded-md',
-                      'bg-secondary/50'
-                    )}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">Java {java.majorVersion}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {java.path}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => onRemoveJavaPath?.(java.path)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    java={java}
+                    onRemove={() => onRemoveJavaPath?.(java.path)}
+                  />
                 ))}
               </div>
             )}
