@@ -1,0 +1,87 @@
+{
+  "common": {
+    "loading": "載入中...",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "confirm": "確認",
+    "close": "關閉",
+    "create": "建立",
+    "edit": "編輯",
+    "settings": "設定",
+    "search": "搜尋"
+  },
+  "header": {
+    "title": "伺服器儀表板"
+  },
+  "sidebar": {
+    "servers": "伺服器",
+    "addServer": "新增伺服器",
+    "settings": "設定"
+  },
+  "theme": {
+    "light": "淺色",
+    "dark": "深色",
+    "system": "跟隨系統"
+  },
+  "language": {
+    "zhTW": "繁體中文",
+    "en": "English"
+  },
+  "welcome": {
+    "title": "歡迎使用 Lumix",
+    "description": "從側邊欄選擇一個伺服器或建立新的伺服器"
+  },
+  "server": {
+    "name": "伺服器名稱",
+    "version": "版本",
+    "coreType": "核心類型",
+    "status": "狀態",
+    "ram": "記憶體",
+    "start": "啟動",
+    "stop": "停止",
+    "restart": "重新啟動",
+    "delete": "刪除伺服器",
+    "console": "控制台",
+    "config": "配置",
+    "stopped": "已停止",
+    "running": "運行中",
+    "starting": "啟動中",
+    "stopping": "停止中"
+  },
+  "createServer": {
+    "title": "建立新伺服器",
+    "namePlaceholder": "輸入伺服器名稱",
+    "selectVersion": "選擇版本",
+    "selectCore": "選擇核心類型",
+    "ramAllocation": "記憶體配置",
+    "minRam": "最小記憶體",
+    "maxRam": "最大記憶體"
+  },
+  "coreType": {
+    "vanilla": "原版",
+    "paper": "Paper",
+    "fabric": "Fabric",
+    "forge": "Forge"
+  },
+  "settings": {
+    "title": "設定",
+    "appearance": "外觀",
+    "theme": "主題",
+    "language": "語言",
+    "defaults": "預設值",
+    "defaultRam": "預設記憶體",
+    "java": "Java 管理",
+    "javaPath": "Java 路徑"
+  },
+  "toast": {
+    "serverCreated": "伺服器建立成功",
+    "serverDeleted": "伺服器已刪除",
+    "serverStarted": "伺服器已啟動",
+    "serverStopped": "伺服器已停止",
+    "settingsSaved": "設定已儲存",
+    "error": "發生錯誤",
+    "downloadStarted": "開始下載",
+    "downloadComplete": "下載完成"
+  }
+}

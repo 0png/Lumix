@@ -1,4 +1,5 @@
 import { Server, Plus, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,8 @@ export function Sidebar({
   onCreateServer,
   onOpenSettings,
 }: SidebarProps) {
+  const { t } = useTranslation();
+
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-card">
       <div className="flex items-center gap-2 border-b p-4">
@@ -38,13 +41,14 @@ export function Sidebar({
       <div className="flex-1 overflow-auto p-2">
         <div className="mb-2 flex items-center justify-between px-2">
           <span className="text-sm font-medium text-muted-foreground">
-            Servers
+            {t('sidebar.servers')}
           </span>
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6"
             onClick={onCreateServer}
+            title={t('sidebar.addServer')}
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -73,7 +77,7 @@ export function Sidebar({
 
           {mockServers.length === 0 && (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-              No servers yet
+              {t('welcome.description')}
             </div>
           )}
         </nav>
@@ -86,7 +90,7 @@ export function Sidebar({
           onClick={onOpenSettings}
         >
           <Settings className="h-4 w-4" />
-          Settings
+          {t('sidebar.settings')}
         </Button>
       </div>
     </aside>

@@ -1,4 +1,5 @@
-import { Sun, Moon, Monitor, Globe } from 'lucide-react';
+import { Sun, Moon, Monitor, Globe, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -6,29 +7,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTheme, type Theme } from '@/contexts';
+import { useLanguage, type Language } from '@/contexts';
 
-type Theme = 'light' | 'dark' | 'system';
-type Language = 'zh-TW' | 'en';
-
-interface HeaderProps {
-  theme?: Theme;
-  language?: Language;
-  onThemeChange?: (theme: Theme) => void;
-  onLanguageChange?: (language: Language) => void;
-}
-
-export function Header({
-  theme = 'system',
-  language = 'zh-TW',
-  onThemeChange,
-  onLanguageChange,
-}: HeaderProps) {
+export function Header() {
+  const { t } = useTranslation();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const ThemeIcon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor;
+
+  const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
+    { value: 'light', label: t('theme.light'), icon: Sun },
+    { value: 'dark', label: t('theme.dark'), icon: Moon },
+    { value: 'system', label: t('theme.system'), icon: Monitor },
+  ];
+
+  const languageOptions: { value: Language; label: string }[] = [
+    { value: 'zh-TW', label: t('language.zhTW') },
+    { value: 'en', label: t('language.en') },
+  ];
 
   return (
     <header className="flex h-14 items-center justify-between border-b px-6">
       <div>
-        <h2 className="text-lg font-semibold">Server Dashboard</h2>
+        <h2 className="text-lg font-semibold">{t('header.title')}</h2>
       </div>
 
       <div className="flex items-center gap-2">
@@ -39,18 +41,18 @@ export function Header({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onThemeChange?.('light')}>
-              <Sun className="mr-2 h-4 w-4" />
-              Light
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onThemeChange?.('dark')}>
-              <Moon className="mr-2 h-4 w-4" />
-              Dark
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onThemeChange?.('system')}>
-              <Monitor className="mr-2 h-4 w-4" />
-              System
-            </DropdownMenuItem>
+            {themeOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setTheme(option.value)}
+              >
+                <option.icon className="mr-2 h-4 w-4" />
+                {option.label}
+                {theme === option.value && (
+                  <Check className="ml-auto h-4 w-4" />
+                )}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -61,12 +63,17 @@ export function Header({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onLanguageChange?.('zh-TW')}>
-              繁體中文
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onLanguageChange?.('en')}>
-              English
-            </DropdownMenuItem>
+            {languageOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setLanguage(option.value)}
+              >
+                {option.label}
+                {language === option.value && (
+                  <Check className="ml-auto h-4 w-4" />
+                )}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

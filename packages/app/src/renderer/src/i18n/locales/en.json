@@ -1,0 +1,87 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "create": "Create",
+    "edit": "Edit",
+    "settings": "Settings",
+    "search": "Search"
+  },
+  "header": {
+    "title": "Server Dashboard"
+  },
+  "sidebar": {
+    "servers": "Servers",
+    "addServer": "Add Server",
+    "settings": "Settings"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "zhTW": "繁體中文",
+    "en": "English"
+  },
+  "welcome": {
+    "title": "Welcome to Lumix",
+    "description": "Select a server from the sidebar or create a new one"
+  },
+  "server": {
+    "name": "Server Name",
+    "version": "Version",
+    "coreType": "Core Type",
+    "status": "Status",
+    "ram": "RAM",
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "delete": "Delete Server",
+    "console": "Console",
+    "config": "Configuration",
+    "stopped": "Stopped",
+    "running": "Running",
+    "starting": "Starting",
+    "stopping": "Stopping"
+  },
+  "createServer": {
+    "title": "Create New Server",
+    "namePlaceholder": "Enter server name",
+    "selectVersion": "Select Version",
+    "selectCore": "Select Core Type",
+    "ramAllocation": "RAM Allocation",
+    "minRam": "Min RAM",
+    "maxRam": "Max RAM"
+  },
+  "coreType": {
+    "vanilla": "Vanilla",
+    "paper": "Paper",
+    "fabric": "Fabric",
+    "forge": "Forge"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "language": "Language",
+    "defaults": "Defaults",
+    "defaultRam": "Default RAM",
+    "java": "Java Management",
+    "javaPath": "Java Path"
+  },
+  "toast": {
+    "serverCreated": "Server created successfully",
+    "serverDeleted": "Server deleted",
+    "serverStarted": "Server started",
+    "serverStopped": "Server stopped",
+    "settingsSaved": "Settings saved",
+    "error": "An error occurred",
+    "downloadStarted": "Download started",
+    "downloadComplete": "Download complete"
+  }
+}
