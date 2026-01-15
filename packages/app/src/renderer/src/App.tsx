@@ -54,6 +54,7 @@ function AppContent() {
     deleteServer,
     startServer,
     stopServer,
+    sendCommand,
   } = useServers();
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
@@ -208,7 +209,11 @@ function AppContent() {
                   onUpdate={handleUpdateServer}
                 />
                 {selectedServer.status === 'running' && (
-                  <ServerConsole logs={currentLogs} onClear={() => {}} />
+                  <ServerConsole
+                    logs={currentLogs}
+                    onClear={() => {}}
+                    onSendCommand={(cmd) => sendCommand(selectedServer.id, cmd)}
+                  />
                 )}
               </div>
             ) : (

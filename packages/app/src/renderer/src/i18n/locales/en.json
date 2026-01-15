@@ -52,7 +52,8 @@
     "running": "Running",
     "starting": "Starting",
     "stopping": "Stopping",
-    "downloading": "Downloading..."
+    "downloading": "Downloading...",
+    "commandPlaceholder": "Enter command..."
   },
   "createServer": {
     "title": "Create New Server",

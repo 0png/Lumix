@@ -3,11 +3,12 @@
  * 支援響應式設計
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Terminal } from 'lucide-react';
+import { Trash2, Terminal, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ export interface LogEntry {
 interface ServerConsoleProps {
   logs: LogEntry[];
   onClear?: () => void;
+  onSendCommand?: (command: string) => void;
   className?: string;
 }
 
@@ -41,15 +43,31 @@ const levelColors: Record<LogLevel, string> = {
   error: 'text-red-500',
 };
 
-export function ServerConsole({ logs, onClear, className }: ServerConsoleProps) {
+export function ServerConsole({ logs, onClear, onSendCommand, className }: ServerConsoleProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [command, setCommand] = useState('');
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  const handleSendCommand = () => {
+    const trimmed = command.trim();
+    if (trimmed && onSendCommand) {
+      onSendCommand(trimmed);
+      setCommand('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendCommand();
+    }
+  };
 
   return (
     <Card className={cn('flex flex-col', className)}>
@@ -62,8 +80,8 @@ export function ServerConsole({ logs, onClear, className }: ServerConsoleProps) 
           <Trash2 className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
         </Button>
       </CardHeader>
-      <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-[200px] lg:h-[400px] rounded-b-lg" ref={scrollRef}>
+      <CardContent className="flex-1 p-0 flex flex-col">
+        <ScrollArea className="h-[200px] lg:h-[350px] rounded-none" ref={scrollRef}>
           <div className="p-3 lg:p-4 font-mono text-[10px] lg:text-sm bg-secondary/50">
             {logs.length === 0 ? (
               <p className="text-muted-foreground text-center py-6 lg:py-8">
@@ -84,6 +102,24 @@ export function ServerConsole({ logs, onClear, className }: ServerConsoleProps) 
             <div ref={bottomRef} />
           </div>
         </ScrollArea>
+        {/* 指令輸入區 */}
+        <div className="flex gap-2 p-3 lg:p-4 pt-2 lg:pt-3 border-t bg-background">
+          <Input
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t('server.commandPlaceholder')}
+            className="flex-1 h-8 lg:h-9 text-xs lg:text-sm font-mono"
+          />
+          <Button
+            size="sm"
+            onClick={handleSendCommand}
+            disabled={!command.trim()}
+            className="h-8 lg:h-9 px-3"
+          >
+            <Send className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
