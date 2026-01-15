@@ -8,15 +8,12 @@ import type {
   SettingsDto,
   SaveSettingsRequest,
 } from '../../shared/ipc-types';
-import { ConfigManager } from '@lumix/core';
-
-let configManager: ConfigManager | null = null;
+import { configManager } from '@lumix/core';
 
 /**
  * 初始化設定 handlers
  */
-export function initSettingsHandlers(dataPath: string): void {
-  configManager = new ConfigManager(dataPath);
+export function initSettingsHandlers(): void {
   registerHandlers();
 }
 
@@ -24,7 +21,6 @@ function registerHandlers(): void {
   // 取得設定
   ipcMain.handle(SettingsChannels.GET, async (): Promise<IpcResult<SettingsDto>> => {
     try {
-      if (!configManager) throw new Error('ConfigManager not initialized');
       const settings = await configManager.loadSettings();
       return { success: true, data: settings };
     } catch (error) {
@@ -35,7 +31,6 @@ function registerHandlers(): void {
   // 儲存設定
   ipcMain.handle(SettingsChannels.SAVE, async (_, data: SaveSettingsRequest): Promise<IpcResult<SettingsDto>> => {
     try {
-      if (!configManager) throw new Error('ConfigManager not initialized');
       const current = await configManager.loadSettings();
       const updated = { ...current, ...data };
       await configManager.saveSettings(updated);
@@ -44,11 +39,4 @@ function registerHandlers(): void {
       return { success: false, error: String(error) };
     }
   });
-}
-
-/**
- * 清理資源
- */
-export function cleanupSettingsHandlers(): void {
-  configManager = null;
 }

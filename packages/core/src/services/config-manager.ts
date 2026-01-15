@@ -28,6 +28,13 @@ export class ConfigManager {
   private instancesCache: Map<string, InstanceConfig> = new Map();
 
   /**
+   * 取得應用程式設定（別名方法）
+   */
+  async loadSettings(): Promise<SettingsFile> {
+    return this.getSettings();
+  }
+
+  /**
    * 取得應用程式設定
    * 如果設定檔不存在或損壞，回傳預設值
    */
@@ -66,11 +73,12 @@ export class ConfigManager {
   }
 
   /**
-   * 儲存設定到檔案
+   * 儲存設定到檔案（公開方法）
    */
-  private async saveSettings(settings: SettingsFile): Promise<void> {
+  async saveSettings(settings: SettingsFile): Promise<void> {
     const settingsPath = getSettingsPath();
     await writeJsonFile(settingsPath, settings);
+    this.settingsCache = settings;
   }
 
   /**

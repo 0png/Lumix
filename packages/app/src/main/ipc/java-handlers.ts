@@ -12,17 +12,13 @@ import {
   detectJavaInstallations,
   selectJavaForMinecraft,
   installJava,
-  ConfigManager,
-  type JavaInstallation,
+  configManager,
 } from '@lumix/core';
-
-let configManager: ConfigManager | null = null;
 
 /**
  * 初始化 Java handlers
  */
-export function initJavaHandlers(dataPath: string): void {
-  configManager = new ConfigManager(dataPath);
+export function initJavaHandlers(): void {
   registerHandlers();
 }
 
@@ -33,11 +29,9 @@ function registerHandlers(): void {
       const installations = await detectJavaInstallations();
       
       // 儲存到設定
-      if (configManager) {
-        const settings = await configManager.loadSettings();
-        settings.javaInstallations = installations;
-        await configManager.saveSettings(settings);
-      }
+      const settings = await configManager.loadSettings();
+      settings.javaInstallations = installations;
+      await configManager.saveSettings(settings);
       
       return { success: true, data: installations };
     } catch (error) {
@@ -48,7 +42,6 @@ function registerHandlers(): void {
   // 取得已儲存的 Java 安裝
   ipcMain.handle(JavaChannels.GET_INSTALLATIONS, async (): Promise<IpcResult<JavaInstallationDto[]>> => {
     try {
-      if (!configManager) throw new Error('ConfigManager not initialized');
       const settings = await configManager.loadSettings();
       return { success: true, data: settings.javaInstallations };
     } catch (error) {
@@ -59,8 +52,6 @@ function registerHandlers(): void {
   // 安裝 Java
   ipcMain.handle(JavaChannels.INSTALL, async (_, data: JavaInstallRequest): Promise<IpcResult<JavaInstallationDto>> => {
     try {
-      if (!configManager) throw new Error('ConfigManager not initialized');
-      
       const installation = await installJava(data.majorVersion, (progress) => {
         // 發送進度事件
         const windows = BrowserWindow.getAllWindows();
@@ -93,7 +84,6 @@ function registerHandlers(): void {
   // 為 Minecraft 版本選擇 Java
   ipcMain.handle(JavaChannels.SELECT_FOR_MC, async (_, mcVersion: string): Promise<IpcResult<JavaInstallationDto | null>> => {
     try {
-      if (!configManager) throw new Error('ConfigManager not initialized');
       const settings = await configManager.loadSettings();
       const selected = selectJavaForMinecraft(mcVersion, settings.javaInstallations);
       return { success: true, data: selected };
@@ -101,11 +91,4 @@ function registerHandlers(): void {
       return { success: false, error: String(error) };
     }
   });
-}
-
-/**
- * 清理資源
- */
-export function cleanupJavaHandlers(): void {
-  configManager = null;
 }

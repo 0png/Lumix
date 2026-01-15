@@ -1,23 +1,20 @@
 // IPC Handlers Index
 // 統一初始化所有 IPC handlers
 
-import { app } from 'electron';
 import { initServerHandlers, cleanupServerHandlers } from './server-handlers';
-import { initJavaHandlers, cleanupJavaHandlers } from './java-handlers';
+import { initJavaHandlers } from './java-handlers';
 import { initDownloadHandlers } from './download-handlers';
-import { initSettingsHandlers, cleanupSettingsHandlers } from './settings-handlers';
+import { initSettingsHandlers } from './settings-handlers';
 import { initAppHandlers } from './app-handlers';
 
 /**
  * 初始化所有 IPC handlers
  */
 export function initAllIpcHandlers(): void {
-  const dataPath = app.getPath('userData');
-  
-  initServerHandlers(dataPath);
-  initJavaHandlers(dataPath);
+  initServerHandlers();
+  initJavaHandlers();
   initDownloadHandlers();
-  initSettingsHandlers(dataPath);
+  initSettingsHandlers();
   initAppHandlers();
 }
 
@@ -26,8 +23,6 @@ export function initAllIpcHandlers(): void {
  */
 export function cleanupAllIpcHandlers(): void {
   cleanupServerHandlers();
-  cleanupJavaHandlers();
-  cleanupSettingsHandlers();
 }
 
 export {

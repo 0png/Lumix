@@ -10,32 +10,26 @@ import type {
   UpdateServerRequest,
 } from '../../shared/ipc-types';
 import {
-  ServerManager,
-  ConfigManager,
+  serverManager,
   type ServerInstance,
   type LogEntry,
+  type ServerStatus,
 } from '@lumix/core';
-
-let serverManager: ServerManager | null = null;
-let configManager: ConfigManager | null = null;
 
 /**
  * 初始化伺服器 handlers
  */
-export function initServerHandlers(dataPath: string): void {
-  configManager = new ConfigManager(dataPath);
-  serverManager = new ServerManager(configManager);
-
-  // 訂閱伺服器狀態變更
-  serverManager.onStatusChange((serverId, status, exitCode) => {
+export function initServerHandlers(): void {
+  // 訂閱伺服器狀態變更（使用 EventEmitter 的 on 方法）
+  serverManager.on('status-changed', (serverId: string, status: ServerStatus) => {
     const windows = BrowserWindow.getAllWindows();
     windows.forEach((win) => {
-      win.webContents.send(ServerChannels.STATUS_CHANGED, { serverId, status, exitCode });
+      win.webContents.send(ServerChannels.STATUS_CHANGED, { serverId, status });
     });
   });
 
   // 訂閱日誌輸出
-  serverManager.onLog((serverId, entry) => {
+  serverManager.on('log', (serverId: string, entry: LogEntry) => {
     const windows = BrowserWindow.getAllWindows();
     windows.forEach((win) => {
       win.webContents.send(ServerChannels.LOG_ENTRY, {
@@ -56,7 +50,6 @@ function registerHandlers(): void {
   // 取得所有伺服器
   ipcMain.handle(ServerChannels.GET_ALL, async (): Promise<IpcResult<ServerInstanceDto[]>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       const instances = await serverManager.getAllInstances();
       return { success: true, data: instances.map(toDto) };
     } catch (error) {
@@ -67,7 +60,6 @@ function registerHandlers(): void {
   // 取得單一伺服器
   ipcMain.handle(ServerChannels.GET_BY_ID, async (_, id: string): Promise<IpcResult<ServerInstanceDto>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       const instance = await serverManager.getInstance(id);
       if (!instance) {
         return { success: false, error: 'Server not found' };
@@ -81,7 +73,6 @@ function registerHandlers(): void {
   // 建立伺服器
   ipcMain.handle(ServerChannels.CREATE, async (_, data: CreateServerRequest): Promise<IpcResult<ServerInstanceDto>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       const instance = await serverManager.createInstance(data);
       return { success: true, data: toDto(instance) };
     } catch (error) {
@@ -92,9 +83,11 @@ function registerHandlers(): void {
   // 更新伺服器
   ipcMain.handle(ServerChannels.UPDATE, async (_, data: UpdateServerRequest): Promise<IpcResult<ServerInstanceDto>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       const { id, ...updates } = data;
       const instance = await serverManager.updateInstance(id, updates);
+      if (!instance) {
+        return { success: false, error: 'Server not found' };
+      }
       return { success: true, data: toDto(instance) };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -104,7 +97,6 @@ function registerHandlers(): void {
   // 刪除伺服器
   ipcMain.handle(ServerChannels.DELETE, async (_, id: string): Promise<IpcResult<void>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       await serverManager.deleteInstance(id);
       return { success: true };
     } catch (error) {
@@ -115,7 +107,6 @@ function registerHandlers(): void {
   // 啟動伺服器
   ipcMain.handle(ServerChannels.START, async (_, id: string): Promise<IpcResult<void>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       await serverManager.startServer(id);
       return { success: true };
     } catch (error) {
@@ -126,7 +117,6 @@ function registerHandlers(): void {
   // 停止伺服器
   ipcMain.handle(ServerChannels.STOP, async (_, id: string): Promise<IpcResult<void>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       await serverManager.stopServer(id);
       return { success: true };
     } catch (error) {
@@ -137,7 +127,6 @@ function registerHandlers(): void {
   // 發送指令
   ipcMain.handle(ServerChannels.SEND_COMMAND, async (_, id: string, command: string): Promise<IpcResult<void>> => {
     try {
-      if (!serverManager) throw new Error('ServerManager not initialized');
       serverManager.sendCommand(id, command);
       return { success: true };
     } catch (error) {
@@ -170,9 +159,6 @@ function toDto(instance: ServerInstance): ServerInstanceDto {
  * 清理資源
  */
 export function cleanupServerHandlers(): void {
-  if (serverManager) {
-    serverManager.cleanup();
-    serverManager = null;
-  }
-  configManager = null;
+  serverManager.stopAllServers();
+  serverManager.removeAllListeners();
 }
