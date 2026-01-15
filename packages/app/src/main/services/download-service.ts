@@ -60,8 +60,13 @@ const API_ENDPOINTS = {
   FABRIC_GAME: 'https://meta.fabricmc.net/v2/versions/game',
   FABRIC_LOADER: 'https://meta.fabricmc.net/v2/versions/loader',
   FABRIC_INSTALLER: 'https://meta.fabricmc.net/v2/versions/installer',
-  BMCLAPI_FORGE: 'https://bmclapi2.bangbang93.com/forge/minecraft',
+  FORGE_PROMOTIONS: 'https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json',
+  FORGE_MAVEN: 'https://maven.minecraftforge.net/net/minecraftforge/forge',
 } as const;
+
+interface ForgePromotions {
+  promos: Record<string, string>;
+}
 
 // ============================================================================
 // DownloadService Class
@@ -111,8 +116,35 @@ export class DownloadService extends EventEmitter {
   }
 
   private async fetchForgeVersions(): Promise<string[]> {
-    const data = await fetchJson<string[]>(API_ENDPOINTS.BMCLAPI_FORGE);
-    return data.reverse().slice(0, 30);
+    const data = await fetchJson<ForgePromotions>(API_ENDPOINTS.FORGE_PROMOTIONS);
+    
+    // 從 promos 中提取所有支援的 MC 版本
+    // 格式: "1.21.1-latest": "52.0.1", "1.21.1-recommended": "52.0.1"
+    const versions = new Set<string>();
+    for (const key of Object.keys(data.promos)) {
+      const mcVersion = key.replace(/-latest$/, '').replace(/-recommended$/, '');
+      versions.add(mcVersion);
+    }
+    
+    // 排序版本（新版在前）
+    return Array.from(versions)
+      .sort((a, b) => this.compareVersions(b, a))
+      .slice(0, 30);
+  }
+
+  /**
+   * 比較 Minecraft 版本號
+   */
+  private compareVersions(a: string, b: string): number {
+    const partsA = a.split('.').map((p) => parseInt(p, 10) || 0);
+    const partsB = b.split('.').map((p) => parseInt(p, 10) || 0);
+    
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const numA = partsA[i] || 0;
+      const numB = partsB[i] || 0;
+      if (numA !== numB) return numA - numB;
+    }
+    return 0;
   }
 
   // ==========================================================================
@@ -223,18 +255,27 @@ export class DownloadService extends EventEmitter {
     jarPath: string,
     serverId?: string
   ): Promise<void> {
-    const forgeListUrl = `https://bmclapi2.bangbang93.com/forge/minecraft/${mcVersion}`;
-    const forgeVersions = await fetchJson<Array<{ version: string; build: number }>>(forgeListUrl);
-
-    if (!forgeVersions || forgeVersions.length === 0) {
+    // 從 promotions_slim.json 獲取 Forge 版本
+    const promos = await fetchJson<ForgePromotions>(API_ENDPOINTS.FORGE_PROMOTIONS);
+    
+    // 優先使用 recommended 版本，否則使用 latest
+    const recommendedKey = `${mcVersion}-recommended`;
+    const latestKey = `${mcVersion}-latest`;
+    const forgeVersion = promos.promos[recommendedKey] || promos.promos[latestKey];
+    
+    if (!forgeVersion) {
       throw new Error(`NO_FORGE: Forge ${mcVersion} 沒有可用版本`);
     }
 
-    const latestForge = forgeVersions[forgeVersions.length - 1]!;
-    const installerUrl = `https://bmclapi2.bangbang93.com/forge/download/${latestForge.build}`;
+    // 構建 Maven 下載連結
+    // 格式: https://maven.minecraftforge.net/net/minecraftforge/forge/[MC版本]-[Forge版本]/forge-[MC版本]-[Forge版本]-installer.jar
+    const forgeFullVersion = `${mcVersion}-${forgeVersion}`;
+    const installerUrl = `${API_ENDPOINTS.FORGE_MAVEN}/${forgeFullVersion}/forge-${forgeFullVersion}-installer.jar`;
+    
     const targetDir = path.dirname(jarPath);
     const installerPath = path.join(targetDir, 'forge-installer.jar');
 
+    console.log('[DownloadService] Forge version:', forgeFullVersion);
     console.log('[DownloadService] Downloading Forge installer:', installerUrl);
     await this.downloadWithProgress(installerUrl, installerPath, 0, serverId);
 
