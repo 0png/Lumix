@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Toaster } from '@/components/ui/sonner';
 import { MainLayout } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
@@ -40,9 +41,11 @@ function toServerInstance(dto: {
 }
 
 function AppContent() {
+  const { t } = useTranslation();
   const {
     servers: serverDtos,
     loading,
+    error,
     logs: serverLogs,
     createServer,
     updateServer,
@@ -76,14 +79,14 @@ function AppContent() {
       // 1. 先偵測系統 Java
       const javaResult = await window.electronAPI.java.detect();
       if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
-        toast.error('toast.noJavaFound');
+        toast.error(t('toast.noJavaFound'));
         return;
       }
 
       // 2. 選擇適合此 MC 版本的 Java
       const selectResult = await window.electronAPI.java.selectForMc(data.mcVersion);
       if (!selectResult.success || !selectResult.data) {
-        toast.error('toast.noCompatibleJava');
+        toast.error(t('toast.noCompatibleJava'));
         return;
       }
 
@@ -101,61 +104,81 @@ function AppContent() {
 
       if (result) {
         // 4. 下載伺服器 JAR（背景執行）
-        toast.info('toast.downloadingServer');
+        toast.info(t('toast.downloadingServer'));
         window.electronAPI.download.downloadServer({
           coreType: data.coreType,
           mcVersion: data.mcVersion,
           targetDir: result.directory,
         }).then((downloadResult) => {
           if (downloadResult.success) {
-            toast.success('toast.serverReady');
+            toast.success(t('toast.serverReady'));
           } else {
-            toast.error('toast.downloadFailed');
+            toast.error(t('toast.downloadFailed'));
           }
         });
 
-        toast.success('toast.serverCreated');
+        toast.success(t('toast.serverCreated'));
       }
     } finally {
       setIsCreating(false);
     }
-  }, [createServer]);
+  }, [createServer, t]);
 
   const handleStartServer = useCallback(async (id: string) => {
+    // 檢查伺服器是否有 Java 路徑，如果沒有則嘗試自動設定
+    const serverDto = serverDtos.find(s => s.id === id);
+    if (serverDto && !serverDto.javaPath) {
+      // 嘗試自動偵測並設定 Java
+      const javaResult = await window.electronAPI.java.detect();
+      if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
+        toast.error(t('toast.noJavaFound'));
+        return;
+      }
+
+      const selectResult = await window.electronAPI.java.selectForMc(serverDto.mcVersion);
+      if (!selectResult.success || !selectResult.data) {
+        toast.error(t('toast.noCompatibleJava'));
+        return;
+      }
+
+      // 更新伺服器的 Java 路徑
+      await updateServer({ id, javaPath: selectResult.data.path });
+    }
+
     const success = await startServer(id);
     if (success) {
-      toast.success('toast.serverStarted');
+      toast.success(t('toast.serverStarted'));
     } else {
-      toast.error('toast.startFailed');
+      toast.error(t('toast.startFailed'), error || undefined);
     }
-  }, [startServer]);
+  }, [startServer, t, error, serverDtos, updateServer]);
 
   const handleStopServer = useCallback(async (id: string) => {
     const success = await stopServer(id);
     if (success) {
-      toast.success('toast.serverStopped');
+      toast.success(t('toast.serverStopped'));
     } else {
-      toast.error('toast.stopFailed');
+      toast.error(t('toast.stopFailed'));
     }
-  }, [stopServer]);
+  }, [stopServer, t]);
 
   const handleDeleteServer = useCallback(async (id: string) => {
     const success = await deleteServer(id);
     if (success) {
       setSelectedServerId(undefined);
-      toast.success('toast.serverDeleted');
+      toast.success(t('toast.serverDeleted'));
     } else {
-      toast.error('toast.deleteFailed');
+      toast.error(t('toast.deleteFailed'));
     }
-  }, [deleteServer]);
+  }, [deleteServer, t]);
 
   const handleUpdateServer = useCallback(async (updates: Partial<ServerInstance>) => {
     if (!selectedServerId) return;
     const result = await updateServer({ id: selectedServerId, ...updates });
     if (result) {
-      toast.success('toast.settingsSaved');
+      toast.success(t('toast.settingsSaved'));
     }
-  }, [selectedServerId, updateServer]);
+  }, [selectedServerId, updateServer, t]);
 
   const handleSelectServer = useCallback((id: string) => {
     setSelectedServerId(id);
