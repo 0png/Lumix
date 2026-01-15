@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { VersionCombobox } from '@/components/ui/version-combobox';
 import type { CoreType } from './ServerList';
 
 export interface CreateServerData {
@@ -144,29 +144,15 @@ export function CreateServerDialog({
 
           <div className="space-y-2">
             <Label>{t('server.version')}</Label>
-            {loading ? (
-              <div className="flex items-center gap-2 h-10 px-3 border rounded-md">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">載入中...</span>
-              </div>
-            ) : error ? (
-              <div className="text-sm text-destructive p-2 border border-destructive rounded-md">
-                載入失敗: {error}
-              </div>
-            ) : (
-              <Select value={mcVersion} onValueChange={setMcVersion}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('createServer.selectVersion')} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px]">
-                  {versions.map((version) => (
-                    <SelectItem key={version} value={version}>
-                      {version}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <VersionCombobox
+              versions={versions}
+              value={mcVersion}
+              onValueChange={setMcVersion}
+              placeholder={t('createServer.selectVersion')}
+              searchPlaceholder={t('createServer.searchVersion')}
+              emptyText={error || t('createServer.noVersionFound')}
+              loading={loading}
+            />
           </div>
 
           <div className="space-y-2">

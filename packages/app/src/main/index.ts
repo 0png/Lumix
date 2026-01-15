@@ -7,6 +7,7 @@ ipcMain.handle('fetch-versions', async (_event, coreType: string) => {
   const MOJANG_API = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
   const PAPER_API = 'https://api.papermc.io/v2/projects/paper';
   const FABRIC_API = 'https://meta.fabricmc.net/v2/versions/game';
+  const FORGE_MAVEN = 'https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml';
 
   try {
     let result: string[] = [];
@@ -15,7 +16,7 @@ ipcMain.handle('fetch-versions', async (_event, coreType: string) => {
       const response = await fetch(PAPER_API);
       const data = await response.json();
       result = [...(data.versions as string[])].reverse();
-    } else if (coreType === 'vanilla' || coreType === 'forge') {
+    } else if (coreType === 'vanilla') {
       const response = await fetch(MOJANG_API);
       const data = await response.json();
       result = (data.versions as Array<{ id: string; type: string }>)
@@ -27,6 +28,31 @@ ipcMain.handle('fetch-versions', async (_event, coreType: string) => {
       result = (data as Array<{ version: string; stable: boolean }>)
         .filter((v) => v.stable)
         .map((v) => v.version);
+    } else if (coreType === 'forge') {
+      // Parse Forge Maven metadata XML
+      const response = await fetch(FORGE_MAVEN);
+      const xml = await response.text();
+      // Extract versions from XML (format: mcVersion-forgeVersion)
+      const versionMatches = xml.match(/<version>([^<]+)<\/version>/g) || [];
+      const mcVersions = new Set<string>();
+      for (const match of versionMatches) {
+        const version = match.replace(/<\/?version>/g, '');
+        const mcVersion = version.split('-')[0];
+        if (mcVersion && /^\d+\.\d+/.test(mcVersion)) {
+          mcVersions.add(mcVersion);
+        }
+      }
+      // Sort versions descending
+      result = [...mcVersions].sort((a, b) => {
+        const partsA = a.split('.').map(Number);
+        const partsB = b.split('.').map(Number);
+        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+          const numA = partsA[i] ?? 0;
+          const numB = partsB[i] ?? 0;
+          if (numA !== numB) return numB - numA;
+        }
+        return 0;
+      });
     }
 
     return { success: true, versions: result };
