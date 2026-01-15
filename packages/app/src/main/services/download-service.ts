@@ -295,8 +295,13 @@ export class DownloadService extends EventEmitter {
         .get(url, options, (res) => {
           // 處理重定向
           if (res.statusCode === 301 || res.statusCode === 302) {
-            const redirectUrl = res.headers.location;
+            let redirectUrl = res.headers.location;
             if (redirectUrl) {
+              // 處理相對路徑重定向
+              if (redirectUrl.startsWith('/')) {
+                const baseUrl = new URL(url);
+                redirectUrl = `${baseUrl.protocol}//${baseUrl.host}${redirectUrl}`;
+              }
               this.fetchJson<T>(redirectUrl).then(resolve).catch(reject);
               return;
             }
@@ -337,8 +342,13 @@ export class DownloadService extends EventEmitter {
         .get(url, options, (res) => {
           // 處理重定向
           if (res.statusCode === 301 || res.statusCode === 302) {
-            const redirectUrl = res.headers.location;
+            let redirectUrl = res.headers.location;
             if (redirectUrl) {
+              // 處理相對路徑重定向
+              if (redirectUrl.startsWith('/')) {
+                const baseUrl = new URL(url);
+                redirectUrl = `${baseUrl.protocol}//${baseUrl.host}${redirectUrl}`;
+              }
               this.downloadFile(redirectUrl, destPath, expectedSize, serverId)
                 .then(resolve)
                 .catch(reject);
