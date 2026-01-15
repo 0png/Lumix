@@ -1,19 +1,6 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { getAvailableVersions } from '@lumix/core';
-
-// IPC Handlers
-function setupIpcHandlers(): void {
-  ipcMain.handle('get-versions', async (_event, coreType: string) => {
-    try {
-      const versions = await getAvailableVersions(coreType as 'vanilla' | 'paper' | 'fabric' | 'forge');
-      return { success: true, data: versions };
-    } catch (error) {
-      return { success: false, error: (error as Error).message };
-    }
-  });
-}
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -47,9 +34,6 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.lumix.launcher');
-
-  // Setup IPC handlers
-  setupIpcHandlers();
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);

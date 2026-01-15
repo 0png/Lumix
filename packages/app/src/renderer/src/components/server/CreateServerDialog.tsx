@@ -37,6 +37,51 @@ interface CreateServerDialogProps {
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
 
+// API URLs
+const MOJANG_VERSION_MANIFEST = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
+const PAPER_API_BASE = 'https://api.papermc.io/v2';
+const FABRIC_API_BASE = 'https://meta.fabricmc.net/v2';
+
+async function fetchVersions(coreType: CoreType): Promise<string[]> {
+  try {
+    switch (coreType) {
+      case 'vanilla': {
+        const res = await fetch(MOJANG_VERSION_MANIFEST);
+        const data = await res.json();
+        return data.versions
+          .filter((v: { type: string }) => v.type === 'release')
+          .map((v: { id: string }) => v.id);
+      }
+      case 'paper': {
+        const res = await fetch(`${PAPER_API_BASE}/projects/paper`);
+        const data = await res.json();
+        return [...data.versions].reverse();
+      }
+      case 'fabric': {
+        const res = await fetch(`${FABRIC_API_BASE}/versions/game`);
+        const data = await res.json();
+        return data
+          .filter((v: { stable: boolean }) => v.stable)
+          .map((v: { version: string }) => v.version);
+      }
+      case 'forge': {
+        // Forge 使用 Vanilla 版本列表作為基礎
+        const res = await fetch(MOJANG_VERSION_MANIFEST);
+        const data = await res.json();
+        return data.versions
+          .filter((v: { type: string }) => v.type === 'release')
+          .map((v: { id: string }) => v.id)
+          .slice(0, 50); // 只取最近 50 個版本
+      }
+      default:
+        return [];
+    }
+  } catch (error) {
+    console.error('Failed to fetch versions:', error);
+    return [];
+  }
+}
+
 export function CreateServerDialog({
   open,
   onOpenChange,
@@ -50,34 +95,33 @@ export function CreateServerDialog({
   const [versions, setVersions] = useState<string[]>([]);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
 
-  // Fetch versions when core type changes
+  // Fetch versions when core type changes or dialog opens
   useEffect(() => {
-    async function fetchVersions() {
+    if (!open) return;
+    
+    let cancelled = false;
+    
+    async function loadVersions() {
       setIsLoadingVersions(true);
       setVersions([]);
       setMcVersion('');
       
-      try {
-        const result = await window.electronAPI.getVersions(coreType);
-        if (result.success && result.data) {
-          setVersions(result.data);
-          // Auto-select first version
-          if (result.data.length > 0) {
-            setMcVersion(result.data[0]!);
-          }
-        } else {
-          console.error('Failed to fetch versions:', result.error);
+      const result = await fetchVersions(coreType);
+      
+      if (!cancelled) {
+        setVersions(result);
+        if (result.length > 0) {
+          setMcVersion(result[0]!);
         }
-      } catch (error) {
-        console.error('Failed to fetch versions:', error);
-      } finally {
         setIsLoadingVersions(false);
       }
     }
 
-    if (open) {
-      fetchVersions();
-    }
+    loadVersions();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [coreType, open]);
 
   const handleSubmit = () => {
