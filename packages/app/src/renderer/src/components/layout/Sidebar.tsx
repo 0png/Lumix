@@ -88,15 +88,15 @@ function SidebarButton({
     <Button
       variant={isActive ? 'secondary' : 'ghost'}
       className={cn(
-        'w-full overflow-hidden transition-all duration-200',
-        isCollapsed ? 'h-10 w-10 p-0 justify-center' : 'h-9 px-3 justify-start'
+        'w-full h-9 overflow-hidden transition-all duration-300 ease-out',
+        isCollapsed ? 'px-0 justify-center' : 'px-3 justify-start'
       )}
       onClick={onClick}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span
         className={cn(
-          'truncate transition-all duration-200',
+          'truncate transition-all duration-300 ease-out overflow-hidden',
           isCollapsed ? 'w-0 ml-0 opacity-0' : 'w-auto ml-2.5 opacity-100'
         )}
       >
@@ -250,7 +250,7 @@ export function Sidebar({
         </div>
 
         {/* 底部功能按鈕 */}
-        <div className={cn('border-t space-y-1 transition-all duration-300', isCollapsed ? 'p-1.5' : 'p-3')}>
+        <div className={cn('border-t space-y-1 transition-all duration-300 ease-out', isCollapsed ? 'p-2' : 'p-3')}>
           <SidebarButton
             icon={Settings}
             label={t('sidebar.settings')}
