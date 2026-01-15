@@ -43,7 +43,7 @@ function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavI
           isCollapsed ? 'h-2.5 w-2.5' : 'h-2 w-2'
         )}
       />
-      {!isCollapsed && <span className="truncate">{server.name}</span>}
+      {!isCollapsed && <span className="truncate whitespace-nowrap">{server.name}</span>}
     </button>
   );
 
@@ -77,13 +77,20 @@ function SidebarButton({
     <Button
       variant={isActive ? 'secondary' : 'ghost'}
       className={cn(
-        'w-full justify-start',
+        'w-full justify-start whitespace-nowrap overflow-hidden',
         isCollapsed ? 'h-10 w-10 p-0 justify-center' : 'h-9 px-3 text-sm'
       )}
       onClick={onClick}
     >
-      <Icon className={cn('h-4 w-4', !isCollapsed && 'mr-2.5')} />
-      {!isCollapsed && label}
+      <Icon className={cn('h-4 w-4 shrink-0', !isCollapsed && 'mr-2.5')} />
+      <span
+        className={cn(
+          'transition-all duration-300 ease-in-out',
+          isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+        )}
+      >
+        {label}
+      </span>
     </Button>
   );
 
@@ -141,7 +148,7 @@ export function Sidebar({
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          'flex h-full flex-col border-r bg-muted/20 shrink-0 transition-all duration-200',
+          'flex h-full flex-col border-r bg-muted/20 shrink-0 transition-all duration-300 ease-in-out overflow-hidden',
           isCollapsed ? 'w-16' : 'w-52 lg:w-64'
         )}
       >
@@ -149,12 +156,19 @@ export function Sidebar({
         <div className={cn('flex items-center justify-between border-b', isCollapsed ? 'p-2' : 'px-4 py-3')}>
           <h1
             className={cn(
-              'font-bold tracking-tight flex items-center',
+              'font-bold tracking-tight flex items-center whitespace-nowrap overflow-hidden',
               isCollapsed ? 'justify-center w-full' : 'gap-2.5 text-lg'
             )}
           >
             <Server className="h-5 w-5 text-primary shrink-0" />
-            {!isCollapsed && 'Lumix'}
+            <span
+              className={cn(
+                'transition-all duration-300 ease-in-out',
+                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+              )}
+            >
+              Lumix
+            </span>
           </h1>
           {!isCollapsed && (
             <Tooltip>
@@ -183,7 +197,7 @@ export function Sidebar({
         )}
 
         {/* 伺服器列表 */}
-        <div className={cn('flex-1 overflow-auto', isCollapsed ? 'px-2 pt-2' : 'px-3 pt-3')}>
+        <div className={cn('flex-1 overflow-y-auto overflow-x-hidden', isCollapsed ? 'px-2 pt-2' : 'px-3 pt-3')}>
           <div
             className={cn(
               'mb-2 flex items-center',
@@ -191,7 +205,7 @@ export function Sidebar({
             )}
           >
             {!isCollapsed && (
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                 {t('sidebar.servers')}
               </span>
             )}
