@@ -9,7 +9,14 @@ import type {
   ServerStatusEvent,
   ServerLogEvent,
   LogEntryDto,
+  IpcErrorCodeType,
 } from '../../../shared/ipc-types';
+import { parseIpcError, IpcErrorCode } from '../../../shared/ipc-types';
+
+export interface CreateServerError {
+  code: IpcErrorCodeType;
+  message: string;
+}
 
 interface UseServersReturn {
   servers: ServerInstanceDto[];
@@ -17,7 +24,7 @@ interface UseServersReturn {
   error: string | null;
   logs: Map<string, LogEntryDto[]>;
   refresh: () => Promise<void>;
-  createServer: (data: CreateServerRequest) => Promise<ServerInstanceDto | null>;
+  createServer: (data: CreateServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
   updateServer: (data: UpdateServerRequest) => Promise<ServerInstanceDto | null>;
   deleteServer: (id: string) => Promise<boolean>;
   startServer: (id: string) => Promise<boolean>;
@@ -53,13 +60,15 @@ export function useServers(): UseServersReturn {
   }, []);
 
   // 建立伺服器（包含下載）
-  const createServer = useCallback(async (data: CreateServerRequest): Promise<ServerInstanceDto | null> => {
+  const createServer = useCallback(async (data: CreateServerRequest): Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }> => {
     try {
       // 1. 先建立伺服器（建立目錄和 metadata）
       const result = await window.electronAPI.server.create(data);
       if (!result.success || !result.data) {
-        setError(result.error || 'Failed to create server');
-        return null;
+        const errorStr = result.error || 'Failed to create server';
+        const parsedError = parseIpcError(errorStr);
+        setError(errorStr);
+        return { server: null, error: { code: parsedError.code, message: parsedError.message } };
       }
 
       const server = result.data;
@@ -80,18 +89,20 @@ export function useServers(): UseServersReturn {
         // 下載失敗，刪除已建立的伺服器
         await window.electronAPI.server.delete(server.id);
         setServers((prev) => prev.filter((s) => s.id !== server.id));
-        setError(downloadResult.error || 'Failed to download server.jar');
-        return null;
+        const errorStr = downloadResult.error || 'Failed to download server.jar';
+        setError(errorStr);
+        return { server: null, error: { code: IpcErrorCode.DOWNLOAD_FAILED, message: errorStr } };
       }
 
       console.log('[useServers] Server created and downloaded successfully');
       // 標記為已就緒
       const readyServer = { ...server, isReady: true };
       setServers((prev) => prev.map((s) => (s.id === server.id ? readyServer : s)));
-      return readyServer;
+      return { server: readyServer, error: null };
     } catch (err) {
-      setError(String(err));
-      return null;
+      const errorStr = String(err);
+      setError(errorStr);
+      return { server: null, error: { code: IpcErrorCode.UNKNOWN_ERROR, message: errorStr } };
     }
   }, []);
 

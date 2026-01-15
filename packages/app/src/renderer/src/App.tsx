@@ -83,14 +83,14 @@ function AppContent() {
       const javaResult = await window.electronAPI.java.detect();
       if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
         toast.error(t('toast.noJavaFound'));
-        return;
+        return { code: 'JAVA_NOT_FOUND' as const, message: t('toast.noJavaFound') };
       }
 
       // 2. 選擇適合此 MC 版本的 Java
       const selectResult = await window.electronAPI.java.selectForMc(data.mcVersion);
       if (!selectResult.success || !selectResult.data) {
         toast.error(t('toast.noCompatibleJava'));
-        return;
+        return { code: 'JAVA_NOT_FOUND' as const, message: t('toast.noCompatibleJava') };
       }
 
       const selectedJava = selectResult.data;
@@ -99,7 +99,7 @@ function AppContent() {
       toast.info(t('toast.downloadingServer'));
 
       // 4. 建立伺服器實例（包含下載 server.jar）
-      const result = await createServer({
+      const { server, error: createError } = await createServer({
         name: data.name,
         coreType: data.coreType,
         mcVersion: data.mcVersion,
@@ -108,9 +108,15 @@ function AppContent() {
         javaPath: selectedJava.path,
       });
 
-      if (result) {
+      if (createError) {
+        // 回傳錯誤讓 Dialog 處理
+        return createError;
+      }
+
+      if (server) {
         toast.success(t('toast.serverReady'));
       }
+      return null;
     } finally {
       setIsCreating(false);
     }
@@ -254,6 +260,7 @@ function AppContent() {
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateServer}
         disabled={isCreating}
+        existingNames={servers.map((s) => s.name)}
       />
 
       <Toaster position="bottom-right" richColors />

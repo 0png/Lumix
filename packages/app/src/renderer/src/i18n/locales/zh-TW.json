@@ -98,7 +98,10 @@
     "stopFailed": "停止伺服器失敗",
     "deleteFailed": "刪除伺服器失敗",
     "noJavaFound": "找不到 Java 安裝，請先安裝 Java",
-    "noCompatibleJava": "找不到與此 Minecraft 版本相容的 Java"
+    "noCompatibleJava": "找不到與此 Minecraft 版本相容的 Java",
+    "duplicateServerName": "伺服器名稱已存在，請使用其他名稱",
+    "invalidServerName": "伺服器名稱不能為空",
+    "createFailed": "建立伺服器失敗"
   },
   "about": {
     "title": "關於",

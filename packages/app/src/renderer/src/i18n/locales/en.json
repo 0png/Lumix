@@ -98,7 +98,10 @@
     "stopFailed": "Failed to stop server",
     "deleteFailed": "Failed to delete server",
     "noJavaFound": "No Java installation found. Please install Java first.",
-    "noCompatibleJava": "No compatible Java version found for this Minecraft version"
+    "noCompatibleJava": "No compatible Java version found for this Minecraft version",
+    "duplicateServerName": "Server name already exists, please use a different name",
+    "invalidServerName": "Server name cannot be empty",
+    "createFailed": "Failed to create server"
   },
   "about": {
     "title": "About",

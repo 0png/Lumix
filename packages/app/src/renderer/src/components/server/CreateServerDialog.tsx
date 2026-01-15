@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { VersionCombobox } from '@/components/ui/version-combobox';
 import type { CoreType } from './ServerList';
+import type { CreateServerError } from '@/hooks/use-servers';
+import { IpcErrorCode } from '../../../../shared/ipc-types';
 
 export interface CreateServerData {
   name: string;
@@ -32,8 +34,9 @@ export interface CreateServerData {
 interface CreateServerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateServerData) => void;
+  onSubmit: (data: CreateServerData) => Promise<CreateServerError | null>;
   disabled?: boolean;
+  existingNames?: string[];
 }
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
@@ -43,6 +46,7 @@ export function CreateServerDialog({
   onOpenChange,
   onSubmit,
   disabled = false,
+  existingNames = [],
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
@@ -52,6 +56,8 @@ export function CreateServerDialog({
   const [versions, setVersions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchVersions = useCallback(async (type: CoreType) => {
     setLoading(true);
@@ -93,20 +99,56 @@ export function CreateServerDialog({
     setCoreType(newType);
   };
 
-  const handleSubmit = () => {
-    if (!name.trim() || !mcVersion) return;
-    onSubmit({
+  // 驗證名稱是否重複（前端即時驗證）
+  const validateName = useCallback((inputName: string) => {
+    const trimmed = inputName.trim();
+    if (!trimmed) {
+      setNameError(null);
+      return;
+    }
+    if (existingNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
+      setNameError(t('toast.duplicateServerName'));
+    } else {
+      setNameError(null);
+    }
+  }, [existingNames, t]);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setName(value);
+    validateName(value);
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !mcVersion || nameError) return;
+    
+    setIsSubmitting(true);
+    const submitError = await onSubmit({
       name: name.trim(),
       coreType,
       mcVersion,
       ramMin: Math.floor(ramMax / 2),
       ramMax,
     });
-    // Reset form
+
+    if (submitError) {
+      // 處理後端回傳的錯誤
+      if (submitError.code === IpcErrorCode.SERVER_DUPLICATE_NAME) {
+        setNameError(t('toast.duplicateServerName'));
+      } else if (submitError.code === IpcErrorCode.SERVER_INVALID_NAME) {
+        setNameError(t('toast.invalidServerName'));
+      }
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 成功，重置表單
     setName('');
     setCoreType('paper');
     setMcVersion('');
     setRamMax(2048);
+    setNameError(null);
+    setIsSubmitting(false);
     onOpenChange(false);
   };
 
@@ -123,9 +165,13 @@ export function CreateServerDialog({
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
               placeholder={t('createServer.namePlaceholder')}
+              className={nameError ? 'border-destructive' : ''}
             />
+            {nameError && (
+              <p className="text-sm text-destructive">{nameError}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -180,7 +226,10 @@ export function CreateServerDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={!name.trim() || !mcVersion || loading || disabled}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!name.trim() || !mcVersion || loading || disabled || !!nameError || isSubmitting}
+          >
             {t('common.create')}
           </Button>
         </DialogFooter>
