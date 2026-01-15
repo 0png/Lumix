@@ -98,6 +98,7 @@ function AppContent() {
               <div className="space-y-6">
                 <ServerDetail
                   server={selectedServer}
+                  onBack={() => setSelectedServerId(undefined)}
                   onStart={() => handleStartServer(selectedServer.id)}
                   onStop={() => handleStopServer(selectedServer.id)}
                   onDelete={() => handleDeleteServer(selectedServer.id)}

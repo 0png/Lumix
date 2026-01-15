@@ -9,7 +9,8 @@
     "create": "Create",
     "edit": "Edit",
     "settings": "Settings",
-    "search": "Search"
+    "search": "Search",
+    "back": "Back"
   },
   "header": {
     "title": "Server Dashboard"

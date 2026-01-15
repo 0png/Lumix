@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Square, Trash2, Settings2, MemoryStick } from 'lucide-react';
+import { Play, Square, Trash2, Settings2, MemoryStick, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ import type { ServerInstance, ServerStatus } from './ServerList';
 
 interface ServerDetailProps {
   server: ServerInstance;
+  onBack?: () => void;
   onStart?: () => void;
   onStop?: () => void;
   onDelete?: () => void;
@@ -60,6 +61,7 @@ function StatusBadge({ status }: { status: ServerStatus }) {
  */
 export function ServerDetail({
   server,
+  onBack,
   onStart,
   onStop,
   onDelete,
@@ -87,6 +89,17 @@ export function ServerDetail({
 
   return (
     <div className="space-y-3 lg:space-y-4">
+      {/* 返回按鈕 */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onBack}
+        className="h-7 lg:h-8 text-xs lg:text-sm -ml-2"
+      >
+        <ArrowLeft className="mr-1 h-3 w-3 lg:h-4 lg:w-4" />
+        {t('common.back')}
+      </Button>
+
       {/* 標題區域 */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
