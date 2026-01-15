@@ -1,36 +1,101 @@
-// Download IPC Handlers - Mock 版本
-// 回傳假資料，不執行實際下載
+/**
+ * Download IPC Handlers
+ * 處理版本獲取與伺服器下載的 IPC 請求
+ */
 
-import { ipcMain } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import { DownloadChannels } from '../../shared/ipc-channels';
+import { DownloadService } from '../services/download-service';
 import type {
   IpcResult,
   FetchVersionsResult,
   DownloadServerRequest,
+  CoreType,
+  DownloadProgress,
 } from '../../shared/ipc-types';
 
-// Mock 版本列表
-const mockVersions: Record<string, string[]> = {
-  vanilla: ['1.20.4', '1.20.3', '1.20.2', '1.20.1', '1.19.4', '1.19.3'],
-  paper: ['1.20.4', '1.20.2', '1.20.1', '1.19.4'],
-  spigot: ['1.20.4', '1.20.2', '1.20.1', '1.19.4'],
-  fabric: ['1.20.4', '1.20.2', '1.20.1', '1.19.4'],
-  forge: ['1.20.4', '1.20.1', '1.19.4', '1.18.2'],
-};
+// ============================================================================
+// Module State
+// ============================================================================
+
+let downloadService: DownloadService | null = null;
+
+// ============================================================================
+// Initialization
+// ============================================================================
 
 export function initDownloadHandlers(): void {
+  downloadService = new DownloadService();
   registerHandlers();
+  setupEventForwarding();
 }
 
-function registerHandlers(): void {
-  ipcMain.handle(DownloadChannels.FETCH_VERSIONS, async (_, coreType: string): Promise<IpcResult<FetchVersionsResult>> => {
-    const versions = mockVersions[coreType] || [];
-    return { success: true, data: { versions } };
-  });
+// ============================================================================
+// Handler Registration
+// ============================================================================
 
-  ipcMain.handle(DownloadChannels.DOWNLOAD_SERVER, async (_, data: DownloadServerRequest): Promise<IpcResult<string>> => {
-    // Mock: 假裝下載成功
-    const jarPath = `${data.targetDir}/server.jar`;
-    return { success: true, data: jarPath };
+function registerHandlers(): void {
+  // FETCH_VERSIONS - 獲取版本列表
+  ipcMain.handle(
+    DownloadChannels.FETCH_VERSIONS,
+    async (_, coreType: CoreType): Promise<IpcResult<FetchVersionsResult>> => {
+      try {
+        const versions = await downloadService!.fetchVersions(coreType);
+        return { success: true, data: { versions } };
+      } catch (error) {
+        console.error(`Failed to fetch versions for ${coreType}:`, error);
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // DOWNLOAD_SERVER - 下載伺服器
+  ipcMain.handle(
+    DownloadChannels.DOWNLOAD_SERVER,
+    async (_, data: DownloadServerRequest): Promise<IpcResult<string>> => {
+      try {
+        const jarPath = await downloadService!.downloadServer(
+          data.coreType,
+          data.mcVersion,
+          data.targetDir,
+          data.targetDir // 使用 targetDir 作為 serverId 來追蹤進度
+        );
+        return { success: true, data: jarPath };
+      } catch (error) {
+        console.error(`Failed to download server:`, error);
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+}
+
+// ============================================================================
+// Event Forwarding
+// ============================================================================
+
+function setupEventForwarding(): void {
+  if (!downloadService) return;
+
+  downloadService.on('progress', (serverId: string, progress: DownloadProgress) => {
+    broadcastToAllWindows(DownloadChannels.DOWNLOAD_PROGRESS, { serverId, progress });
   });
+}
+
+function broadcastToAllWindows(channel: string, data: unknown): void {
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed()) {
+      win.webContents.send(channel, data);
+    }
+  });
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+function formatError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
