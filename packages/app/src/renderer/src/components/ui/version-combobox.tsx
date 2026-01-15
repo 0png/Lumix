@@ -83,7 +83,7 @@ export function VersionCombobox({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command filter={versionFilter}>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList className="max-h-[200px] overflow-y-auto">
+          <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {versions.map((version) => (
