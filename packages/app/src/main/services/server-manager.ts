@@ -186,12 +186,30 @@ export class ServerManager extends EventEmitter {
 
     const jarPath = path.join(server.directory, 'server.jar');
     console.log('[ServerManager] Checking jar at:', jarPath);
+    
+    // 檢查是否為新版 Forge
+    let forgeArgsFile: string | undefined;
+    const forgeConfigPath = path.join(server.directory, 'forge-config.json');
     try {
-      await fs.access(jarPath);
-      console.log('[ServerManager] server.jar found');
-    } catch (err) {
-      console.log('[ServerManager] server.jar NOT found:', err);
-      throw new Error(`JAR_NOT_FOUND: 找不到 server.jar 檔案 (path: ${jarPath})`);
+      const forgeConfigContent = await fs.readFile(forgeConfigPath, 'utf-8');
+      const forgeConfig = JSON.parse(forgeConfigContent);
+      if (forgeConfig.type === 'forge-new' && forgeConfig.argsFile) {
+        forgeArgsFile = forgeConfig.argsFile;
+        console.log('[ServerManager] New Forge detected, using args file:', forgeArgsFile);
+      }
+    } catch {
+      // 不是新版 Forge，使用標準方式
+    }
+
+    // 如果不是新版 Forge，檢查 server.jar 是否存在
+    if (!forgeArgsFile) {
+      try {
+        await fs.access(jarPath);
+        console.log('[ServerManager] server.jar found');
+      } catch (err) {
+        console.log('[ServerManager] server.jar NOT found:', err);
+        throw new Error(`JAR_NOT_FOUND: 找不到 server.jar 檔案 (path: ${jarPath})`);
+      }
     }
 
     this.updateServerStatus(id, 'starting');
@@ -205,6 +223,7 @@ export class ServerManager extends EventEmitter {
         ramMin: server.ramMin,
         ramMax: server.ramMax,
         jvmArgs: server.jvmArgs,
+        forgeArgsFile,
       };
 
       console.log('[ServerManager] Spawning process with config:', JSON.stringify(processConfig, null, 2));
@@ -362,6 +381,7 @@ export class ServerManager extends EventEmitter {
       const { spawn } = require('child_process');
       let output = '';
       let errorOutput = '';
+      let resolved = false;
 
       console.log('[ServerManager] Spawning java -version...');
       const proc = spawn(javaPath, ['-version'], {
@@ -379,21 +399,30 @@ export class ServerManager extends EventEmitter {
 
       proc.on('error', (err: Error) => {
         console.log('[ServerManager] Java spawn error:', err.message);
-        resolve(false);
+        if (!resolved) {
+          resolved = true;
+          resolve(false);
+        }
       });
 
       proc.on('close', (code: number | null) => {
         console.log('[ServerManager] Java process exited with code:', code);
         console.log('[ServerManager] Java stdout:', output);
         console.log('[ServerManager] Java stderr:', errorOutput);
-        resolve(code === 0);
+        if (!resolved) {
+          resolved = true;
+          resolve(code === 0);
+        }
       });
 
       // 設定超時，避免卡住
       setTimeout(() => {
-        console.log('[ServerManager] Java validation timeout');
-        proc.kill();
-        resolve(false);
+        if (!resolved) {
+          console.log('[ServerManager] Java validation timeout');
+          resolved = true;
+          proc.kill();
+          resolve(false);
+        }
       }, 5000);
     });
   }

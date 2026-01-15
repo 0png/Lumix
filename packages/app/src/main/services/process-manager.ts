@@ -18,6 +18,7 @@ export interface ProcessConfig {
   ramMin: number;
   ramMax: number;
   jvmArgs: string[];
+  forgeArgsFile?: string; // 新版 Forge 的 args 檔案路徑
 }
 
 export interface ProcessInfo {
@@ -174,6 +175,20 @@ export class ProcessManager extends EventEmitter {
    * 建構 JVM 啟動參數
    */
   private buildJvmArgs(config: ProcessConfig): string[] {
+    // 新版 Forge 使用 @args.txt 方式啟動
+    if (config.forgeArgsFile) {
+      const args: string[] = [
+        `-Xms${config.ramMin}M`,
+        `-Xmx${config.ramMax}M`,
+        ...config.jvmArgs,
+        '@user_jvm_args.txt',
+        `@${config.forgeArgsFile}`,
+        'nogui',
+      ];
+      return args;
+    }
+
+    // 標準 -jar 方式啟動
     const args: string[] = [
       `-Xms${config.ramMin}M`,
       `-Xmx${config.ramMax}M`,
