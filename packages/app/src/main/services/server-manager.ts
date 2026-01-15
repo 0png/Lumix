@@ -155,20 +155,43 @@ export class ServerManager extends EventEmitter {
       throw new Error('NOT_FOUND: 找不到指定的伺服器');
     }
 
+    console.log('[ServerManager] startServer called for:', id);
+    console.log('[ServerManager] Server info:', JSON.stringify(server, null, 2));
+
     if (server.status === 'running' || server.status === 'starting') {
       throw new Error('INVALID_STATE: 伺服器已在執行中');
     }
 
     const javaPath = server.javaPath || this.defaultJavaPath;
-    if (!(await this.validateJava(javaPath))) {
-      throw new Error('JAVA_NOT_FOUND: 找不到有效的 Java 安裝');
+    console.log('[ServerManager] Using javaPath:', javaPath);
+    console.log('[ServerManager] defaultJavaPath:', this.defaultJavaPath);
+
+    let javaValid = await this.validateJava(javaPath);
+    console.log('[ServerManager] Java validation result:', javaValid);
+
+    // 如果指定的 javaPath 無效，嘗試使用預設的 'java'
+    let effectiveJavaPath = javaPath;
+    if (!javaValid && javaPath !== this.defaultJavaPath) {
+      console.log('[ServerManager] Specified javaPath invalid, trying default:', this.defaultJavaPath);
+      javaValid = await this.validateJava(this.defaultJavaPath);
+      if (javaValid) {
+        effectiveJavaPath = this.defaultJavaPath;
+        console.log('[ServerManager] Using default java instead');
+      }
+    }
+
+    if (!javaValid) {
+      throw new Error(`JAVA_NOT_FOUND: 找不到有效的 Java 安裝 (path: ${javaPath})`);
     }
 
     const jarPath = path.join(server.directory, 'server.jar');
+    console.log('[ServerManager] Checking jar at:', jarPath);
     try {
       await fs.access(jarPath);
-    } catch {
-      throw new Error('JAR_NOT_FOUND: 找不到 server.jar 檔案');
+      console.log('[ServerManager] server.jar found');
+    } catch (err) {
+      console.log('[ServerManager] server.jar NOT found:', err);
+      throw new Error(`JAR_NOT_FOUND: 找不到 server.jar 檔案 (path: ${jarPath})`);
     }
 
     this.updateServerStatus(id, 'starting');
@@ -176,7 +199,7 @@ export class ServerManager extends EventEmitter {
     try {
       const processConfig: ProcessConfig = {
         serverId: id,
-        javaPath,
+        javaPath: effectiveJavaPath,
         jarPath,
         workingDir: server.directory,
         ramMin: server.ramMin,
@@ -184,10 +207,13 @@ export class ServerManager extends EventEmitter {
         jvmArgs: server.jvmArgs,
       };
 
+      console.log('[ServerManager] Spawning process with config:', JSON.stringify(processConfig, null, 2));
       this.processManager.spawn(processConfig);
       await this.updateLastStartedAt(id);
       this.updateServerStatus(id, 'running');
+      console.log('[ServerManager] Server started successfully');
     } catch (error) {
+      console.log('[ServerManager] Failed to start server:', error);
       this.updateServerStatus(id, 'stopped');
       throw error;
     }
@@ -331,22 +357,41 @@ export class ServerManager extends EventEmitter {
   }
 
   private async validateJava(javaPath: string): Promise<boolean> {
+    console.log('[ServerManager] validateJava called with:', javaPath);
     return new Promise((resolve) => {
       const { spawn } = require('child_process');
+      let output = '';
+      let errorOutput = '';
+
+      console.log('[ServerManager] Spawning java -version...');
       const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true, // 使用 shell 來解析 PATH
       });
 
-      proc.on('error', () => {
+      proc.stdout?.on('data', (data: Buffer) => {
+        output += data.toString();
+      });
+
+      proc.stderr?.on('data', (data: Buffer) => {
+        errorOutput += data.toString();
+      });
+
+      proc.on('error', (err: Error) => {
+        console.log('[ServerManager] Java spawn error:', err.message);
         resolve(false);
       });
 
       proc.on('close', (code: number | null) => {
+        console.log('[ServerManager] Java process exited with code:', code);
+        console.log('[ServerManager] Java stdout:', output);
+        console.log('[ServerManager] Java stderr:', errorOutput);
         resolve(code === 0);
       });
 
       // 設定超時，避免卡住
       setTimeout(() => {
+        console.log('[ServerManager] Java validation timeout');
         proc.kill();
         resolve(false);
       }, 5000);
