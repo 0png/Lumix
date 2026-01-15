@@ -16,6 +16,8 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerProperties,
+  UpdateServerPropertiesRequest,
   JavaInstallationDto,
   JavaInstallRequest,
   JavaInstallProgressEvent,
@@ -59,6 +61,12 @@ const electronAPI = {
 
     sendCommand: (id: string, command: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(ServerChannels.SEND_COMMAND, id, command),
+
+    getProperties: (id: string): Promise<IpcResult<ServerProperties>> =>
+      ipcRenderer.invoke(ServerChannels.GET_PROPERTIES, id),
+
+    updateProperties: (data: UpdateServerPropertiesRequest): Promise<IpcResult<ServerProperties>> =>
+      ipcRenderer.invoke(ServerChannels.UPDATE_PROPERTIES, data),
 
     onStatusChanged: (callback: (event: ServerStatusEvent) => void) => {
       const handler = (_: Electron.IpcRendererEvent, data: ServerStatusEvent) => callback(data);

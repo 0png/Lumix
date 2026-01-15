@@ -18,6 +18,10 @@ export const ServerChannels = {
   STOP: 'server:stop',
   SEND_COMMAND: 'server:send-command',
   
+  // Server properties
+  GET_PROPERTIES: 'server:get-properties',
+  UPDATE_PROPERTIES: 'server:update-properties',
+  
   // Events (Main -> Renderer)
   STATUS_CHANGED: 'server:status-changed',
   LOG_ENTRY: 'server:log-entry',

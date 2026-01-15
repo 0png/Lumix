@@ -54,7 +54,14 @@
     "stopping": "Stopping",
     "downloading": "Downloading...",
     "commandPlaceholder": "Enter command...",
-    "openFolder": "Open Folder"
+    "openFolder": "Open Folder",
+    "properties": "Server Properties",
+    "allowFlight": "Allow Flight",
+    "difficulty": "Difficulty",
+    "gamemode": "Game Mode",
+    "maxPlayers": "Max Players",
+    "onlineMode": "Online Mode",
+    "whiteList": "White List"
   },
   "createServer": {
     "title": "Create New Server",
@@ -83,6 +90,18 @@
     "java": "Java Management",
     "javaPath": "Java Path"
   },
+  "difficulty": {
+    "peaceful": "Peaceful",
+    "easy": "Easy",
+    "normal": "Normal",
+    "hard": "Hard"
+  },
+  "gamemode": {
+    "survival": "Survival",
+    "creative": "Creative",
+    "adventure": "Adventure",
+    "spectator": "Spectator"
+  },
   "toast": {
     "serverCreated": "Server created successfully",
     "serverDeleted": "Server deleted",
@@ -102,7 +121,9 @@
     "noCompatibleJava": "No compatible Java version found for this Minecraft version",
     "duplicateServerName": "Server name already exists, please use a different name",
     "invalidServerName": "Server name cannot be empty",
-    "createFailed": "Failed to create server"
+    "createFailed": "Failed to create server",
+    "propertiesSaved": "Server properties saved",
+    "propertiesSaveFailed": "Failed to save server properties"
   },
   "about": {
     "title": "About",

@@ -54,7 +54,14 @@
     "stopping": "停止中",
     "downloading": "下載中...",
     "commandPlaceholder": "輸入指令...",
-    "openFolder": "開啟資料夾"
+    "openFolder": "開啟資料夾",
+    "properties": "伺服器屬性",
+    "allowFlight": "允許飛行",
+    "difficulty": "難度",
+    "gamemode": "遊戲模式",
+    "maxPlayers": "最大玩家數",
+    "onlineMode": "正版驗證",
+    "whiteList": "白名單"
   },
   "createServer": {
     "title": "建立新伺服器",
@@ -83,6 +90,18 @@
     "java": "Java 管理",
     "javaPath": "Java 路徑"
   },
+  "difficulty": {
+    "peaceful": "和平",
+    "easy": "簡單",
+    "normal": "普通",
+    "hard": "困難"
+  },
+  "gamemode": {
+    "survival": "生存",
+    "creative": "創造",
+    "adventure": "冒險",
+    "spectator": "旁觀"
+  },
   "toast": {
     "serverCreated": "伺服器建立成功",
     "serverDeleted": "伺服器已刪除",
@@ -102,7 +121,9 @@
     "noCompatibleJava": "找不到與此 Minecraft 版本相容的 Java",
     "duplicateServerName": "伺服器名稱已存在，請使用其他名稱",
     "invalidServerName": "伺服器名稱不能為空",
-    "createFailed": "建立伺服器失敗"
+    "createFailed": "建立伺服器失敗",
+    "propertiesSaved": "伺服器屬性已儲存",
+    "propertiesSaveFailed": "儲存伺服器屬性失敗"
   },
   "about": {
     "title": "關於",

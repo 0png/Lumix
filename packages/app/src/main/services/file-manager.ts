@@ -5,7 +5,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { CoreType } from '../../shared/ipc-types';
+import type { CoreType, ServerProperties } from '../../shared/ipc-types';
 
 // ============================================================================
 // Types
@@ -155,5 +155,137 @@ pause
     }
 
     return servers;
+  }
+
+  /**
+   * 讀取 server.properties 檔案
+   */
+  async readServerProperties(serverPath: string): Promise<ServerProperties> {
+    const propsPath = path.join(serverPath, 'server.properties');
+    
+    // 預設值
+    const defaults: ServerProperties = {
+      'allow-flight': false,
+      difficulty: 'easy',
+      gamemode: 'survival',
+      'max-players': 20,
+      'online-mode': true,
+      'white-list': false,
+    };
+
+    try {
+      const content = await fs.readFile(propsPath, 'utf-8');
+      const props = this.parseProperties(content);
+      
+      return {
+        'allow-flight': props['allow-flight'] === 'true',
+        difficulty: (props['difficulty'] as ServerProperties['difficulty']) || defaults.difficulty,
+        gamemode: (props['gamemode'] as ServerProperties['gamemode']) || defaults.gamemode,
+        'max-players': parseInt(props['max-players'] || '20', 10),
+        'online-mode': props['online-mode'] !== 'false',
+        'white-list': props['white-list'] === 'true',
+      };
+    } catch {
+      // 檔案不存在，回傳預設值
+      return defaults;
+    }
+  }
+
+  /**
+   * 更新 server.properties 檔案
+   */
+  async updateServerProperties(
+    serverPath: string,
+    updates: Partial<ServerProperties>
+  ): Promise<ServerProperties> {
+    const propsPath = path.join(serverPath, 'server.properties');
+    let existingContent = '';
+    
+    try {
+      existingContent = await fs.readFile(propsPath, 'utf-8');
+    } catch {
+      // 檔案不存在，建立新檔案
+    }
+
+    const existingProps = this.parseProperties(existingContent);
+    
+    // 更新指定的屬性
+    for (const [key, value] of Object.entries(updates)) {
+      existingProps[key] = String(value);
+    }
+
+    // 重新組合檔案內容
+    const newContent = this.stringifyProperties(existingProps, existingContent);
+    await fs.writeFile(propsPath, newContent, 'utf-8');
+
+    return this.readServerProperties(serverPath);
+  }
+
+  /**
+   * 解析 properties 檔案格式
+   */
+  private parseProperties(content: string): Record<string, string> {
+    const props: Record<string, string> = {};
+    const lines = content.split('\n');
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) continue;
+      
+      const key = trimmed.substring(0, eqIndex).trim();
+      const value = trimmed.substring(eqIndex + 1).trim();
+      props[key] = value;
+    }
+    
+    return props;
+  }
+
+  /**
+   * 將 properties 物件轉換為檔案內容
+   * 保留原有的註解和順序
+   */
+  private stringifyProperties(
+    props: Record<string, string>,
+    originalContent: string
+  ): string {
+    const lines = originalContent.split('\n');
+    const updatedKeys = new Set<string>();
+    const result: string[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // 保留空行和註解
+      if (!trimmed || trimmed.startsWith('#')) {
+        result.push(line);
+        continue;
+      }
+
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) {
+        result.push(line);
+        continue;
+      }
+
+      const key = trimmed.substring(0, eqIndex).trim();
+      if (key in props) {
+        result.push(`${key}=${props[key]}`);
+        updatedKeys.add(key);
+      } else {
+        result.push(line);
+      }
+    }
+
+    // 加入新的屬性
+    for (const [key, value] of Object.entries(props)) {
+      if (!updatedKeys.has(key)) {
+        result.push(`${key}=${value}`);
+      }
+    }
+
+    return result.join('\n');
   }
 }

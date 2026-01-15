@@ -4,15 +4,23 @@
  * 支援響應式設計
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Square, Trash2, Settings2, MemoryStick, ArrowLeft, FolderOpen } from 'lucide-react';
+import { Play, Square, Trash2, Settings2, MemoryStick, ArrowLeft, FolderOpen, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +30,9 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { ServerInstance, ServerStatus } from './ServerList';
+import type { ServerProperties, Difficulty, Gamemode } from '../../../../shared/ipc-types';
 
 interface ServerDetailProps {
   server: ServerInstance;
@@ -75,10 +85,36 @@ export function ServerDetail({
   const [editName, setEditName] = useState(server.name);
   const [editRamMax, setEditRamMax] = useState(server.ramMax);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Server properties state
+  const [properties, setProperties] = useState<ServerProperties>({
+    'allow-flight': false,
+    difficulty: 'easy',
+    gamemode: 'survival',
+    'max-players': 20,
+    'online-mode': true,
+    'white-list': false,
+  });
+  const [isSavingProperties, setIsSavingProperties] = useState(false);
 
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
   const isReady = server.isReady !== false; // 預設為 true
+
+  // 載入 server properties
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const result = await window.electronAPI.server.getProperties(server.id);
+        if (result.success && result.data) {
+          setProperties(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to load server properties:', error);
+      }
+    };
+    loadProperties();
+  }, [server.id]);
 
   const handleSave = () => {
     onUpdate?.({ name: editName, ramMax: editRamMax });
@@ -89,6 +125,25 @@ export function ServerDetail({
     setEditName(server.name);
     setEditRamMax(server.ramMax);
     setIsEditing(false);
+  };
+
+  const handleSaveProperties = async () => {
+    setIsSavingProperties(true);
+    try {
+      const result = await window.electronAPI.server.updateProperties({
+        id: server.id,
+        properties,
+      });
+      if (result.success) {
+        toast.success(t('toast.propertiesSaved'));
+      } else {
+        toast.error(t('toast.propertiesSaveFailed'));
+      }
+    } catch (error) {
+      toast.error(t('toast.propertiesSaveFailed'));
+    } finally {
+      setIsSavingProperties(false);
+    }
   };
 
   return (
@@ -183,6 +238,128 @@ export function ServerDetail({
               <MemoryStick className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground" />
               <p className="text-xs lg:text-sm font-medium">{server.ramMax} MB</p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Server Properties 卡片 */}
+      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xs lg:text-sm">{t('server.properties')}</CardTitle>
+            <Button
+              size="sm"
+              onClick={handleSaveProperties}
+              disabled={isSavingProperties || isRunning}
+              className="h-6 lg:h-7 text-[10px] lg:text-xs"
+            >
+              <Save className="mr-1 h-3 w-3" />
+              {t('common.save')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3 lg:p-4 pt-0 space-y-3 lg:space-y-4">
+          {/* Boolean switches */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm">{t('server.allowFlight')}</Label>
+              <Switch
+                checked={properties['allow-flight']}
+                onCheckedChange={(checked) =>
+                  setProperties((prev) => ({ ...prev, 'allow-flight': checked }))
+                }
+                disabled={isRunning}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm">{t('server.onlineMode')}</Label>
+              <Switch
+                checked={properties['online-mode']}
+                onCheckedChange={(checked) =>
+                  setProperties((prev) => ({ ...prev, 'online-mode': checked }))
+                }
+                disabled={isRunning}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm">{t('server.whiteList')}</Label>
+              <Switch
+                checked={properties['white-list']}
+                onCheckedChange={(checked) =>
+                  setProperties((prev) => ({ ...prev, 'white-list': checked }))
+                }
+                disabled={isRunning}
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Select fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs lg:text-sm">{t('server.difficulty')}</Label>
+              <Select
+                value={properties.difficulty}
+                onValueChange={(value: Difficulty) =>
+                  setProperties((prev) => ({ ...prev, difficulty: value }))
+                }
+                disabled={isRunning}
+              >
+                <SelectTrigger className="h-8 lg:h-9 text-xs lg:text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="peaceful">{t('difficulty.peaceful')}</SelectItem>
+                  <SelectItem value="easy">{t('difficulty.easy')}</SelectItem>
+                  <SelectItem value="normal">{t('difficulty.normal')}</SelectItem>
+                  <SelectItem value="hard">{t('difficulty.hard')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs lg:text-sm">{t('server.gamemode')}</Label>
+              <Select
+                value={properties.gamemode}
+                onValueChange={(value: Gamemode) =>
+                  setProperties((prev) => ({ ...prev, gamemode: value }))
+                }
+                disabled={isRunning}
+              >
+                <SelectTrigger className="h-8 lg:h-9 text-xs lg:text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="survival">{t('gamemode.survival')}</SelectItem>
+                  <SelectItem value="creative">{t('gamemode.creative')}</SelectItem>
+                  <SelectItem value="adventure">{t('gamemode.adventure')}</SelectItem>
+                  <SelectItem value="spectator">{t('gamemode.spectator')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Max players */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm">{t('server.maxPlayers')}</Label>
+              <span className="text-xs lg:text-sm text-muted-foreground">
+                {properties['max-players']}
+              </span>
+            </div>
+            <Slider
+              value={[properties['max-players']]}
+              onValueChange={(values) => {
+                const value = values[0];
+                if (value !== undefined) {
+                  setProperties((prev) => ({ ...prev, 'max-players': value }));
+                }
+              }}
+              min={1}
+              max={100}
+              step={1}
+              disabled={isRunning}
+            />
           </div>
         </CardContent>
       </Card>

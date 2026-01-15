@@ -244,3 +244,24 @@ export interface AppInfo {
   version: string;
   dataPath: string;
 }
+
+// ============================================================================
+// Server Properties Types
+// ============================================================================
+
+export type Difficulty = 'peaceful' | 'easy' | 'normal' | 'hard';
+export type Gamemode = 'survival' | 'creative' | 'adventure' | 'spectator';
+
+export interface ServerProperties {
+  'allow-flight': boolean;
+  difficulty: Difficulty;
+  gamemode: Gamemode;
+  'max-players': number;
+  'online-mode': boolean;
+  'white-list': boolean;
+}
+
+export interface UpdateServerPropertiesRequest {
+  id: string;
+  properties: Partial<ServerProperties>;
+}

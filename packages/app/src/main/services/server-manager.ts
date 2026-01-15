@@ -18,6 +18,7 @@ import type {
   ServerStatusEvent,
   ServerLogEvent,
   LogLevel,
+  ServerProperties,
 } from '../../shared/ipc-types';
 import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 
@@ -362,6 +363,34 @@ export class ServerManager extends EventEmitter {
     this.processManager.killAll();
   }
 
+  // ==========================================================================
+  // Server Properties Operations
+  // ==========================================================================
+
+  async getServerProperties(id: string): Promise<ServerProperties> {
+    const server = this.servers.get(id);
+    if (!server) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+    return this.fileManager.readServerProperties(server.directory);
+  }
+
+  async updateServerProperties(
+    id: string,
+    properties: Partial<ServerProperties>
+  ): Promise<ServerProperties> {
+    const server = this.servers.get(id);
+    if (!server) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+    return this.fileManager.updateServerProperties(server.directory, properties);
+  }
 
   // ==========================================================================
   // Private Methods

@@ -13,6 +13,8 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerProperties,
+  UpdateServerPropertiesRequest,
 } from '../../shared/ipc-types';
 
 // ============================================================================
@@ -137,6 +139,32 @@ function registerHandlers(): void {
       try {
         await serverManager!.sendCommand(id, command);
         return { success: true };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // GET_PROPERTIES - 取得伺服器屬性
+  ipcMain.handle(
+    ServerChannels.GET_PROPERTIES,
+    async (_, id: string): Promise<IpcResult<ServerProperties>> => {
+      try {
+        const properties = await serverManager!.getServerProperties(id);
+        return { success: true, data: properties };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // UPDATE_PROPERTIES - 更新伺服器屬性
+  ipcMain.handle(
+    ServerChannels.UPDATE_PROPERTIES,
+    async (_, data: UpdateServerPropertiesRequest): Promise<IpcResult<ServerProperties>> => {
+      try {
+        const properties = await serverManager!.updateServerProperties(data.id, data.properties);
+        return { success: true, data: properties };
       } catch (error) {
         return { success: false, error: formatError(error) };
       }
