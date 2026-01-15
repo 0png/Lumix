@@ -90,7 +90,7 @@
     "error": "發生錯誤",
     "downloadStarted": "開始下載",
     "downloadComplete": "下載完成",
-    "downloadingServer": "正在下載伺服器 JAR...",
+    "downloadingServer": "正在下載伺服器 JAR，可能需要 20 秒...",
     "serverReady": "伺服器已準備就緒",
     "downloadFailed": "下載伺服器失敗",
     "startFailed": "啟動伺服器失敗",

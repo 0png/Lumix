@@ -90,7 +90,7 @@
     "error": "An error occurred",
     "downloadStarted": "Download started",
     "downloadComplete": "Download complete",
-    "downloadingServer": "Downloading server JAR...",
+    "downloadingServer": "Downloading server JAR, this may take about 20 seconds...",
     "serverReady": "Server is ready to start",
     "downloadFailed": "Failed to download server",
     "startFailed": "Failed to start server",
