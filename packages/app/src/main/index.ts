@@ -1,10 +1,16 @@
-// Lumix Launcher - Main Process
-// Electron 主進程入口
+/**
+ * Lumix Launcher - Main Process
+ * Electron 主進程入口
+ */
 
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { initAllIpcHandlers, cleanupAllIpcHandlers } from './ipc';
+
+// ============================================================================
+// Window Management
+// ============================================================================
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -36,15 +42,19 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+// ============================================================================
+// Application Lifecycle
+// ============================================================================
+
+app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.lumix.launcher');
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  // 初始化所有 IPC handlers
-  initAllIpcHandlers();
+  // 初始化所有 IPC handlers（包含 ServerManager 載入）
+  await initAllIpcHandlers();
 
   createWindow();
 
@@ -60,6 +70,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  // 清理資源
+  // 清理所有資源（包含終止執行中的伺服器程序）
   cleanupAllIpcHandlers();
 });
