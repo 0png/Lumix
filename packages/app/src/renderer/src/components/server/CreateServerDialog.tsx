@@ -247,9 +247,14 @@ export function CreateServerDialog({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary underline hover:text-primary/80"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault();
-                    window.electronAPI.app.openExternal(MOJANG_EULA_URL);
+                    e.stopPropagation();
+                    try {
+                      await window.electronAPI.app.openExternal(MOJANG_EULA_URL);
+                    } catch (err) {
+                      console.error('Failed to open external URL:', err);
+                    }
                   }}
                 >
                   Minecraft EULA
