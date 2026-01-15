@@ -230,8 +230,16 @@ function AppContent() {
     }
   };
 
+  // 轉換為 Sidebar 需要的格式
+  const sidebarServers = servers.map((s) => ({
+    id: s.id,
+    name: s.name,
+    status: s.status as 'stopped' | 'running',
+  }));
+
   return (
     <MainLayout
+      servers={sidebarServers}
       onCreateServer={() => setShowCreateDialog(true)}
       onOpenSettings={() => setCurrentView('settings')}
       onOpenAbout={() => setCurrentView('about')}

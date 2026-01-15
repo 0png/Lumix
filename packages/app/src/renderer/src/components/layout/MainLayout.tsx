@@ -7,8 +7,15 @@ import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface ServerItem {
+  id: string;
+  name: string;
+  status: 'stopped' | 'running';
+}
+
 interface MainLayoutProps {
   children: ReactNode;
+  servers?: ServerItem[];
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
   onCreateServer?: () => void;
@@ -19,6 +26,7 @@ interface MainLayoutProps {
 
 export function MainLayout({
   children,
+  servers = [],
   selectedServerId,
   onSelectServer,
   onCreateServer,
@@ -29,6 +37,7 @@ export function MainLayout({
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar
+        servers={servers}
         selectedServerId={selectedServerId}
         onSelectServer={onSelectServer}
         onCreateServer={onCreateServer}
