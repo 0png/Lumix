@@ -16,7 +16,7 @@ export function parseJavaVersionOutput(output: string): { version: string; major
   // 例如: openjdk version "17.0.2" 或 java version "1.8.0_301"
   const versionMatch = output.match(/version\s+"([^"]+)"/i);
   
-  if (!versionMatch) {
+  if (!versionMatch || !versionMatch[1]) {
     return null;
   }
 
@@ -39,13 +39,13 @@ export function parseJavaVersionOutput(output: string): { version: string; major
 export function extractMajorVersion(version: string): number | null {
   // Java 8 及更早版本使用 1.x 格式
   const legacyMatch = version.match(/^1\.(\d+)/);
-  if (legacyMatch) {
+  if (legacyMatch && legacyMatch[1]) {
     return parseInt(legacyMatch[1], 10);
   }
 
   // Java 9+ 使用 x.y.z 格式
   const modernMatch = version.match(/^(\d+)/);
-  if (modernMatch) {
+  if (modernMatch && modernMatch[1]) {
     return parseInt(modernMatch[1], 10);
   }
 

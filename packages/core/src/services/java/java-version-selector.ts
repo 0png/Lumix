@@ -63,7 +63,7 @@ export function selectJavaForMinecraft(
   // 排序：優先選擇版本最接近需求的（避免過新）
   compatible.sort((a, b) => a.majorVersion - b.majorVersion);
 
-  return compatible[0];
+  return compatible[0] ?? null;
 }
 
 /**
@@ -90,7 +90,7 @@ interface MinecraftVersion {
 function parseMinecraftVersion(version: string): MinecraftVersion | null {
   const match = version.match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
   
-  if (!match) {
+  if (!match || !match[1] || !match[2]) {
     return null;
   }
 

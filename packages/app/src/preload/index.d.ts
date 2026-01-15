@@ -1,16 +1,11 @@
-import type { ElectronAPI } from '@electron-toolkit/preload';
+// Preload Script Type Definitions
 
-interface IpcResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import type { ElectronAPI } from './index';
 
 declare global {
   interface Window {
-    electronAPI: {
-      ping: () => Promise<string>;
-      getVersions: (coreType: string) => Promise<IpcResult<string[]>>;
-    };
+    electronAPI: ElectronAPI;
   }
 }
+
+export { ElectronAPI };

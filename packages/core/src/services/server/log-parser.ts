@@ -16,7 +16,7 @@ export function parseLogLine(line: string, defaultLevel: LogLevel = 'info'): Log
   const mcLogPattern = /^\[[\d:]+\]\s*\[([^\]]+)\/(\w+)\]:\s*(.*)$/;
   const match = line.match(mcLogPattern);
 
-  if (match) {
+  if (match && match[2] && match[3]) {
     const levelStr = match[2].toLowerCase();
     if (levelStr === 'warn' || levelStr === 'warning') {
       level = 'warn';
