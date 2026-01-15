@@ -107,7 +107,7 @@ export function SettingsView({
 
       <div className="grid gap-6">
         {/* 外觀設定 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('settings.appearance')}</CardTitle>
           </CardHeader>
@@ -151,7 +151,7 @@ export function SettingsView({
         </Card>
 
         {/* 預設值設定 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('settings.defaults')}</CardTitle>
           </CardHeader>
@@ -177,7 +177,7 @@ export function SettingsView({
         </Card>
 
         {/* Java 管理 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">{t('settings.java')}</CardTitle>

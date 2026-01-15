@@ -50,7 +50,7 @@ export function AboutView({ onBack }: AboutViewProps) {
 
       <div className="grid gap-6">
         {/* 應用程式資訊 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
               <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0 shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-shadow">
@@ -84,17 +84,16 @@ export function AboutView({ onBack }: AboutViewProps) {
         </Card>
 
         {/* 技術棧 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('about.techStack')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {techStack.map((tech, index) => (
+              {techStack.map((tech) => (
                 <span
                   key={tech}
-                  className="px-3 py-1 text-sm font-medium rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-default animate-scale-in"
-                  style={{ animationDelay: `${150 + index * 50}ms` }}
+                  className="px-3 py-1 text-sm font-medium rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-default"
                 >
                   {tech}
                 </span>
@@ -104,7 +103,7 @@ export function AboutView({ onBack }: AboutViewProps) {
         </Card>
 
         {/* 連結 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('about.openSource')}</CardTitle>
           </CardHeader>
