@@ -19,6 +19,7 @@ import type {
   ServerLogEvent,
   LogLevel,
 } from '../../shared/ipc-types';
+import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 
 // ============================================================================
 // Types
@@ -68,15 +69,24 @@ export class ServerManager extends EventEmitter {
   async createServer(request: CreateServerRequest): Promise<ServerInstanceDto> {
     const trimmedName = request.name.trim();
     if (!trimmedName) {
-      throw new Error('INVALID_NAME: 伺服器名稱不能為空');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_INVALID_NAME,
+        '伺服器名稱不能為空'
+      )));
     }
 
     if (this.findServerByName(trimmedName)) {
-      throw new Error('DUPLICATE_NAME: 伺服器名稱已存在');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_DUPLICATE_NAME,
+        '伺服器名稱已存在'
+      )));
     }
 
     if (await this.fileManager.serverExists(trimmedName)) {
-      throw new Error('DUPLICATE_NAME: 伺服器目錄已存在');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_DUPLICATE_NAME,
+        '伺服器目錄已存在'
+      )));
     }
 
     const id = uuidv4();
@@ -104,16 +114,25 @@ export class ServerManager extends EventEmitter {
   async updateServer(request: UpdateServerRequest): Promise<ServerInstanceDto> {
     const server = this.servers.get(request.id);
     if (!server) {
-      throw new Error('NOT_FOUND: 找不到指定的伺服器');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
     }
 
     if (request.name !== undefined) {
       const trimmedName = request.name.trim();
       if (!trimmedName) {
-        throw new Error('INVALID_NAME: 伺服器名稱不能為空');
+        throw new Error(formatIpcError(createIpcError(
+          IpcErrorCode.SERVER_INVALID_NAME,
+          '伺服器名稱不能為空'
+        )));
       }
       if (this.findServerByName(trimmedName, request.id)) {
-        throw new Error('DUPLICATE_NAME: 伺服器名稱已存在');
+        throw new Error(formatIpcError(createIpcError(
+          IpcErrorCode.SERVER_DUPLICATE_NAME,
+          '伺服器名稱已存在'
+        )));
       }
     }
 
@@ -134,7 +153,10 @@ export class ServerManager extends EventEmitter {
   async deleteServer(id: string): Promise<void> {
     const server = this.servers.get(id);
     if (!server) {
-      throw new Error('NOT_FOUND: 找不到指定的伺服器');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
     }
 
     if (server.status !== 'stopped') {
@@ -152,14 +174,20 @@ export class ServerManager extends EventEmitter {
   async startServer(id: string): Promise<void> {
     const server = this.servers.get(id);
     if (!server) {
-      throw new Error('NOT_FOUND: 找不到指定的伺服器');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
     }
 
     console.log('[ServerManager] startServer called for:', id);
     console.log('[ServerManager] Server info:', JSON.stringify(server, null, 2));
 
     if (server.status === 'running' || server.status === 'starting') {
-      throw new Error('INVALID_STATE: 伺服器已在執行中');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_INVALID_STATE,
+        '伺服器已在執行中'
+      )));
     }
 
     const javaPath = server.javaPath || this.defaultJavaPath;
@@ -181,7 +209,11 @@ export class ServerManager extends EventEmitter {
     }
 
     if (!javaValid) {
-      throw new Error(`JAVA_NOT_FOUND: 找不到有效的 Java 安裝 (path: ${javaPath})`);
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.JAVA_NOT_FOUND,
+        `找不到有效的 Java 安裝`,
+        { path: javaPath }
+      )));
     }
 
     const jarPath = path.join(server.directory, 'server.jar');
@@ -208,7 +240,11 @@ export class ServerManager extends EventEmitter {
         console.log('[ServerManager] server.jar found');
       } catch (err) {
         console.log('[ServerManager] server.jar NOT found:', err);
-        throw new Error(`JAR_NOT_FOUND: 找不到 server.jar 檔案 (path: ${jarPath})`);
+        throw new Error(formatIpcError(createIpcError(
+          IpcErrorCode.SERVER_JAR_NOT_FOUND,
+          '找不到 server.jar 檔案',
+          { path: jarPath }
+        )));
       }
     }
 
@@ -241,11 +277,17 @@ export class ServerManager extends EventEmitter {
   async stopServer(id: string): Promise<void> {
     const server = this.servers.get(id);
     if (!server) {
-      throw new Error('NOT_FOUND: 找不到指定的伺服器');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
     }
 
     if (server.status === 'stopped') {
-      throw new Error('INVALID_STATE: 伺服器已停止');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_INVALID_STATE,
+        '伺服器已停止'
+      )));
     }
 
     this.updateServerStatus(id, 'stopping');
@@ -265,16 +307,25 @@ export class ServerManager extends EventEmitter {
   async sendCommand(id: string, command: string): Promise<void> {
     const server = this.servers.get(id);
     if (!server) {
-      throw new Error('NOT_FOUND: 找不到指定的伺服器');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
     }
 
     if (server.status !== 'running') {
-      throw new Error('INVALID_STATE: 只能對執行中的伺服器發送指令');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_INVALID_STATE,
+        '只能對執行中的伺服器發送指令'
+      )));
     }
 
     const sent = this.processManager.writeStdin(id, command);
     if (!sent) {
-      throw new Error('COMMAND_FAILED: 無法發送指令');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.PROCESS_COMMAND_FAILED,
+        '無法發送指令'
+      )));
     }
 
     this.emitLogEntry(id, 'info', `> ${command}`);

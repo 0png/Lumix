@@ -6,6 +6,7 @@
 import { EventEmitter } from 'events';
 import path from 'path';
 import type { CoreType, DownloadProgress } from '../../shared/ipc-types';
+import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 import { fetchJson, downloadFile } from './http-client';
 import { runForgeInstaller } from './forge-installer';
 
@@ -90,7 +91,10 @@ export class DownloadService extends EventEmitter {
       case 'spigot':
         return this.fetchPaperVersions();
       default:
-        throw new Error(`UNSUPPORTED_CORE: 不支援的核心類型 ${coreType}`);
+        throw new Error(formatIpcError(createIpcError(
+          IpcErrorCode.DOWNLOAD_UNSUPPORTED_CORE,
+          `不支援的核心類型 ${coreType}`
+        )));
     }
   }
 
@@ -173,7 +177,10 @@ export class DownloadService extends EventEmitter {
         await this.downloadPaperServer(mcVersion, jarPath, serverId);
         break;
       default:
-        throw new Error(`UNSUPPORTED_CORE: 不支援的核心類型 ${coreType}`);
+        throw new Error(formatIpcError(createIpcError(
+          IpcErrorCode.DOWNLOAD_UNSUPPORTED_CORE,
+          `不支援的核心類型 ${coreType}`
+        )));
     }
 
     return jarPath;
@@ -187,7 +194,10 @@ export class DownloadService extends EventEmitter {
     const manifest = await fetchJson<VersionManifest>(API_ENDPOINTS.VANILLA_MANIFEST);
     const versionInfo = manifest.versions.find((v) => v.id === mcVersion);
     if (!versionInfo) {
-      throw new Error(`VERSION_NOT_FOUND: 找不到 Vanilla ${mcVersion} 版本`);
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `找不到 Vanilla ${mcVersion} 版本`
+      )));
     }
 
     const versionData = await fetchJson<{
@@ -195,7 +205,10 @@ export class DownloadService extends EventEmitter {
     }>(versionInfo.url);
 
     if (!versionData.downloads?.server) {
-      throw new Error(`NO_SERVER_JAR: ${mcVersion} 沒有提供伺服器 JAR`);
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `${mcVersion} 沒有提供伺服器 JAR`
+      )));
     }
 
     await this.downloadWithProgress(
@@ -217,7 +230,10 @@ export class DownloadService extends EventEmitter {
     const buildsData = await fetchJson<PaperBuildsResponse>(buildsUrl);
 
     if (!buildsData.builds || buildsData.builds.length === 0) {
-      throw new Error(`NO_BUILDS: Paper ${mcVersion} 沒有可用的 build`);
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `Paper ${mcVersion} 沒有可用的 build`
+      )));
     }
 
     const latestBuild = buildsData.builds[buildsData.builds.length - 1]!;
@@ -234,13 +250,19 @@ export class DownloadService extends EventEmitter {
     const loaders = await fetchJson<FabricLoaderVersion[]>(API_ENDPOINTS.FABRIC_LOADER);
     const stableLoader = loaders.find((l) => l.stable);
     if (!stableLoader) {
-      throw new Error('NO_LOADER: 找不到穩定的 Fabric Loader');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        '找不到穩定的 Fabric Loader'
+      )));
     }
 
     const installers = await fetchJson<FabricInstallerVersion[]>(API_ENDPOINTS.FABRIC_INSTALLER);
     const stableInstaller = installers.find((i) => i.stable);
     if (!stableInstaller) {
-      throw new Error('NO_INSTALLER: 找不到穩定的 Fabric Installer');
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        '找不到穩定的 Fabric Installer'
+      )));
     }
 
     const downloadUrl = `https://meta.fabricmc.net/v2/versions/loader/${mcVersion}/${stableLoader.version}/${stableInstaller.version}/server/jar`;
@@ -261,7 +283,10 @@ export class DownloadService extends EventEmitter {
     const forgeVersion = promos.promos[recommendedKey] || promos.promos[latestKey];
     
     if (!forgeVersion) {
-      throw new Error(`NO_FORGE: Forge ${mcVersion} 沒有可用版本`);
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `Forge ${mcVersion} 沒有可用版本`
+      )));
     }
 
     // 構建 Maven 下載連結

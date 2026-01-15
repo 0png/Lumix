@@ -18,6 +18,92 @@ export interface DownloadProgress {
 }
 
 // ============================================================================
+// Error Types
+// ============================================================================
+
+/**
+ * 統一錯誤碼定義
+ * 格式: CATEGORY_SPECIFIC_ERROR
+ */
+export const IpcErrorCode = {
+  // Server 相關錯誤
+  SERVER_NOT_FOUND: 'SERVER_NOT_FOUND',
+  SERVER_INVALID_NAME: 'SERVER_INVALID_NAME',
+  SERVER_DUPLICATE_NAME: 'SERVER_DUPLICATE_NAME',
+  SERVER_INVALID_STATE: 'SERVER_INVALID_STATE',
+  SERVER_JAR_NOT_FOUND: 'SERVER_JAR_NOT_FOUND',
+
+  // Java 相關錯誤
+  JAVA_NOT_FOUND: 'JAVA_NOT_FOUND',
+  JAVA_INVALID_VERSION: 'JAVA_INVALID_VERSION',
+  JAVA_INSTALL_FAILED: 'JAVA_INSTALL_FAILED',
+
+  // 下載相關錯誤
+  DOWNLOAD_FAILED: 'DOWNLOAD_FAILED',
+  DOWNLOAD_VERSION_NOT_FOUND: 'DOWNLOAD_VERSION_NOT_FOUND',
+  DOWNLOAD_UNSUPPORTED_CORE: 'DOWNLOAD_UNSUPPORTED_CORE',
+  DOWNLOAD_NETWORK_ERROR: 'DOWNLOAD_NETWORK_ERROR',
+
+  // 檔案系統錯誤
+  FS_READ_ERROR: 'FS_READ_ERROR',
+  FS_WRITE_ERROR: 'FS_WRITE_ERROR',
+  FS_DELETE_ERROR: 'FS_DELETE_ERROR',
+  FS_PERMISSION_DENIED: 'FS_PERMISSION_DENIED',
+
+  // 程序相關錯誤
+  PROCESS_SPAWN_FAILED: 'PROCESS_SPAWN_FAILED',
+  PROCESS_COMMAND_FAILED: 'PROCESS_COMMAND_FAILED',
+
+  // 通用錯誤
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+} as const;
+
+export type IpcErrorCodeType = (typeof IpcErrorCode)[keyof typeof IpcErrorCode];
+
+/**
+ * 統一錯誤介面
+ */
+export interface IpcError {
+  code: IpcErrorCodeType;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * 建立 IpcError 的工具函式
+ */
+export function createIpcError(
+  code: IpcErrorCodeType,
+  message: string,
+  details?: Record<string, unknown>
+): IpcError {
+  return { code, message, details };
+}
+
+/**
+ * 從錯誤字串解析 IpcError
+ * 支援格式: "CODE: message" 或純訊息
+ */
+export function parseIpcError(errorStr: string): IpcError {
+  const match = errorStr.match(/^([A-Z_]+):\s*(.+)$/);
+  if (match && match[1] && match[2]) {
+    const code = match[1] as IpcErrorCodeType;
+    if (Object.values(IpcErrorCode).includes(code)) {
+      return { code, message: match[2] };
+    }
+  }
+  return { code: IpcErrorCode.UNKNOWN_ERROR, message: errorStr };
+}
+
+/**
+ * 格式化 IpcError 為字串
+ */
+export function formatIpcError(error: IpcError): string {
+  return `${error.code}: ${error.message}`;
+}
+
+// ============================================================================
 // Generic IPC Result
 // ============================================================================
 
@@ -25,6 +111,7 @@ export interface IpcResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  errorDetails?: IpcError;
 }
 
 // ============================================================================
