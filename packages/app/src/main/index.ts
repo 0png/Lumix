@@ -1,6 +1,39 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+
+// IPC handler for fetching MC versions (bypasses CSP)
+ipcMain.handle('fetch-versions', async (_event, coreType: string) => {
+  const MOJANG_API = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
+  const PAPER_API = 'https://api.papermc.io/v2/projects/paper';
+  const FABRIC_API = 'https://meta.fabricmc.net/v2/versions/game';
+
+  try {
+    let result: string[] = [];
+
+    if (coreType === 'paper') {
+      const response = await fetch(PAPER_API);
+      const data = await response.json();
+      result = [...(data.versions as string[])].reverse();
+    } else if (coreType === 'vanilla' || coreType === 'forge') {
+      const response = await fetch(MOJANG_API);
+      const data = await response.json();
+      result = (data.versions as Array<{ id: string; type: string }>)
+        .filter((v) => v.type === 'release')
+        .map((v) => v.id);
+    } else if (coreType === 'fabric') {
+      const response = await fetch(FABRIC_API);
+      const data = await response.json();
+      result = (data as Array<{ version: string; stable: boolean }>)
+        .filter((v) => v.stable)
+        .map((v) => v.version);
+    }
+
+    return { success: true, versions: result };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+});
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

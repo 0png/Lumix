@@ -37,11 +37,6 @@ interface CreateServerDialogProps {
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
 
-// API URLs
-const MOJANG_API = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
-const PAPER_API = 'https://api.papermc.io/v2/projects/paper';
-const FABRIC_API = 'https://meta.fabricmc.net/v2/versions/game';
-
 export function CreateServerDialog({
   open,
   onOpenChange,
@@ -63,33 +58,17 @@ export function CreateServerDialog({
     setMcVersion('');
 
     try {
-      let result: string[] = [];
-
-      if (type === 'paper') {
-        const response = await fetch(PAPER_API);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        result = [...(data.versions as string[])].reverse();
-      } else if (type === 'vanilla' || type === 'forge') {
-        const response = await fetch(MOJANG_API);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        result = (data.versions as Array<{ id: string; type: string }>)
-          .filter((v) => v.type === 'release')
-          .map((v) => v.id);
-      } else if (type === 'fabric') {
-        const response = await fetch(FABRIC_API);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        result = (data as Array<{ version: string; stable: boolean }>)
-          .filter((v) => v.stable)
-          .map((v) => v.version);
-      }
-
-      console.log(`Fetched ${result.length} versions for ${type}`);
-      setVersions(result);
-      if (result.length > 0) {
-        setMcVersion(result[0]!);
+      // Use IPC to fetch versions from main process (bypasses CSP)
+      const result = await window.electronAPI.fetchVersions(type);
+      
+      if (result.success && result.versions) {
+        console.log(`Fetched ${result.versions.length} versions for ${type}`);
+        setVersions(result.versions);
+        if (result.versions.length > 0) {
+          setMcVersion(result.versions[0]!);
+        }
+      } else {
+        throw new Error(result.error || 'Unknown error');
       }
     } catch (err) {
       console.error('Failed to fetch versions:', err);

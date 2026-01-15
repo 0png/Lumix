@@ -1,14 +1,14 @@
 // Electron API type definitions for renderer process
 
-interface IpcResult<T> {
+interface FetchVersionsResult {
   success: boolean;
-  data?: T;
+  versions?: string[];
   error?: string;
 }
 
 interface ElectronAPI {
   ping: () => Promise<string>;
-  getVersions: (coreType: string) => Promise<IpcResult<string[]>>;
+  fetchVersions: (coreType: string) => Promise<FetchVersionsResult>;
 }
 
 declare global {

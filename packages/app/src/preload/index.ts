@@ -10,8 +10,7 @@ export interface IpcResult<T> {
 // the ipcRenderer without exposing the entire object
 const api = {
   ping: () => ipcRenderer.invoke('ping'),
-  getVersions: (coreType: string): Promise<IpcResult<string[]>> => 
-    ipcRenderer.invoke('get-versions', coreType),
+  fetchVersions: (coreType: string) => ipcRenderer.invoke('fetch-versions', coreType),
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to
