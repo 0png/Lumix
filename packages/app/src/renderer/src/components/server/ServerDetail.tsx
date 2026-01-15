@@ -245,60 +245,14 @@ export function ServerDetail({
       {/* Server Properties 卡片 */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xs lg:text-sm">{t('server.properties')}</CardTitle>
-            <Button
-              size="sm"
-              onClick={handleSaveProperties}
-              disabled={isSavingProperties || isRunning}
-              className="h-6 lg:h-7 text-[10px] lg:text-xs"
-            >
-              <Save className="mr-1 h-3 w-3" />
-              {t('common.save')}
-            </Button>
-          </div>
+          <CardTitle className="text-xs lg:text-sm">{t('server.properties')}</CardTitle>
         </CardHeader>
-        <CardContent className="p-3 lg:p-4 pt-0 space-y-3 lg:space-y-4">
-          {/* Boolean switches */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <CardContent className="p-3 lg:p-4 pt-0 space-y-2">
+          {/* 統一的設定列表 */}
+          <div className="space-y-2.5">
+            {/* 難度 */}
             <div className="flex items-center justify-between">
-              <Label className="text-xs lg:text-sm">{t('server.allowFlight')}</Label>
-              <Switch
-                checked={properties['allow-flight']}
-                onCheckedChange={(checked) =>
-                  setProperties((prev) => ({ ...prev, 'allow-flight': checked }))
-                }
-                disabled={isRunning}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs lg:text-sm">{t('server.onlineMode')}</Label>
-              <Switch
-                checked={properties['online-mode']}
-                onCheckedChange={(checked) =>
-                  setProperties((prev) => ({ ...prev, 'online-mode': checked }))
-                }
-                disabled={isRunning}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs lg:text-sm">{t('server.whiteList')}</Label>
-              <Switch
-                checked={properties['white-list']}
-                onCheckedChange={(checked) =>
-                  setProperties((prev) => ({ ...prev, 'white-list': checked }))
-                }
-                disabled={isRunning}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Select fields */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs lg:text-sm">{t('server.difficulty')}</Label>
+              <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.difficulty')}</Label>
               <Select
                 value={properties.difficulty}
                 onValueChange={(value: Difficulty) =>
@@ -306,7 +260,7 @@ export function ServerDetail({
                 }
                 disabled={isRunning}
               >
-                <SelectTrigger className="h-8 lg:h-9 text-xs lg:text-sm">
+                <SelectTrigger className="h-7 w-28 text-xs border-0 bg-secondary/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -317,8 +271,10 @@ export function ServerDetail({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs lg:text-sm">{t('server.gamemode')}</Label>
+
+            {/* 遊戲模式 */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.gamemode')}</Label>
               <Select
                 value={properties.gamemode}
                 onValueChange={(value: Gamemode) =>
@@ -326,7 +282,7 @@ export function ServerDetail({
                 }
                 disabled={isRunning}
               >
-                <SelectTrigger className="h-8 lg:h-9 text-xs lg:text-sm">
+                <SelectTrigger className="h-7 w-28 text-xs border-0 bg-secondary/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -337,29 +293,77 @@ export function ServerDetail({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* 最大玩家數 */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.maxPlayers')}</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[properties['max-players']]}
+                  onValueChange={(values) => {
+                    const value = values[0];
+                    if (value !== undefined) {
+                      setProperties((prev) => ({ ...prev, 'max-players': value }));
+                    }
+                  }}
+                  min={1}
+                  max={100}
+                  step={1}
+                  disabled={isRunning}
+                  className="w-24"
+                />
+                <span className="text-xs w-6 text-right tabular-nums">{properties['max-players']}</span>
+              </div>
+            </div>
+
+            {/* 正版驗證 */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.onlineMode')}</Label>
+              <Switch
+                checked={properties['online-mode']}
+                onCheckedChange={(checked) =>
+                  setProperties((prev) => ({ ...prev, 'online-mode': checked }))
+                }
+                disabled={isRunning}
+              />
+            </div>
+
+            {/* 允許飛行 */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.allowFlight')}</Label>
+              <Switch
+                checked={properties['allow-flight']}
+                onCheckedChange={(checked) =>
+                  setProperties((prev) => ({ ...prev, 'allow-flight': checked }))
+                }
+                disabled={isRunning}
+              />
+            </div>
+
+            {/* 白名單 */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.whiteList')}</Label>
+              <Switch
+                checked={properties['white-list']}
+                onCheckedChange={(checked) =>
+                  setProperties((prev) => ({ ...prev, 'white-list': checked }))
+                }
+                disabled={isRunning}
+              />
+            </div>
           </div>
 
-          {/* Max players */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs lg:text-sm">{t('server.maxPlayers')}</Label>
-              <span className="text-xs lg:text-sm text-muted-foreground">
-                {properties['max-players']}
-              </span>
-            </div>
-            <Slider
-              value={[properties['max-players']]}
-              onValueChange={(values) => {
-                const value = values[0];
-                if (value !== undefined) {
-                  setProperties((prev) => ({ ...prev, 'max-players': value }));
-                }
-              }}
-              min={1}
-              max={100}
-              step={1}
-              disabled={isRunning}
-            />
+          {/* 儲存按鈕 */}
+          <div className="pt-2">
+            <Button
+              size="sm"
+              onClick={handleSaveProperties}
+              disabled={isSavingProperties || isRunning}
+              className="w-full h-8 text-xs"
+            >
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+              {t('common.save')}
+            </Button>
           </div>
         </CardContent>
       </Card>
