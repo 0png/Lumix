@@ -33,6 +33,7 @@ interface CreateServerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: CreateServerData) => void;
+  disabled?: boolean;
 }
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
@@ -41,6 +42,7 @@ export function CreateServerDialog({
   open,
   onOpenChange,
   onSubmit,
+  disabled = false,
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
@@ -178,7 +180,7 @@ export function CreateServerDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={!name.trim() || !mcVersion || loading}>
+          <Button onClick={handleSubmit} disabled={!name.trim() || !mcVersion || loading || disabled}>
             {t('common.create')}
           </Button>
         </DialogFooter>

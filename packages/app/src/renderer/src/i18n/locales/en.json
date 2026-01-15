@@ -88,7 +88,13 @@
     "settingsSaved": "Settings saved",
     "error": "An error occurred",
     "downloadStarted": "Download started",
-    "downloadComplete": "Download complete"
+    "downloadComplete": "Download complete",
+    "downloadingServer": "Downloading server JAR...",
+    "serverReady": "Server is ready to start",
+    "downloadFailed": "Failed to download server",
+    "startFailed": "Failed to start server",
+    "stopFailed": "Failed to stop server",
+    "deleteFailed": "Failed to delete server"
   },
   "about": {
     "title": "About",
