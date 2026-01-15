@@ -51,9 +51,11 @@ const languageOptions: { value: Language; label: string }[] = [
 /** Java 安裝項目元件 */
 function JavaItem({ java, onRemove }: { java: JavaInstallation; onRemove: () => void }) {
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-all duration-200 hover:shadow-sm group">
       <div className="flex items-center gap-3 min-w-0">
-        <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+          <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+        </div>
         <div className="min-w-0">
           <p className="text-sm font-medium">Java {java.majorVersion}</p>
           <p className="text-xs text-muted-foreground truncate">{java.path}</p>
@@ -62,7 +64,7 @@ function JavaItem({ java, onRemove }: { java: JavaInstallation; onRemove: () => 
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
+        className="shrink-0 h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={onRemove}
       >
         <Trash2 className="h-4 w-4" />
@@ -94,10 +96,10 @@ export function SettingsView({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* 標題列 */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} className="hover:bg-primary/10 transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold">{t('settings.title')}</h1>
@@ -105,7 +107,7 @@ export function SettingsView({
 
       <div className="grid gap-6">
         {/* 外觀設定 */}
-        <Card>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('settings.appearance')}</CardTitle>
           </CardHeader>
@@ -149,7 +151,7 @@ export function SettingsView({
         </Card>
 
         {/* 預設值設定 */}
-        <Card>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('settings.defaults')}</CardTitle>
           </CardHeader>
@@ -175,11 +177,11 @@ export function SettingsView({
         </Card>
 
         {/* Java 管理 */}
-        <Card>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">{t('settings.java')}</CardTitle>
-              <Button variant="outline" size="sm" onClick={onAddJavaPath}>
+              <Button variant="outline" size="sm" onClick={onAddJavaPath} className="hover:bg-primary/10 hover:border-primary/50 transition-colors">
                 <Plus className="mr-1.5 h-4 w-4" />
                 {t('common.create')}
               </Button>

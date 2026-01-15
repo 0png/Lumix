@@ -39,10 +39,10 @@ export function AboutView({ onBack }: AboutViewProps) {
   const techStack = ['Electron', 'React', 'Vite', 'TypeScript', 'Tailwind CSS', 'Radix UI'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* 標題列 */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} className="hover:bg-primary/10 transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold">{t('about.title')}</h1>
@@ -50,10 +50,10 @@ export function AboutView({ onBack }: AboutViewProps) {
 
       <div className="grid gap-6">
         {/* 應用程式資訊 */}
-        <Card>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-              <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0 shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-shadow">
                 <Server className="h-8 w-8 text-primary" />
               </div>
               <div>
@@ -84,16 +84,17 @@ export function AboutView({ onBack }: AboutViewProps) {
         </Card>
 
         {/* 技術棧 */}
-        <Card>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('about.techStack')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {techStack.map((tech) => (
+              {techStack.map((tech, index) => (
                 <span
                   key={tech}
-                  className="px-3 py-1 text-sm font-medium rounded-full bg-muted text-muted-foreground"
+                  className="px-3 py-1 text-sm font-medium rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-default animate-scale-in"
+                  style={{ animationDelay: `${150 + index * 50}ms` }}
                 >
                   {tech}
                 </span>
@@ -103,7 +104,7 @@ export function AboutView({ onBack }: AboutViewProps) {
         </Card>
 
         {/* 連結 */}
-        <Card>
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t('about.openSource')}</CardTitle>
           </CardHeader>
@@ -112,6 +113,7 @@ export function AboutView({ onBack }: AboutViewProps) {
               <Button
                 variant="outline"
                 onClick={() => openExternal('https://github.com/0png/Lumix')}
+                className="hover:bg-primary/10 hover:border-primary/50 transition-colors"
               >
                 <GitHubIcon className="mr-2 h-4 w-4" />
                 {t('about.viewOnGitHub')}
@@ -119,6 +121,7 @@ export function AboutView({ onBack }: AboutViewProps) {
               <Button
                 variant="outline"
                 onClick={() => openExternal('https://github.com/0png/Lumix/issues')}
+                className="hover:bg-primary/10 hover:border-primary/50 transition-colors"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t('about.submitFeedback')}
