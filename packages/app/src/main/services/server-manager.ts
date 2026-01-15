@@ -331,12 +331,26 @@ export class ServerManager extends EventEmitter {
   }
 
   private async validateJava(javaPath: string): Promise<boolean> {
-    try {
-      await fs.access(javaPath);
-      return true;
-    } catch {
-      return javaPath === 'java';
-    }
+    return new Promise((resolve) => {
+      const { spawn } = require('child_process');
+      const proc = spawn(javaPath, ['-version'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      proc.on('error', () => {
+        resolve(false);
+      });
+
+      proc.on('close', (code: number | null) => {
+        resolve(code === 0);
+      });
+
+      // 設定超時，避免卡住
+      setTimeout(() => {
+        proc.kill();
+        resolve(false);
+      }, 5000);
+    });
   }
 
   private findServerByName(name: string, excludeId?: string): ServerInstanceDto | undefined {
