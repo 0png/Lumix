@@ -98,21 +98,19 @@ export class DownloadService extends EventEmitter {
     const manifest = await fetchJson<VersionManifest>(API_ENDPOINTS.VANILLA_MANIFEST);
     return manifest.versions
       .filter((v) => v.type === 'release')
-      .map((v) => v.id)
-      .slice(0, 30);
+      .map((v) => v.id);
   }
 
   private async fetchPaperVersions(): Promise<string[]> {
     const data = await fetchJson<PaperProjectResponse>(API_ENDPOINTS.PAPER_PROJECT);
-    return data.versions.reverse().slice(0, 30);
+    return data.versions.reverse();
   }
 
   private async fetchFabricVersions(): Promise<string[]> {
     const data = await fetchJson<FabricGameVersion[]>(API_ENDPOINTS.FABRIC_GAME);
     return data
       .filter((v) => v.stable)
-      .map((v) => v.version)
-      .slice(0, 30);
+      .map((v) => v.version);
   }
 
   private async fetchForgeVersions(): Promise<string[]> {
@@ -128,8 +126,7 @@ export class DownloadService extends EventEmitter {
     
     // 排序版本（新版在前）
     return Array.from(versions)
-      .sort((a, b) => this.compareVersions(b, a))
-      .slice(0, 30);
+      .sort((a, b) => this.compareVersions(b, a));
   }
 
   /**
