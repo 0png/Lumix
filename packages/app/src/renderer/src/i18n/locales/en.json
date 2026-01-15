@@ -57,6 +57,8 @@
     "title": "Create New Server",
     "namePlaceholder": "Enter server name",
     "selectVersion": "Select Version",
+    "searchVersion": "Search version...",
+    "noVersionFound": "No version found",
     "selectCore": "Select Core Type",
     "ramAllocation": "RAM Allocation",
     "minRam": "Min RAM",

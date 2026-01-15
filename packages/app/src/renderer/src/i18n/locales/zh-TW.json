@@ -57,6 +57,8 @@
     "title": "建立新伺服器",
     "namePlaceholder": "輸入伺服器名稱",
     "selectVersion": "選擇版本",
+    "searchVersion": "搜尋版本...",
+    "noVersionFound": "找不到版本",
     "selectCore": "選擇核心類型",
     "ramAllocation": "記憶體配置",
     "minRam": "最小記憶體",

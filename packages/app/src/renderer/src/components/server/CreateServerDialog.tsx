@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { VersionCombobox } from '@/components/ui/version-combobox';
 import type { CoreType } from './ServerList';
 
 export interface CreateServerData {
@@ -122,18 +123,14 @@ export function CreateServerDialog({
 
           <div className="space-y-2">
             <Label>{t('server.version')}</Label>
-            <Select value={mcVersion} onValueChange={setMcVersion}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('createServer.selectVersion')} />
-              </SelectTrigger>
-              <SelectContent>
-                {MOCK_VERSIONS.map((version) => (
-                  <SelectItem key={version} value={version}>
-                    {version}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <VersionCombobox
+              versions={MOCK_VERSIONS}
+              value={mcVersion}
+              onValueChange={setMcVersion}
+              placeholder={t('createServer.selectVersion')}
+              searchPlaceholder={t('createServer.searchVersion')}
+              emptyText={t('createServer.noVersionFound')}
+            />
           </div>
 
           <div className="space-y-2">
