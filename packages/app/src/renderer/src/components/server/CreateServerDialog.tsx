@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { VersionCombobox } from '@/components/ui/version-combobox';
+import { Loader2 } from 'lucide-react';
 import type { CoreType } from './ServerList';
 
 export interface CreateServerData {
@@ -38,49 +38,9 @@ interface CreateServerDialogProps {
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
 
 // API URLs
-const MOJANG_VERSION_MANIFEST = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
-const PAPER_API_BASE = 'https://api.papermc.io/v2';
-const FABRIC_API_BASE = 'https://meta.fabricmc.net/v2';
-
-async function fetchVersions(coreType: CoreType): Promise<string[]> {
-  try {
-    switch (coreType) {
-      case 'vanilla': {
-        const res = await fetch(MOJANG_VERSION_MANIFEST);
-        const data = await res.json();
-        return data.versions
-          .filter((v: { type: string }) => v.type === 'release')
-          .map((v: { id: string }) => v.id);
-      }
-      case 'paper': {
-        const res = await fetch(`${PAPER_API_BASE}/projects/paper`);
-        const data = await res.json();
-        return [...data.versions].reverse();
-      }
-      case 'fabric': {
-        const res = await fetch(`${FABRIC_API_BASE}/versions/game`);
-        const data = await res.json();
-        return data
-          .filter((v: { stable: boolean }) => v.stable)
-          .map((v: { version: string }) => v.version);
-      }
-      case 'forge': {
-        // Forge 使用 Vanilla 版本列表作為基礎
-        const res = await fetch(MOJANG_VERSION_MANIFEST);
-        const data = await res.json();
-        return data.versions
-          .filter((v: { type: string }) => v.type === 'release')
-          .map((v: { id: string }) => v.id)
-          .slice(0, 50); // 只取最近 50 個版本
-      }
-      default:
-        return [];
-    }
-  } catch (error) {
-    console.error('Failed to fetch versions:', error);
-    return [];
-  }
-}
+const MOJANG_API = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
+const PAPER_API = 'https://api.papermc.io/v2/projects/paper';
+const FABRIC_API = 'https://meta.fabricmc.net/v2/versions/game';
 
 export function CreateServerDialog({
   open,
@@ -93,36 +53,64 @@ export function CreateServerDialog({
   const [mcVersion, setMcVersion] = useState('');
   const [ramMax, setRamMax] = useState(2048);
   const [versions, setVersions] = useState<string[]>([]);
-  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch versions when core type changes or dialog opens
-  useEffect(() => {
-    if (!open) return;
-    
-    let cancelled = false;
-    
-    async function loadVersions() {
-      setIsLoadingVersions(true);
-      setVersions([]);
-      setMcVersion('');
-      
-      const result = await fetchVersions(coreType);
-      
-      if (!cancelled) {
-        setVersions(result);
-        if (result.length > 0) {
-          setMcVersion(result[0]!);
-        }
-        setIsLoadingVersions(false);
+  const fetchVersions = useCallback(async (type: CoreType) => {
+    setLoading(true);
+    setError(null);
+    setVersions([]);
+    setMcVersion('');
+
+    try {
+      let result: string[] = [];
+
+      if (type === 'paper') {
+        const response = await fetch(PAPER_API);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        result = [...(data.versions as string[])].reverse();
+      } else if (type === 'vanilla' || type === 'forge') {
+        const response = await fetch(MOJANG_API);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        result = (data.versions as Array<{ id: string; type: string }>)
+          .filter((v) => v.type === 'release')
+          .map((v) => v.id);
+      } else if (type === 'fabric') {
+        const response = await fetch(FABRIC_API);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        result = (data as Array<{ version: string; stable: boolean }>)
+          .filter((v) => v.stable)
+          .map((v) => v.version);
       }
-    }
 
-    loadVersions();
-    
-    return () => {
-      cancelled = true;
-    };
-  }, [coreType, open]);
+      console.log(`Fetched ${result.length} versions for ${type}`);
+      setVersions(result);
+      if (result.length > 0) {
+        setMcVersion(result[0]!);
+      }
+    } catch (err) {
+      console.error('Failed to fetch versions:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch versions when dialog opens or core type changes
+  useEffect(() => {
+    if (open) {
+      console.log('Dialog opened, fetching versions for:', coreType);
+      fetchVersions(coreType);
+    }
+  }, [open, coreType, fetchVersions]);
+
+  const handleCoreTypeChange = (value: string) => {
+    const newType = value as CoreType;
+    setCoreType(newType);
+  };
 
   const handleSubmit = () => {
     if (!name.trim() || !mcVersion) return;
@@ -133,15 +121,12 @@ export function CreateServerDialog({
       ramMin: Math.floor(ramMax / 2),
       ramMax,
     });
-    resetForm();
-    onOpenChange(false);
-  };
-
-  const resetForm = () => {
+    // Reset form
     setName('');
     setCoreType('paper');
     setMcVersion('');
     setRamMax(2048);
+    onOpenChange(false);
   };
 
   return (
@@ -164,7 +149,7 @@ export function CreateServerDialog({
 
           <div className="space-y-2">
             <Label>{t('server.coreType')}</Label>
-            <Select value={coreType} onValueChange={(v) => setCoreType(v as CoreType)}>
+            <Select value={coreType} onValueChange={handleCoreTypeChange}>
               <SelectTrigger>
                 <SelectValue placeholder={t('createServer.selectCore')} />
               </SelectTrigger>
@@ -180,15 +165,29 @@ export function CreateServerDialog({
 
           <div className="space-y-2">
             <Label>{t('server.version')}</Label>
-            <VersionCombobox
-              versions={versions}
-              value={mcVersion}
-              onValueChange={setMcVersion}
-              placeholder={t('createServer.selectVersion')}
-              searchPlaceholder={t('createServer.searchVersion')}
-              emptyText={t('createServer.noVersionFound')}
-              loading={isLoadingVersions}
-            />
+            {loading ? (
+              <div className="flex items-center gap-2 h-10 px-3 border rounded-md">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">載入中...</span>
+              </div>
+            ) : error ? (
+              <div className="text-sm text-destructive p-2 border border-destructive rounded-md">
+                載入失敗: {error}
+              </div>
+            ) : (
+              <Select value={mcVersion} onValueChange={setMcVersion}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('createServer.selectVersion')} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {versions.map((version) => (
+                    <SelectItem key={version} value={version}>
+                      {version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -214,7 +213,7 @@ export function CreateServerDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={!name.trim() || !mcVersion || isLoadingVersions}>
+          <Button onClick={handleSubmit} disabled={!name.trim() || !mcVersion || loading}>
             {t('common.create')}
           </Button>
         </DialogFooter>
