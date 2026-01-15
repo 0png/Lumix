@@ -13,7 +13,9 @@ import { spawn } from 'child_process';
 export function runForgeInstaller(installerPath: string, targetDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Forge installer 使用 --installServer 參數進行無頭安裝
-    const args = ['-jar', installerPath, '--installServer'];
+    // 使用引號包裹路徑以處理空格
+    const quotedInstallerPath = `"${installerPath}"`;
+    const args = ['-jar', quotedInstallerPath, '--installServer'];
     console.log('[ForgeInstaller] Args:', args);
     console.log('[ForgeInstaller] Working directory:', targetDir);
 
