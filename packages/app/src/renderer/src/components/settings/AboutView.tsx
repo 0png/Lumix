@@ -48,12 +48,12 @@ export function AboutView({ onBack }: AboutViewProps) {
         <h1 className="text-xl font-bold">{t('about.title')}</h1>
       </div>
 
-      <div className="grid gap-6 max-w-2xl">
+      <div className="grid gap-6">
         {/* 應用程式資訊 */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+              <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <Server className="h-8 w-8 text-primary" />
               </div>
               <div>
@@ -108,7 +108,7 @@ export function AboutView({ onBack }: AboutViewProps) {
             <CardTitle className="text-base">{t('about.openSource')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
               <Button
                 variant="outline"
                 onClick={() => openExternal('https://github.com/0png/Lumix')}

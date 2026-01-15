@@ -103,7 +103,7 @@ export function SettingsView({
         <h1 className="text-xl font-bold">{t('settings.title')}</h1>
       </div>
 
-      <div className="grid gap-6 max-w-2xl">
+      <div className="grid gap-6">
         {/* 外觀設定 */}
         <Card>
           <CardHeader className="pb-3">
@@ -112,7 +112,7 @@ export function SettingsView({
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>{t('settings.theme')}</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {themeOptions.map((option) => {
                   const Icon = themeIcons[option.value];
                   return (
