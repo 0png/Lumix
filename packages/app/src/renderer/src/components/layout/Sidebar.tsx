@@ -170,51 +170,34 @@ export function Sidebar({
             isCollapsed ? 'px-2 justify-center' : 'px-4 justify-between'
           )}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Server className="h-5 w-5 text-primary shrink-0" />
-            <span
-              className={cn(
-                'font-bold text-lg truncate transition-all duration-200',
-                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-              )}
-            >
-              Lumix
-            </span>
-          </div>
-
-          {/* 摺疊按鈕 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  'h-8 w-8 shrink-0 transition-all duration-200',
-                  isCollapsed && 'absolute left-1/2 -translate-x-1/2'
-                )}
-                onClick={toggleCollapse}
-                style={{ display: isCollapsed ? 'none' : 'flex' }}
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">{t('sidebar.collapse')}</TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* 展開按鈕（收縮時顯示） */}
-        {isCollapsed && (
-          <div className="p-1.5">
+          {isCollapsed ? (
+            // 摺疊時：只顯示展開按鈕
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-full h-9" onClick={toggleCollapse}>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleCollapse}>
                   <PanelLeft className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">{t('sidebar.expand')}</TooltipContent>
             </Tooltip>
-          </div>
-        )}
+          ) : (
+            // 展開時：顯示 Logo 和摺疊按鈕
+            <>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Server className="h-5 w-5 text-primary shrink-0" />
+                <span className="font-bold text-lg truncate">Lumix</span>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={toggleCollapse}>
+                    <PanelLeftClose className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{t('sidebar.collapse')}</TooltipContent>
+              </Tooltip>
+            </>
+          )}
+        </div>
 
         {/* 伺服器列表 */}
         <div
