@@ -4,11 +4,14 @@
  * 支援響應式設計：小視窗時收縮為圖示模式
  */
 
-import { Server, Plus, Settings, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Server, Plus, Settings, PanelLeftClose, PanelLeft, Info, Sun, Moon, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import { useTheme } from '@/contexts';
+import { useLanguage } from '@/contexts';
 import { cn } from '@/lib/utils';
 
 interface ServerItem {
@@ -24,9 +27,7 @@ interface ServerNavItemProps {
   isCollapsed: boolean;
 }
 
-/**
- * 伺服器導航項目
- */
+/** 伺服器導航項目 */
 function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavItemProps) {
   const content = (
     <button
@@ -61,6 +62,46 @@ function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavI
   return content;
 }
 
+/** 圖示按鈕元件 */
+function IconButton({
+  icon: Icon,
+  label,
+  onClick,
+  isCollapsed,
+}: {
+  icon: typeof Settings;
+  label: string;
+  onClick?: () => void;
+  isCollapsed: boolean;
+}) {
+  const content = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      onClick={onClick}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
+
+  if (isCollapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="top">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 interface SidebarProps {
   servers?: ServerItem[];
   selectedServerId?: string;
@@ -79,13 +120,14 @@ export function Sidebar({
   onOpenAbout,
 }: SidebarProps) {
   const { t } = useTranslation();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // 監聽視窗大小變化
   useEffect(() => {
     const checkScreenSize = () => {
       const isSmall = window.innerWidth < 1024;
-      // 小螢幕時自動收縮
       if (isSmall && !isCollapsed) {
         setIsCollapsed(true);
       }
@@ -96,9 +138,18 @@ export function Sidebar({
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+    setTheme(nextTheme);
   };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'zh-TW' ? 'en' : 'zh-TW');
+  };
+
+  const ThemeIcon = theme === 'light' ? Sun : Moon;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -143,7 +194,6 @@ export function Sidebar({
                   size="icon"
                   className="h-5 w-5"
                   onClick={onCreateServer}
-                  title={t('sidebar.addServer')}
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
@@ -171,59 +221,56 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* 底部區域 */}
-        <div className="border-t p-1.5 space-y-1">
-          {/* 收縮/展開按鈕 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn('h-7 w-full', isCollapsed ? 'justify-center' : 'justify-start px-2')}
-                onClick={toggleCollapse}
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                ) : (
-                  <>
-                    <ChevronLeft className="h-3.5 w-3.5 mr-1.5" />
-                    <span className="text-xs">{t('sidebar.collapse') || '收縮'}</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            {isCollapsed && <TooltipContent side="right">{t('sidebar.expand') || '展開'}</TooltipContent>}
-          </Tooltip>
+        {/* 底部工具列 */}
+        <div className="border-t p-2">
+          <div className={cn(
+            'flex items-center',
+            isCollapsed ? 'flex-col gap-1' : 'justify-between'
+          )}>
+            {/* 左側：收縮按鈕 */}
+            <IconButton
+              icon={isCollapsed ? PanelLeft : PanelLeftClose}
+              label={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+              onClick={toggleCollapse}
+              isCollapsed={isCollapsed}
+            />
 
-          {/* 設定按鈕 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn('w-full h-7 text-xs', isCollapsed ? 'justify-center px-0' : 'justify-start px-2')}
-                onClick={() => onOpenSettings?.()}
-              >
-                <Settings className={cn('h-3.5 w-3.5', !isCollapsed && 'mr-1.5')} />
-                {!isCollapsed && t('sidebar.settings')}
-              </Button>
-            </TooltipTrigger>
-            {isCollapsed && <TooltipContent side="right">{t('sidebar.settings')}</TooltipContent>}
-          </Tooltip>
+            {!isCollapsed && <Separator orientation="vertical" className="h-6" />}
 
-          {/* 關於按鈕 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn('w-full h-7 text-xs', isCollapsed ? 'justify-center px-0' : 'justify-start px-2')}
-                onClick={() => onOpenAbout?.()}
-              >
-                <Info className={cn('h-3.5 w-3.5', !isCollapsed && 'mr-1.5')} />
-                {!isCollapsed && t('sidebar.about')}
-              </Button>
-            </TooltipTrigger>
-            {isCollapsed && <TooltipContent side="right">{t('sidebar.about')}</TooltipContent>}
-          </Tooltip>
+            {/* 中間：主題和語言 */}
+            <div className={cn('flex', isCollapsed ? 'flex-col gap-1' : 'gap-0.5')}>
+              <IconButton
+                icon={ThemeIcon}
+                label={t(`theme.${theme}`)}
+                onClick={toggleTheme}
+                isCollapsed={isCollapsed}
+              />
+              <IconButton
+                icon={Globe}
+                label={language === 'zh-TW' ? '繁體中文' : 'English'}
+                onClick={toggleLanguage}
+                isCollapsed={isCollapsed}
+              />
+            </div>
+
+            {!isCollapsed && <Separator orientation="vertical" className="h-6" />}
+
+            {/* 右側：設定和關於 */}
+            <div className={cn('flex', isCollapsed ? 'flex-col gap-1' : 'gap-0.5')}>
+              <IconButton
+                icon={Settings}
+                label={t('sidebar.settings')}
+                onClick={onOpenSettings}
+                isCollapsed={isCollapsed}
+              />
+              <IconButton
+                icon={Info}
+                label={t('sidebar.about')}
+                onClick={onOpenAbout}
+                isCollapsed={isCollapsed}
+              />
+            </div>
+          </div>
         </div>
       </aside>
     </TooltipProvider>
