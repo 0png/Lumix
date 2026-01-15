@@ -90,6 +90,43 @@ eula=true
     await fs.writeFile(eulaPath, content, 'utf-8');
   }
 
+  /**
+   * 生成 run.bat 啟動腳本
+   */
+  async generateRunScript(id: string): Promise<string> {
+    const instance = await this.getInstance(id);
+    if (!instance) throw new Error('Server instance not found');
+
+    const javaPath = instance.javaPath || 'java';
+    const jvmArgs = [
+      `-Xms${instance.ramMin}M`,
+      `-Xmx${instance.ramMax}M`,
+      ...instance.jvmArgs,
+    ].join(' ');
+
+    // Windows batch script
+    const batContent = `@echo off
+title ${instance.name} - Lumix Server
+cd /d "%~dp0"
+"${javaPath}" ${jvmArgs} -jar server.jar nogui
+pause
+`;
+
+    const batPath = path.join(instance.directory, 'run.bat');
+    await fs.writeFile(batPath, batContent, 'utf-8');
+
+    // Also generate shell script for Linux/Mac
+    const shContent = `#!/bin/bash
+cd "$(dirname "$0")"
+"${javaPath}" ${jvmArgs} -jar server.jar nogui
+`;
+
+    const shPath = path.join(instance.directory, 'run.sh');
+    await fs.writeFile(shPath, shContent, 'utf-8');
+
+    return batPath;
+  }
+
   private configToInstance(config: InstanceConfig, directory: string): ServerInstance {
     const running = this.runningServers.get(config.id);
     return {
@@ -167,6 +204,9 @@ eula=true
     const serverJar = await this.findServerJar(instance.directory);
     if (!serverJar) throw new Error('Server JAR not found');
 
+    // 生成/更新啟動腳本
+    await this.generateRunScript(id);
+
     const jvmArgs = [
       `-Xms${instance.ramMin}M`,
       `-Xmx${instance.ramMax}M`,
@@ -178,13 +218,13 @@ eula=true
 
     this.setServerStatus(id, 'starting');
 
-    const process = spawn(instance.javaPath, jvmArgs, {
+    const childProcess = spawn(instance.javaPath, jvmArgs, {
       cwd: instance.directory,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    this.runningServers.set(id, { process, status: 'starting', logs: [] });
-    this.setupProcessListeners(id, process);
+    this.runningServers.set(id, { process: childProcess, status: 'starting', logs: [] });
+    this.setupProcessListeners(id, childProcess);
 
     await this.updateInstance(id, { lastStartedAt: new Date().toISOString() });
     return true;
