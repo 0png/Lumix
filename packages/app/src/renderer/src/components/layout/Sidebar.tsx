@@ -22,10 +22,11 @@ interface ServerNavItemProps {
   isSelected: boolean;
   onSelect: () => void;
   isCollapsed: boolean;
+  showText: boolean;
 }
 
 /** 伺服器導航項目 */
-function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavItemProps) {
+function ServerNavItem({ server, isSelected, onSelect, isCollapsed, showText }: ServerNavItemProps) {
   const content = (
     <button
       onClick={onSelect}
@@ -43,7 +44,7 @@ function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavI
           isCollapsed ? 'h-2.5 w-2.5' : 'h-2 w-2'
         )}
       />
-      {!isCollapsed && <span className="truncate">{server.name}</span>}
+      {showText && <span className="truncate">{server.name}</span>}
     </button>
   );
 
@@ -66,12 +67,14 @@ function SidebarButton({
   onClick,
   isCollapsed,
   isActive,
+  showText,
 }: {
   icon: typeof Settings;
   label: string;
   onClick?: () => void;
   isCollapsed: boolean;
   isActive?: boolean;
+  showText: boolean;
 }) {
   const content = (
     <Button
@@ -83,7 +86,7 @@ function SidebarButton({
       onClick={onClick}
     >
       <Icon className={cn('h-4 w-4 shrink-0', !isCollapsed && 'mr-2.5')} />
-      {!isCollapsed && <span className="truncate">{label}</span>}
+      {showText && <span className="truncate">{label}</span>}
     </Button>
   );
 
@@ -120,6 +123,8 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // 追蹤動畫是否完成，用於延遲顯示內容
+  const [isFullyExpanded, setIsFullyExpanded] = useState(true);
 
   // 監聽視窗大小變化
   useEffect(() => {
@@ -127,6 +132,7 @@ export function Sidebar({
       const isSmall = window.innerWidth < 1024;
       if (isSmall && !isCollapsed) {
         setIsCollapsed(true);
+        setIsFullyExpanded(false);
       }
     };
 
@@ -135,7 +141,24 @@ export function Sidebar({
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // 處理展開/收縮動畫完成後的狀態
+  useEffect(() => {
+    if (isCollapsed) {
+      // 收縮時立即隱藏內容
+      setIsFullyExpanded(false);
+    } else {
+      // 展開時等待動畫完成後才顯示內容
+      const timer = setTimeout(() => {
+        setIsFullyExpanded(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isCollapsed]);
+
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
+
+  // 是否顯示展開狀態的內容
+  const showExpandedContent = !isCollapsed && isFullyExpanded;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -154,9 +177,9 @@ export function Sidebar({
             )}
           >
             <Server className="h-5 w-5 text-primary shrink-0" />
-            {!isCollapsed && <span className="truncate">Lumix</span>}
+            {showExpandedContent && <span className="truncate">Lumix</span>}
           </h1>
-          {!isCollapsed && (
+          {showExpandedContent && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={toggleCollapse}>
@@ -190,7 +213,7 @@ export function Sidebar({
               isCollapsed ? 'justify-center' : 'justify-between px-1'
             )}
           >
-            {!isCollapsed && (
+            {showExpandedContent && (
               <span className="text-sm font-medium text-muted-foreground truncate">
                 {t('sidebar.servers')}
               </span>
@@ -218,10 +241,11 @@ export function Sidebar({
                 isSelected={selectedServerId === server.id && currentView === 'servers'}
                 onSelect={() => onSelectServer?.(server.id)}
                 isCollapsed={isCollapsed}
+                showText={showExpandedContent}
               />
             ))}
 
-            {servers.length === 0 && !isCollapsed && (
+            {servers.length === 0 && showExpandedContent && (
               <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                 {t('welcome.description')}
               </div>
@@ -237,6 +261,7 @@ export function Sidebar({
             onClick={onOpenSettings}
             isCollapsed={isCollapsed}
             isActive={currentView === 'settings'}
+            showText={showExpandedContent}
           />
           <SidebarButton
             icon={Info}
@@ -244,6 +269,7 @@ export function Sidebar({
             onClick={onOpenAbout}
             isCollapsed={isCollapsed}
             isActive={currentView === 'about'}
+            showText={showExpandedContent}
           />
         </div>
       </aside>
