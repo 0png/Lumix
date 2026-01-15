@@ -54,9 +54,7 @@ export function AboutView({ onBack }: AboutViewProps) {
         <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0 shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-shadow overflow-hidden">
-                <img src={appIcon} alt="Lumix" className="w-12 h-12 object-contain" />
-              </div>
+              <img src={appIcon} alt="Lumix" className="w-16 h-16 rounded-xl shrink-0" />
               <div>
                 <h2 className="text-xl font-bold">Lumix</h2>
                 <p className="text-sm text-muted-foreground">{t('about.description')}</p>
