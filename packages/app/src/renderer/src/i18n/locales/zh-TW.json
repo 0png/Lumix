@@ -19,7 +19,8 @@
     "addServer": "新增伺服器",
     "settings": "設定",
     "collapse": "收縮",
-    "expand": "展開"
+    "expand": "展開",
+    "about": "關於"
   },
   "theme": {
     "light": "淺色",
@@ -85,5 +86,17 @@
     "error": "發生錯誤",
     "downloadStarted": "開始下載",
     "downloadComplete": "下載完成"
+  },
+  "about": {
+    "title": "關於",
+    "description": "Minecraft 伺服器管理工具",
+    "version": "版本",
+    "author": "作者",
+    "license": "授權",
+    "copyright": "版權",
+    "techStack": "技術棧",
+    "openSource": "開源專案",
+    "viewOnGitHub": "在 GitHub 上查看",
+    "submitFeedback": "提交回饋"
   }
 }

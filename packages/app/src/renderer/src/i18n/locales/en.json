@@ -19,7 +19,8 @@
     "addServer": "Add Server",
     "settings": "Settings",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "about": "About"
   },
   "theme": {
     "light": "Light",
@@ -85,5 +86,17 @@
     "error": "An error occurred",
     "downloadStarted": "Download started",
     "downloadComplete": "Download complete"
+  },
+  "about": {
+    "title": "About",
+    "description": "Minecraft Server Management Tool",
+    "version": "Version",
+    "author": "Author",
+    "license": "License",
+    "copyright": "Copyright",
+    "techStack": "Tech Stack",
+    "openSource": "Open Source",
+    "viewOnGitHub": "View on GitHub",
+    "submitFeedback": "Submit Feedback"
   }
 }

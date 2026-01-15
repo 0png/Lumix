@@ -4,7 +4,7 @@
  * 支援響應式設計：小視窗時收縮為圖示模式
  */
 
-import { Server, Plus, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Server, Plus, Settings, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,7 @@ interface SidebarProps {
   onSelectServer?: (id: string) => void;
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
+  onOpenAbout?: () => void;
 }
 
 export function Sidebar({
@@ -75,16 +76,15 @@ export function Sidebar({
   onSelectServer,
   onCreateServer,
   onOpenSettings,
+  onOpenAbout,
 }: SidebarProps) {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   // 監聽視窗大小變化
   useEffect(() => {
     const checkScreenSize = () => {
       const isSmall = window.innerWidth < 1024;
-      setIsSmallScreen(isSmall);
       // 小螢幕時自動收縮
       if (isSmall && !isCollapsed) {
         setIsCollapsed(true);
@@ -208,6 +208,21 @@ export function Sidebar({
               </Button>
             </TooltipTrigger>
             {isCollapsed && <TooltipContent side="right">{t('sidebar.settings')}</TooltipContent>}
+          </Tooltip>
+
+          {/* 關於按鈕 */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn('w-full h-7 text-xs', isCollapsed ? 'justify-center px-0' : 'justify-start px-2')}
+                onClick={() => onOpenAbout?.()}
+              >
+                <Info className={cn('h-3.5 w-3.5', !isCollapsed && 'mr-1.5')} />
+                {!isCollapsed && t('sidebar.about')}
+              </Button>
+            </TooltipTrigger>
+            {isCollapsed && <TooltipContent side="right">{t('sidebar.about')}</TooltipContent>}
           </Tooltip>
         </div>
       </aside>

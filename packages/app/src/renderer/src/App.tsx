@@ -11,7 +11,7 @@ import {
   type LogEntry,
   type CreateServerData,
 } from '@/components/server';
-import { SettingsDialog } from '@/components/settings';
+import { SettingsDialog, AboutDialog } from '@/components/settings';
 import { toast } from '@/lib/toast';
 import '@/i18n';
 
@@ -36,6 +36,7 @@ function AppContent() {
   const [logs, setLogs] = useState<LogEntry[]>(mockLogs);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
 
   const selectedServer = servers.find((s) => s.id === selectedServerId);
 
@@ -78,6 +79,7 @@ function AppContent() {
     <MainLayout
       onCreateServer={() => setShowCreateDialog(true)}
       onOpenSettings={() => setShowSettingsDialog(true)}
+      onOpenAbout={() => setShowAboutDialog(true)}
       selectedServerId={selectedServerId}
       onSelectServer={setSelectedServerId}
     >
@@ -118,6 +120,11 @@ function AppContent() {
       <SettingsDialog
         open={showSettingsDialog}
         onOpenChange={setShowSettingsDialog}
+      />
+
+      <AboutDialog
+        open={showAboutDialog}
+        onOpenChange={setShowAboutDialog}
       />
 
       <Toaster position="bottom-right" richColors />

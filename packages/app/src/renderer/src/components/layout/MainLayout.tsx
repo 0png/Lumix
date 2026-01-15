@@ -14,6 +14,7 @@ interface MainLayoutProps {
   onSelectServer?: (id: string) => void;
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
+  onOpenAbout?: () => void;
 }
 
 export function MainLayout({
@@ -22,6 +23,7 @@ export function MainLayout({
   onSelectServer,
   onCreateServer,
   onOpenSettings,
+  onOpenAbout,
 }: MainLayoutProps) {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -30,6 +32,7 @@ export function MainLayout({
         onSelectServer={onSelectServer}
         onCreateServer={onCreateServer}
         onOpenSettings={onOpenSettings}
+        onOpenAbout={onOpenAbout}
       />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header />
