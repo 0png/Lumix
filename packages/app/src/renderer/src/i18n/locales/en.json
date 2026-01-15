@@ -53,7 +53,8 @@
     "starting": "Starting",
     "stopping": "Stopping",
     "downloading": "Downloading...",
-    "commandPlaceholder": "Enter command..."
+    "commandPlaceholder": "Enter command...",
+    "openFolder": "Open Folder"
   },
   "createServer": {
     "title": "Create New Server",

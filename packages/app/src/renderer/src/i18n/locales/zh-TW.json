@@ -53,7 +53,8 @@
     "starting": "啟動中",
     "stopping": "停止中",
     "downloading": "下載中...",
-    "commandPlaceholder": "輸入指令..."
+    "commandPlaceholder": "輸入指令...",
+    "openFolder": "開啟資料夾"
   },
   "createServer": {
     "title": "建立新伺服器",

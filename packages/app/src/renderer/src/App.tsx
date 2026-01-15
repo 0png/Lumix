@@ -65,6 +65,7 @@ function AppContent() {
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
   const selectedServer = servers.find((s) => s.id === selectedServerId);
+  const selectedServerDto = serverDtos.find((s) => s.id === selectedServerId);
 
   // 取得選中伺服器的日誌
   const currentLogs: LogEntry[] = selectedServerId
@@ -187,6 +188,10 @@ function AppContent() {
     setCurrentView('servers');
   }, []);
 
+  const handleOpenFolder = useCallback(async (directory: string) => {
+    await window.electronAPI.app.openFolder(directory);
+  }, []);
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -213,6 +218,7 @@ function AppContent() {
                   onStop={() => handleStopServer(selectedServer.id)}
                   onDelete={() => handleDeleteServer(selectedServer.id)}
                   onUpdate={handleUpdateServer}
+                  onOpenFolder={() => selectedServerDto && handleOpenFolder(selectedServerDto.directory)}
                 />
                 {selectedServer.status === 'running' && (
                   <ServerConsole

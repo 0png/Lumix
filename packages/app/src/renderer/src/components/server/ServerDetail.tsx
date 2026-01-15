@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Square, Trash2, Settings2, MemoryStick, ArrowLeft } from 'lucide-react';
+import { Play, Square, Trash2, Settings2, MemoryStick, ArrowLeft, FolderOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +26,13 @@ import type { ServerInstance, ServerStatus } from './ServerList';
 
 interface ServerDetailProps {
   server: ServerInstance;
+  directory?: string;
   onBack?: () => void;
   onStart?: () => void;
   onStop?: () => void;
   onDelete?: () => void;
   onUpdate?: (updates: Partial<ServerInstance>) => void;
+  onOpenFolder?: () => void;
 }
 
 /**
@@ -66,6 +68,7 @@ export function ServerDetail({
   onStop,
   onDelete,
   onUpdate,
+  onOpenFolder,
 }: ServerDetailProps) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -134,6 +137,15 @@ export function ServerDetail({
         >
           <Settings2 className="mr-1 h-3 w-3 lg:h-4 lg:w-4" />
           {t('common.edit')}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onOpenFolder}
+          className="h-7 lg:h-8 text-xs lg:text-sm"
+        >
+          <FolderOpen className="mr-1 h-3 w-3 lg:h-4 lg:w-4" />
+          {t('server.openFolder')}
         </Button>
         <Button
           variant="outline"
