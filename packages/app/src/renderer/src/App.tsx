@@ -29,6 +29,7 @@ function toServerInstance(dto: {
   mcVersion: string;
   status: string;
   ramMax: number;
+  isReady?: boolean;
 }): ServerInstance {
   return {
     id: dto.id,
@@ -37,6 +38,7 @@ function toServerInstance(dto: {
     mcVersion: dto.mcVersion,
     status: dto.status as ServerInstance['status'],
     ramMax: dto.ramMax,
+    isReady: dto.isReady,
   };
 }
 
@@ -92,7 +94,10 @@ function AppContent() {
 
       const selectedJava = selectResult.data;
 
-      // 3. 建立伺服器實例（包含 Java 路徑）
+      // 3. 顯示下載中提示
+      toast.info(t('toast.downloadingServer'));
+
+      // 4. 建立伺服器實例（包含下載 server.jar）
       const result = await createServer({
         name: data.name,
         coreType: data.coreType,
@@ -103,21 +108,7 @@ function AppContent() {
       });
 
       if (result) {
-        // 4. 下載伺服器 JAR（背景執行）
-        toast.info(t('toast.downloadingServer'));
-        window.electronAPI.download.downloadServer({
-          coreType: data.coreType,
-          mcVersion: data.mcVersion,
-          targetDir: result.directory,
-        }).then((downloadResult) => {
-          if (downloadResult.success) {
-            toast.success(t('toast.serverReady'));
-          } else {
-            toast.error(t('toast.downloadFailed'));
-          }
-        });
-
-        toast.success(t('toast.serverCreated'));
+        toast.success(t('toast.serverReady'));
       }
     } finally {
       setIsCreating(false);
