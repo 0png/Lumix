@@ -1,15 +1,21 @@
 // IPC Type definitions
 // 定義所有 IPC 通訊的請求與回應型別
 
-import type {
-  CoreType,
-  ServerStatus,
-  LogLevel,
-  Theme,
-  Language,
-  JavaInstallation,
-  DownloadProgress,
-} from '@lumix/core';
+// ============================================================================
+// Core Types (原本從 @lumix/core 匯入)
+// ============================================================================
+
+export type CoreType = 'vanilla' | 'paper' | 'spigot' | 'fabric' | 'forge';
+export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
+export type LogLevel = 'info' | 'warn' | 'error';
+export type Theme = 'light' | 'dark' | 'system';
+export type Language = 'zh-TW' | 'en';
+
+export interface DownloadProgress {
+  downloaded: number;
+  total: number;
+  percentage: number;
+}
 
 // ============================================================================
 // Generic IPC Result
@@ -84,6 +90,8 @@ export interface JavaInstallationDto {
   path: string;
   version: string;
   majorVersion: number;
+  vendor?: string;
+  isValid?: boolean;
 }
 
 export interface JavaInstallRequest {
@@ -127,7 +135,8 @@ export interface SettingsDto {
   language: Language;
   defaultRamMin: number;
   defaultRamMax: number;
-  autoCheckUpdate: boolean;
+  autoCheckUpdate?: boolean;
+  autoUpdate?: boolean;
   javaInstallations: JavaInstallationDto[];
 }
 

@@ -24,9 +24,8 @@ import type {
   DownloadProgressEvent,
   SettingsDto,
   SaveSettingsRequest,
-  AppInfo,
+  CoreType,
 } from '../shared/ipc-types';
-import type { CoreType } from '@lumix/core';
 
 // ============================================================================
 // API Definition
@@ -153,6 +152,6 @@ if (process.contextIsolated) {
     console.error('Failed to expose electronAPI:', error);
   }
 } else {
-  // @ts-expect-error - Fallback for non-isolated context
-  window.electronAPI = electronAPI;
+  // Fallback for non-isolated context
+  (window as unknown as { electronAPI: ElectronAPI }).electronAPI = electronAPI;
 }

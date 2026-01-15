@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "pnpm --filter @lumix/app dev",
-    "build": "pnpm --filter @lumix/core build && pnpm --filter @lumix/app build",
+    "build": "pnpm --filter @lumix/app build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"

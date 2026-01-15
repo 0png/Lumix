@@ -1,4 +1,4 @@
-// IPC Handlers Index
+// IPC Handlers Index - Mock 版本
 // 統一初始化所有 IPC handlers
 
 import { initServerHandlers, cleanupServerHandlers } from './server-handlers';
@@ -7,9 +7,6 @@ import { initDownloadHandlers } from './download-handlers';
 import { initSettingsHandlers } from './settings-handlers';
 import { initAppHandlers } from './app-handlers';
 
-/**
- * 初始化所有 IPC handlers
- */
 export function initAllIpcHandlers(): void {
   initServerHandlers();
   initJavaHandlers();
@@ -18,9 +15,6 @@ export function initAllIpcHandlers(): void {
   initAppHandlers();
 }
 
-/**
- * 清理所有 IPC handlers
- */
 export function cleanupAllIpcHandlers(): void {
   cleanupServerHandlers();
 }

@@ -2,7 +2,7 @@
 // 封裝版本列表獲取的 IPC 呼叫
 
 import { useState, useCallback } from 'react';
-import type { CoreType } from '@lumix/core';
+import type { CoreType } from '../../../shared/ipc-types';
 
 interface UseVersionsReturn {
   versions: string[];

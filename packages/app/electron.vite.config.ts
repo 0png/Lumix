@@ -4,12 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   main: {
-    plugins: [
-      externalizeDepsPlugin({
-        // 不要外部化 @lumix/core，讓它被打包進 main process
-        exclude: ['@lumix/core'],
-      }),
-    ],
+    plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
         input: {
@@ -19,11 +14,7 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [
-      externalizeDepsPlugin({
-        exclude: ['@lumix/core'],
-      }),
-    ],
+    plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
         input: {
