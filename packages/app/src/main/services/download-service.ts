@@ -26,8 +26,19 @@ interface PaperProjectResponse {
   versions: string[];
 }
 
+interface PaperBuild {
+  build: number;
+  channel: string;
+  downloads: {
+    application: {
+      name: string;
+      sha256: string;
+    };
+  };
+}
+
 interface PaperBuildsResponse {
-  builds: number[];
+  builds: PaperBuild[];
 }
 
 interface FabricGameVersion {
@@ -188,20 +199,29 @@ export class DownloadService extends EventEmitter {
     jarPath: string,
     serverId?: string
   ): Promise<void> {
+    console.log('[DownloadService] Downloading Paper server for MC', mcVersion);
+
     // 1. 獲取該版本的 builds
     const buildsUrl = `${API_ENDPOINTS.PAPER_PROJECT}/versions/${mcVersion}/builds`;
+    console.log('[DownloadService] Fetching builds from:', buildsUrl);
+
     const buildsData = await this.fetchJson<PaperBuildsResponse>(buildsUrl);
+    console.log('[DownloadService] Builds count:', buildsData.builds?.length ?? 0);
 
     if (!buildsData.builds || buildsData.builds.length === 0) {
       throw new Error(`NO_BUILDS: Paper ${mcVersion} 沒有可用的 build`);
     }
 
-    // 2. 取得最新 build
-    const latestBuild = Math.max(...buildsData.builds);
-    const downloadUrl = `${API_ENDPOINTS.PAPER_PROJECT}/versions/${mcVersion}/builds/${latestBuild}/downloads/paper-${mcVersion}-${latestBuild}.jar`;
+    // 2. 取得最新 build（陣列最後一個）
+    const latestBuild = buildsData.builds[buildsData.builds.length - 1]!;
+    console.log('[DownloadService] Latest build:', latestBuild.build);
+
+    const downloadUrl = `${API_ENDPOINTS.PAPER_PROJECT}/versions/${mcVersion}/builds/${latestBuild.build}/downloads/paper-${mcVersion}-${latestBuild.build}.jar`;
+    console.log('[DownloadService] Download URL:', downloadUrl);
 
     // 3. 下載
     await this.downloadFile(downloadUrl, jarPath, 0, serverId);
+    console.log('[DownloadService] Paper download complete');
   }
 
   private async downloadFabricServer(

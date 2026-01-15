@@ -50,16 +50,38 @@ export function useServers(): UseServersReturn {
     }
   }, []);
 
-  // 建立伺服器
+  // 建立伺服器（包含下載）
   const createServer = useCallback(async (data: CreateServerRequest): Promise<ServerInstanceDto | null> => {
     try {
+      // 1. 先建立伺服器（建立目錄和 metadata）
       const result = await window.electronAPI.server.create(data);
-      if (result.success && result.data) {
-        setServers((prev) => [...prev, result.data!]);
-        return result.data;
+      if (!result.success || !result.data) {
+        setError(result.error || 'Failed to create server');
+        return null;
       }
-      setError(result.error || 'Failed to create server');
-      return null;
+
+      const server = result.data;
+      setServers((prev) => [...prev, server]);
+
+      // 2. 下載 server.jar
+      console.log('[useServers] Downloading server.jar for:', server.name);
+      const downloadResult = await window.electronAPI.download.downloadServer({
+        coreType: data.coreType,
+        mcVersion: data.mcVersion,
+        targetDir: server.directory,
+      });
+
+      if (!downloadResult.success) {
+        console.error('[useServers] Download failed:', downloadResult.error);
+        // 下載失敗，刪除已建立的伺服器
+        await window.electronAPI.server.delete(server.id);
+        setServers((prev) => prev.filter((s) => s.id !== server.id));
+        setError(downloadResult.error || 'Failed to download server.jar');
+        return null;
+      }
+
+      console.log('[useServers] Server created and downloaded successfully');
+      return server;
     } catch (err) {
       setError(String(err));
       return null;
