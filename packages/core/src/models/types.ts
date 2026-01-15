@@ -57,6 +57,7 @@ export interface CreateInstanceConfig {
   ramMin?: number;
   ramMax?: number;
   jvmArgs?: string[];
+  javaPath?: string;
 }
 
 // ============================================================================

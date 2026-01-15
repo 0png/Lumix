@@ -94,7 +94,9 @@
     "downloadFailed": "Failed to download server",
     "startFailed": "Failed to start server",
     "stopFailed": "Failed to stop server",
-    "deleteFailed": "Failed to delete server"
+    "deleteFailed": "Failed to delete server",
+    "noJavaFound": "No Java installation found. Please install Java first.",
+    "noCompatibleJava": "No compatible Java version found for this Minecraft version"
   },
   "about": {
     "title": "About",

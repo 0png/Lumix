@@ -94,7 +94,9 @@
     "downloadFailed": "下載伺服器失敗",
     "startFailed": "啟動伺服器失敗",
     "stopFailed": "停止伺服器失敗",
-    "deleteFailed": "刪除伺服器失敗"
+    "deleteFailed": "刪除伺服器失敗",
+    "noJavaFound": "找不到 Java 安裝，請先安裝 Java",
+    "noCompatibleJava": "找不到與此 Minecraft 版本相容的 Java"
   },
   "about": {
     "title": "關於",

@@ -62,7 +62,7 @@ export class ServerManager extends EventEmitter {
       name: config.name,
       coreType: config.coreType,
       mcVersion: config.mcVersion,
-      javaPath: '',
+      javaPath: config.javaPath ?? '',
       ramMin: config.ramMin ?? 1024,
       ramMax: config.ramMax ?? 4096,
       jvmArgs: config.jvmArgs ?? [],

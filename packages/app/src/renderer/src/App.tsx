@@ -73,17 +73,34 @@ function AppContent() {
   const handleCreateServer = useCallback(async (data: CreateServerData) => {
     setIsCreating(true);
     try {
-      // 1. 建立伺服器實例
+      // 1. 先偵測系統 Java
+      const javaResult = await window.electronAPI.java.detect();
+      if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
+        toast.error('toast.noJavaFound');
+        return;
+      }
+
+      // 2. 選擇適合此 MC 版本的 Java
+      const selectResult = await window.electronAPI.java.selectForMc(data.mcVersion);
+      if (!selectResult.success || !selectResult.data) {
+        toast.error('toast.noCompatibleJava');
+        return;
+      }
+
+      const selectedJava = selectResult.data;
+
+      // 3. 建立伺服器實例（包含 Java 路徑）
       const result = await createServer({
         name: data.name,
         coreType: data.coreType,
         mcVersion: data.mcVersion,
         ramMin: data.ramMin,
         ramMax: data.ramMax,
+        javaPath: selectedJava.path,
       });
 
       if (result) {
-        // 2. 下載伺服器 JAR（背景執行）
+        // 4. 下載伺服器 JAR（背景執行）
         toast.info('toast.downloadingServer');
         window.electronAPI.download.downloadServer({
           coreType: data.coreType,

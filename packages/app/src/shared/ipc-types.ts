@@ -47,6 +47,7 @@ export interface CreateServerRequest {
   ramMin?: number;
   ramMax?: number;
   jvmArgs?: string[];
+  javaPath?: string;
 }
 
 export interface UpdateServerRequest {
