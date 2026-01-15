@@ -5,7 +5,6 @@
 
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
-import { Header } from './Header';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MainLayoutProps {
@@ -15,6 +14,7 @@ interface MainLayoutProps {
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
+  currentView?: 'servers' | 'settings' | 'about';
 }
 
 export function MainLayout({
@@ -24,6 +24,7 @@ export function MainLayout({
   onCreateServer,
   onOpenSettings,
   onOpenAbout,
+  currentView = 'servers',
 }: MainLayoutProps) {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -33,9 +34,9 @@ export function MainLayout({
         onCreateServer={onCreateServer}
         onOpenSettings={onOpenSettings}
         onOpenAbout={onOpenAbout}
+        currentView={currentView}
       />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        <Header />
         <ScrollArea className="flex-1">
           <main className="p-4 lg:p-6">
             {children}

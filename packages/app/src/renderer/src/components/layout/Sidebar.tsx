@@ -4,13 +4,11 @@
  * 支援響應式設計：小視窗時收縮為圖示模式
  */
 
-import { Server, Plus, Settings, PanelLeftClose, PanelLeft, Info, Sun, Moon, Globe } from 'lucide-react';
+import { Server, Plus, Settings, PanelLeftClose, PanelLeft, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { useTheme } from '@/contexts';
-import { useLanguage } from '@/contexts';
 import { cn } from '@/lib/utils';
 
 interface ServerItem {
@@ -67,15 +65,17 @@ function SidebarButton({
   label,
   onClick,
   isCollapsed,
+  isActive,
 }: {
   icon: typeof Settings;
   label: string;
   onClick?: () => void;
   isCollapsed: boolean;
+  isActive?: boolean;
 }) {
   const content = (
     <Button
-      variant="ghost"
+      variant={isActive ? 'secondary' : 'ghost'}
       className={cn(
         'w-full justify-start',
         isCollapsed ? 'h-10 w-10 p-0 justify-center' : 'h-9 px-3 text-sm'
@@ -106,6 +106,7 @@ interface SidebarProps {
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
+  currentView?: 'servers' | 'settings' | 'about';
 }
 
 export function Sidebar({
@@ -115,10 +116,9 @@ export function Sidebar({
   onCreateServer,
   onOpenSettings,
   onOpenAbout,
+  currentView = 'servers',
 }: SidebarProps) {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
-  const { language, setLanguage } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // 監聽視窗大小變化
@@ -136,19 +136,6 @@ export function Sidebar({
   }, []);
 
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
-    setTheme(nextTheme);
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(language === 'zh-TW' ? 'en' : 'zh-TW');
-  };
-
-  const ThemeIcon = theme === 'light' ? Sun : Moon;
-  const themeLabel = t(`theme.${theme}`);
-  const languageLabel = language === 'zh-TW' ? '繁體中文' : 'English';
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -228,7 +215,7 @@ export function Sidebar({
               <ServerNavItem
                 key={server.id}
                 server={server}
-                isSelected={selectedServerId === server.id}
+                isSelected={selectedServerId === server.id && currentView === 'servers'}
                 onSelect={() => onSelectServer?.(server.id)}
                 isCollapsed={isCollapsed}
               />
@@ -245,28 +232,18 @@ export function Sidebar({
         {/* 底部功能按鈕 */}
         <div className={cn('border-t space-y-1', isCollapsed ? 'p-2' : 'p-3')}>
           <SidebarButton
-            icon={ThemeIcon}
-            label={themeLabel}
-            onClick={toggleTheme}
-            isCollapsed={isCollapsed}
-          />
-          <SidebarButton
-            icon={Globe}
-            label={languageLabel}
-            onClick={toggleLanguage}
-            isCollapsed={isCollapsed}
-          />
-          <SidebarButton
             icon={Settings}
             label={t('sidebar.settings')}
             onClick={onOpenSettings}
             isCollapsed={isCollapsed}
+            isActive={currentView === 'settings'}
           />
           <SidebarButton
             icon={Info}
             label={t('sidebar.about')}
             onClick={onOpenAbout}
             isCollapsed={isCollapsed}
+            isActive={currentView === 'about'}
           />
         </div>
       </aside>

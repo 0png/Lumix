@@ -11,7 +11,7 @@ import {
   type LogEntry,
   type CreateServerData,
 } from '@/components/server';
-import { SettingsDialog, AboutDialog } from '@/components/settings';
+import { SettingsView, AboutView } from '@/components/settings';
 import { toast } from '@/lib/toast';
 import '@/i18n';
 
@@ -30,13 +30,14 @@ const mockLogs: LogEntry[] = [
   { id: '5', timestamp: new Date(), level: 'info', message: '[Server] Done (2.5s)! For help, type "help"' },
 ];
 
+type ViewType = 'servers' | 'settings' | 'about';
+
 function AppContent() {
   const [servers, setServers] = useState<ServerInstance[]>(mockServers);
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [logs, setLogs] = useState<LogEntry[]>(mockLogs);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewType>('servers');
 
   const selectedServer = servers.find((s) => s.id === selectedServerId);
 
@@ -75,56 +76,66 @@ function AppContent() {
     toast.success('toast.settingsSaved');
   };
 
-  return (
-    <MainLayout
-      onCreateServer={() => setShowCreateDialog(true)}
-      onOpenSettings={() => setShowSettingsDialog(true)}
-      onOpenAbout={() => setShowAboutDialog(true)}
-      selectedServerId={selectedServerId}
-      onSelectServer={setSelectedServerId}
-    >
-      <div className="h-full">
-        {selectedServer ? (
-          <div className="space-y-6">
-            <ServerDetail
-              server={selectedServer}
-              onStart={() => handleStartServer(selectedServer.id)}
-              onStop={() => handleStopServer(selectedServer.id)}
-              onDelete={() => handleDeleteServer(selectedServer.id)}
-              onUpdate={handleUpdateServer}
-            />
-            {selectedServer.status === 'running' && (
-              <ServerConsole
-                logs={logs}
-                onClear={() => setLogs([])}
+  const handleSelectServer = (id: string) => {
+    setSelectedServerId(id);
+    setCurrentView('servers');
+  };
+
+  const handleBackToServers = () => {
+    setCurrentView('servers');
+  };
+
+  const renderContent = () => {
+    switch (currentView) {
+      case 'settings':
+        return <SettingsView onBack={handleBackToServers} />;
+      case 'about':
+        return <AboutView onBack={handleBackToServers} />;
+      default:
+        return (
+          <div className="h-full">
+            {selectedServer ? (
+              <div className="space-y-6">
+                <ServerDetail
+                  server={selectedServer}
+                  onStart={() => handleStartServer(selectedServer.id)}
+                  onStop={() => handleStopServer(selectedServer.id)}
+                  onDelete={() => handleDeleteServer(selectedServer.id)}
+                  onUpdate={handleUpdateServer}
+                />
+                {selectedServer.status === 'running' && (
+                  <ServerConsole logs={logs} onClear={() => setLogs([])} />
+                )}
+              </div>
+            ) : (
+              <ServerList
+                servers={servers}
+                selectedServerId={selectedServerId}
+                onSelectServer={handleSelectServer}
+                onStartServer={handleStartServer}
+                onStopServer={handleStopServer}
               />
             )}
           </div>
-        ) : (
-          <ServerList
-            servers={servers}
-            selectedServerId={selectedServerId}
-            onSelectServer={setSelectedServerId}
-            onStartServer={handleStartServer}
-            onStopServer={handleStopServer}
-          />
-        )}
-      </div>
+        );
+    }
+  };
+
+  return (
+    <MainLayout
+      onCreateServer={() => setShowCreateDialog(true)}
+      onOpenSettings={() => setCurrentView('settings')}
+      onOpenAbout={() => setCurrentView('about')}
+      selectedServerId={selectedServerId}
+      onSelectServer={handleSelectServer}
+      currentView={currentView}
+    >
+      {renderContent()}
 
       <CreateServerDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreateServer}
-      />
-
-      <SettingsDialog
-        open={showSettingsDialog}
-        onOpenChange={setShowSettingsDialog}
-      />
-
-      <AboutDialog
-        open={showAboutDialog}
-        onOpenChange={setShowAboutDialog}
       />
 
       <Toaster position="bottom-right" richColors />
