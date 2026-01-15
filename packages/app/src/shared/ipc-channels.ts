@@ -70,6 +70,7 @@ export const AppChannels = {
   GET_VERSION: 'app:get-version',
   GET_DATA_PATH: 'app:get-data-path',
   OPEN_FOLDER: 'app:open-folder',
+  OPEN_EXTERNAL: 'app:open-external',
 } as const;
 
 // ============================================================================

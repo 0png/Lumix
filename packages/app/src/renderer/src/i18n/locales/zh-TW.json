@@ -72,7 +72,9 @@
     "selectCore": "選擇核心類型",
     "ramAllocation": "記憶體配置",
     "minRam": "最小記憶體",
-    "maxRam": "最大記憶體"
+    "maxRam": "最大記憶體",
+    "eulaAgree": "我同意 Minecraft EULA",
+    "eulaDescription": "您必須同意"
   },
   "coreType": {
     "vanilla": "原版",

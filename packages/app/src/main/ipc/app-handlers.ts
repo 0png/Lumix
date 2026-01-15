@@ -42,4 +42,14 @@ function registerHandlers(): void {
       return { success: false, error: String(error) };
     }
   });
+
+  // 開啟外部連結
+  ipcMain.handle(AppChannels.OPEN_EXTERNAL, async (_, url: string): Promise<IpcResult<void>> => {
+    try {
+      await shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
 }

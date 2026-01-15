@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -22,6 +23,8 @@ import { VersionCombobox } from '@/components/ui/version-combobox';
 import type { CoreType } from './ServerList';
 import type { CreateServerError } from '@/hooks/use-servers';
 import { IpcErrorCode } from '../../../../shared/ipc-types';
+
+const MOJANG_EULA_URL = 'https://aka.ms/MinecraftEULA';
 
 export interface CreateServerData {
   name: string;
@@ -58,6 +61,7 @@ export function CreateServerDialog({
   const [error, setError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eulaAccepted, setEulaAccepted] = useState(false);
 
   const fetchVersions = useCallback(async (type: CoreType) => {
     setLoading(true);
@@ -148,6 +152,7 @@ export function CreateServerDialog({
     setMcVersion('');
     setRamMax(2048);
     setNameError(null);
+    setEulaAccepted(false);
     setIsSubmitting(false);
     onOpenChange(false);
   };
@@ -220,6 +225,38 @@ export function CreateServerDialog({
               <span>16 GB</span>
             </div>
           </div>
+
+          {/* EULA Agreement */}
+          <div className="flex items-start space-x-2 pt-2">
+            <Checkbox
+              id="eula"
+              checked={eulaAccepted}
+              onCheckedChange={(checked) => setEulaAccepted(checked === true)}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <label
+                htmlFor="eula"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                {t('createServer.eulaAgree')}
+              </label>
+              <p className="text-xs text-muted-foreground">
+                {t('createServer.eulaDescription')}{' '}
+                <a
+                  href={MOJANG_EULA_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline hover:text-primary/80"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.electronAPI.app.openExternal(MOJANG_EULA_URL);
+                  }}
+                >
+                  Minecraft EULA
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -228,7 +265,7 @@ export function CreateServerDialog({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={!name.trim() || !mcVersion || loading || disabled || !!nameError || isSubmitting}
+            disabled={!name.trim() || !mcVersion || loading || disabled || !!nameError || isSubmitting || !eulaAccepted}
           >
             {t('common.create')}
           </Button>

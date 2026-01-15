@@ -144,6 +144,9 @@ const electronAPI = {
 
     openFolder: (path: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_FOLDER, path),
+
+    openExternal: (url: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(AppChannels.OPEN_EXTERNAL, url),
   },
 };
 

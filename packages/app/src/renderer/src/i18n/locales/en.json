@@ -72,7 +72,9 @@
     "selectCore": "Select Core Type",
     "ramAllocation": "RAM Allocation",
     "minRam": "Min RAM",
-    "maxRam": "Max RAM"
+    "maxRam": "Max RAM",
+    "eulaAgree": "I agree to the Minecraft EULA",
+    "eulaDescription": "You must agree to the"
   },
   "coreType": {
     "vanilla": "Vanilla",
