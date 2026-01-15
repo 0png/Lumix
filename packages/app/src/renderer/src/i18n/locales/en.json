@@ -51,7 +51,8 @@
     "stopped": "Stopped",
     "running": "Running",
     "starting": "Starting",
-    "stopping": "Stopping"
+    "stopping": "Stopping",
+    "downloading": "Downloading..."
   },
   "createServer": {
     "title": "Create New Server",

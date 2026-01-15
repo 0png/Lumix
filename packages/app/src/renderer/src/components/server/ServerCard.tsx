@@ -55,12 +55,13 @@ export function ServerCard({
   const { t } = useTranslation();
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
+  const isReady = server.isReady !== false; // 預設為 true
 
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isRunning) {
       onStop?.();
-    } else if (server.status === 'stopped') {
+    } else if (server.status === 'stopped' && isReady) {
       onStart?.();
     }
   };
@@ -95,7 +96,7 @@ export function ServerCard({
             <Button
               size="sm"
               variant={isRunning ? 'destructive' : 'default'}
-              disabled={isTransitioning}
+              disabled={isTransitioning || (!isRunning && !isReady)}
               onClick={handleActionClick}
               className="h-7 text-xs px-3"
             >
@@ -107,7 +108,7 @@ export function ServerCard({
               ) : (
                 <>
                   <Play className="mr-1 h-3 w-3" />
-                  {t('server.start')}
+                  {!isReady ? t('server.downloading') : t('server.start')}
                 </>
               )}
             </Button>

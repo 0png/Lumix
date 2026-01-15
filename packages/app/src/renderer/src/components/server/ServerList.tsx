@@ -18,6 +18,7 @@ export interface ServerInstance {
   mcVersion: string;
   status: ServerStatus;
   ramMax: number;
+  isReady?: boolean; // server.jar 是否已下載完成
 }
 
 interface ServerListProps {

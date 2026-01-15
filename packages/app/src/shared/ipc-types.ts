@@ -44,6 +44,7 @@ export interface ServerInstanceDto {
   status: ServerStatus;
   createdAt: string;
   lastStartedAt?: string;
+  isReady?: boolean; // server.jar 是否已下載完成
 }
 
 export interface CreateServerRequest {

@@ -39,7 +39,9 @@ export function useServers(): UseServersReturn {
     try {
       const result = await window.electronAPI.server.getAll();
       if (result.success && result.data) {
-        setServers(result.data);
+        // 已存在的伺服器預設為已就緒
+        const serversWithReady = result.data.map((s) => ({ ...s, isReady: s.isReady ?? true }));
+        setServers(serversWithReady);
       } else {
         setError(result.error || 'Failed to load servers');
       }
@@ -61,7 +63,9 @@ export function useServers(): UseServersReturn {
       }
 
       const server = result.data;
-      setServers((prev) => [...prev, server]);
+      // 標記為未就緒（正在下載）
+      const serverWithStatus = { ...server, isReady: false };
+      setServers((prev) => [...prev, serverWithStatus]);
 
       // 2. 下載 server.jar
       console.log('[useServers] Downloading server.jar for:', server.name);
@@ -81,7 +85,10 @@ export function useServers(): UseServersReturn {
       }
 
       console.log('[useServers] Server created and downloaded successfully');
-      return server;
+      // 標記為已就緒
+      const readyServer = { ...server, isReady: true };
+      setServers((prev) => prev.map((s) => (s.id === server.id ? readyServer : s)));
+      return readyServer;
     } catch (err) {
       setError(String(err));
       return null;

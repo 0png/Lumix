@@ -51,7 +51,8 @@
     "stopped": "已停止",
     "running": "運行中",
     "starting": "啟動中",
-    "stopping": "停止中"
+    "stopping": "停止中",
+    "downloading": "下載中..."
   },
   "createServer": {
     "title": "建立新伺服器",

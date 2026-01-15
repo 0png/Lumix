@@ -75,6 +75,7 @@ export function ServerDetail({
 
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
+  const isReady = server.isReady !== false; // 預設為 true
 
   const handleSave = () => {
     onUpdate?.({ name: editName, ramMax: editRamMax });
@@ -119,9 +120,9 @@ export function ServerDetail({
             {t('server.stop')}
           </Button>
         ) : (
-          <Button size="sm" onClick={onStart} disabled={isTransitioning} className="h-7 lg:h-8 text-xs lg:text-sm">
+          <Button size="sm" onClick={onStart} disabled={isTransitioning || !isReady} className="h-7 lg:h-8 text-xs lg:text-sm">
             <Play className="mr-1 h-3 w-3 lg:h-4 lg:w-4" />
-            {t('server.start')}
+            {!isReady ? t('server.downloading') : t('server.start')}
           </Button>
         )}
         <Button
