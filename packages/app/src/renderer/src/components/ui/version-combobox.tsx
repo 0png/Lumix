@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,7 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface VersionComboboxProps {
   versions: string[]
@@ -26,6 +25,7 @@ interface VersionComboboxProps {
   placeholder?: string
   searchPlaceholder?: string
   emptyText?: string
+  loading?: boolean
 }
 
 // Custom filter for version search - matches versions that start with or contain the search term
@@ -55,6 +55,7 @@ export function VersionCombobox({
   placeholder = "Select version...",
   searchPlaceholder = "Search version...",
   emptyText = "No version found.",
+  loading = false,
 }: VersionComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -66,38 +67,44 @@ export function VersionCombobox({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          disabled={loading}
         >
-          {value || placeholder}
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading...
+            </span>
+          ) : (
+            value || placeholder
+          )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command filter={versionFilter}>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            <ScrollArea className="h-[200px]">
-              <CommandEmpty>{emptyText}</CommandEmpty>
-              <CommandGroup>
-                {versions.map((version) => (
-                  <CommandItem
-                    key={version}
-                    value={version}
-                    onSelect={(currentValue) => {
-                      onValueChange(currentValue)
-                      setOpen(false)
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === version ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {version}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </ScrollArea>
+          <CommandList className="max-h-[200px] overflow-y-auto">
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {versions.map((version) => (
+                <CommandItem
+                  key={version}
+                  value={version}
+                  onSelect={(currentValue) => {
+                    onValueChange(currentValue)
+                    setOpen(false)
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === version ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {version}
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>

@@ -1,10 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+export interface IpcResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 const api = {
-  // Placeholder for future IPC methods
   ping: () => ipcRenderer.invoke('ping'),
+  getVersions: (coreType: string): Promise<IpcResult<string[]>> => 
+    ipcRenderer.invoke('get-versions', coreType),
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to

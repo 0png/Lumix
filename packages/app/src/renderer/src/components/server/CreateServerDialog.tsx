@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -37,24 +37,6 @@ interface CreateServerDialogProps {
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
 
-// Mock versions for development - will be replaced with dynamic API calls after IPC integration
-const MOCK_VERSIONS = [
-  // 1.21.x
-  '1.21.4', '1.21.3', '1.21.2', '1.21.1', '1.21',
-  // 1.20.x
-  '1.20.6', '1.20.5', '1.20.4', '1.20.3', '1.20.2', '1.20.1', '1.20',
-  // 1.19.x
-  '1.19.4', '1.19.3', '1.19.2', '1.19.1', '1.19',
-  // 1.18.x
-  '1.18.2', '1.18.1', '1.18',
-  // 1.17.x
-  '1.17.1', '1.17',
-  // 1.16.x
-  '1.16.5', '1.16.4', '1.16.3', '1.16.2', '1.16.1',
-  // Older popular versions
-  '1.15.2', '1.14.4', '1.12.2', '1.8.9', '1.7.10',
-];
-
 export function CreateServerDialog({
   open,
   onOpenChange,
@@ -63,12 +45,43 @@ export function CreateServerDialog({
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [coreType, setCoreType] = useState<CoreType>('paper');
-  const [mcVersion, setMcVersion] = useState('1.20.4');
+  const [mcVersion, setMcVersion] = useState('');
   const [ramMax, setRamMax] = useState(2048);
+  const [versions, setVersions] = useState<string[]>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
 
+  // Fetch versions when core type changes
+  useEffect(() => {
+    async function fetchVersions() {
+      setIsLoadingVersions(true);
+      setVersions([]);
+      setMcVersion('');
+      
+      try {
+        const result = await window.electronAPI.getVersions(coreType);
+        if (result.success && result.data) {
+          setVersions(result.data);
+          // Auto-select first version
+          if (result.data.length > 0) {
+            setMcVersion(result.data[0]!);
+          }
+        } else {
+          console.error('Failed to fetch versions:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch versions:', error);
+      } finally {
+        setIsLoadingVersions(false);
+      }
+    }
+
+    if (open) {
+      fetchVersions();
+    }
+  }, [coreType, open]);
 
   const handleSubmit = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !mcVersion) return;
     onSubmit({
       name: name.trim(),
       coreType,
@@ -83,7 +96,7 @@ export function CreateServerDialog({
   const resetForm = () => {
     setName('');
     setCoreType('paper');
-    setMcVersion('1.20.4');
+    setMcVersion('');
     setRamMax(2048);
   };
 
@@ -124,12 +137,13 @@ export function CreateServerDialog({
           <div className="space-y-2">
             <Label>{t('server.version')}</Label>
             <VersionCombobox
-              versions={MOCK_VERSIONS}
+              versions={versions}
               value={mcVersion}
               onValueChange={setMcVersion}
               placeholder={t('createServer.selectVersion')}
               searchPlaceholder={t('createServer.searchVersion')}
               emptyText={t('createServer.noVersionFound')}
+              loading={isLoadingVersions}
             />
           </div>
 
@@ -156,7 +170,7 @@ export function CreateServerDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={!name.trim()}>
+          <Button onClick={handleSubmit} disabled={!name.trim() || !mcVersion || isLoadingVersions}>
             {t('common.create')}
           </Button>
         </DialogFooter>
