@@ -59,13 +59,13 @@ export function CreateServerDialog({
 
     try {
       // Use IPC to fetch versions from main process (bypasses CSP)
-      const result = await window.electronAPI.fetchVersions(type);
+      const result = await window.electronAPI.download.fetchVersions(type);
       
-      if (result.success && result.versions) {
-        console.log(`Fetched ${result.versions.length} versions for ${type}`);
-        setVersions(result.versions);
-        if (result.versions.length > 0) {
-          setMcVersion(result.versions[0]!);
+      if (result.success && result.data) {
+        console.log(`Fetched ${result.data.versions.length} versions for ${type}`);
+        setVersions(result.data.versions);
+        if (result.data.versions.length > 0) {
+          setMcVersion(result.data.versions[0]!);
         }
       } else {
         throw new Error(result.error || 'Unknown error');
