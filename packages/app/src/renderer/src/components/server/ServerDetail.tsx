@@ -34,23 +34,23 @@ interface ServerDetailProps {
 }
 
 /**
- * 狀態徽章元件
+ * 狀態徽章元件 - 帶光暈效果
  */
 function StatusBadge({ status }: { status: ServerStatus }) {
   const { t } = useTranslation();
 
   const statusConfig = {
-    stopped: { color: 'bg-muted-foreground', label: t('server.stopped') },
-    starting: { color: 'bg-yellow-500 animate-pulse', label: t('server.starting') },
-    running: { color: 'bg-green-500', label: t('server.running') },
-    stopping: { color: 'bg-yellow-500 animate-pulse', label: t('server.stopping') },
+    stopped: { color: 'bg-muted-foreground', label: t('server.stopped'), glow: '' },
+    starting: { color: 'status-glow-transitioning', label: t('server.starting'), glow: '' },
+    running: { color: 'status-glow-running', label: t('server.running'), glow: '' },
+    stopping: { color: 'status-glow-transitioning', label: t('server.stopping'), glow: '' },
   };
 
   const config = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-1.5 lg:gap-2 px-2 lg:px-3 py-0.5 lg:py-1 rounded-full bg-secondary">
-      <span className={cn('h-1.5 w-1.5 lg:h-2 lg:w-2 rounded-full', config.color)} />
+    <div className="flex items-center gap-1.5 lg:gap-2 px-2 lg:px-3 py-0.5 lg:py-1 rounded-full bg-secondary/80 backdrop-blur-sm border border-border/50">
+      <span className={cn('h-1.5 w-1.5 lg:h-2 lg:w-2 rounded-full transition-all duration-300', config.color)} />
       <span className="text-xs lg:text-sm font-medium">{config.label}</span>
     </div>
   );
@@ -89,7 +89,7 @@ export function ServerDetail({
   };
 
   return (
-    <div className="space-y-3 lg:space-y-4">
+    <div className="space-y-3 lg:space-y-4 animate-fade-in">
       {/* 返回按鈕 */}
       <Button
         variant="ghost"
@@ -150,7 +150,7 @@ export function ServerDetail({
       <Separator />
 
       {/* 設定卡片 */}
-      <Card>
+      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
           <CardTitle className="text-xs lg:text-sm">{t('server.config')}</CardTitle>
         </CardHeader>

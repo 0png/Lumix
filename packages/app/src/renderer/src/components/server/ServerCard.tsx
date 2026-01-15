@@ -20,23 +20,39 @@ interface ServerCardProps {
 }
 
 /**
- * 狀態指示器元件
+ * 狀態指示器元件 - 帶光暈效果
  */
 function StatusIndicator({ status }: { status: ServerStatus }) {
   const { t } = useTranslation();
 
   const statusConfig = {
-    stopped: { color: 'bg-muted-foreground', label: t('server.stopped') },
-    starting: { color: 'bg-yellow-500 animate-pulse', label: t('server.starting') },
-    running: { color: 'bg-green-500', label: t('server.running') },
-    stopping: { color: 'bg-yellow-500 animate-pulse', label: t('server.stopping') },
+    stopped: { 
+      color: 'bg-muted-foreground', 
+      label: t('server.stopped'),
+      glow: '',
+    },
+    starting: { 
+      color: 'status-glow-transitioning', 
+      label: t('server.starting'),
+      glow: 'glow-yellow',
+    },
+    running: { 
+      color: 'status-glow-running', 
+      label: t('server.running'),
+      glow: 'glow-green',
+    },
+    stopping: { 
+      color: 'status-glow-transitioning', 
+      label: t('server.stopping'),
+      glow: 'glow-yellow',
+    },
   };
 
   const config = statusConfig[status];
 
   return (
     <div className="flex items-center gap-1.5 lg:gap-2">
-      <span className={cn('h-2 w-2 rounded-full', config.color)} />
+      <span className={cn('h-2 w-2 rounded-full transition-all duration-300', config.color)} />
       <span className="text-xs text-muted-foreground">{config.label}</span>
     </div>
   );
@@ -69,14 +85,28 @@ export function ServerCard({
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-colors hover:bg-accent/50',
-        isSelected && 'ring-2 ring-primary'
+        'cursor-pointer card-hover group relative overflow-hidden',
+        'border border-border/50 bg-card/80 backdrop-blur-sm',
+        'hover:border-primary/30 hover:bg-accent/30',
+        isSelected && 'ring-2 ring-primary border-primary/50',
+        isRunning && 'border-green-500/30 hover:border-green-500/50',
+        'animate-fade-in-up'
       )}
+      style={{ animationDelay: '0ms' }}
       onClick={onSelect}
     >
+      {/* 頂部漸層裝飾 */}
+      <div 
+        className={cn(
+          'absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300',
+          'bg-gradient-to-r from-transparent via-primary/50 to-transparent',
+          isRunning && 'opacity-100 via-green-500/50'
+        )}
+      />
+      
       <CardHeader className="p-4 pb-2">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm font-medium truncate">
+          <CardTitle className="text-sm font-medium truncate group-hover:text-primary transition-colors duration-200">
             {server.name}
           </CardTitle>
           <StatusIndicator status={server.status} />
@@ -86,6 +116,7 @@ export function ServerCard({
         <div className="space-y-2.5">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="capitalize">{t(`coreType.${server.coreType}`)}</span>
+            <span className="text-muted-foreground/50">•</span>
             <span>{server.mcVersion}</span>
           </div>
           <div className="flex items-center justify-between">
@@ -98,7 +129,11 @@ export function ServerCard({
               variant={isRunning ? 'destructive' : 'default'}
               disabled={isTransitioning || (!isRunning && !isReady)}
               onClick={handleActionClick}
-              className="h-7 text-xs px-3"
+              className={cn(
+                'h-7 text-xs px-3 transition-all duration-200',
+                !isRunning && !isTransitioning && 'hover:shadow-md hover:shadow-primary/20',
+                isRunning && 'hover:shadow-md hover:shadow-destructive/20'
+              )}
             >
               {isRunning ? (
                 <>

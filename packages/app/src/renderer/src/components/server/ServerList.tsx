@@ -5,7 +5,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import { Server } from 'lucide-react';
+import { Server, Plus } from 'lucide-react';
 import { ServerCard } from './ServerCard';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
@@ -30,21 +30,25 @@ interface ServerListProps {
 }
 
 /**
- * 空狀態元件
+ * 空狀態元件 - 帶動畫效果
  */
 function EmptyState() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex-1 border-2 border-dashed rounded-lg flex flex-col items-center justify-center border-muted-foreground/25 bg-muted/50 min-h-[200px]">
+    <div className="flex-1 border-2 border-dashed rounded-lg flex flex-col items-center justify-center border-muted-foreground/25 bg-muted/30 min-h-[200px] animate-fade-in backdrop-blur-sm">
       <div className="text-center p-4 lg:p-6">
-        <div className="rounded-full bg-background p-2 lg:p-3 w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 lg:mb-3 flex items-center justify-center shadow-sm">
+        <div className="rounded-full bg-gradient-to-br from-background to-muted p-2 lg:p-3 w-12 h-12 lg:w-14 lg:h-14 mx-auto mb-3 lg:mb-4 flex items-center justify-center shadow-lg shadow-primary/5 border border-border/50">
           <Server className="h-5 w-5 lg:h-6 lg:w-6 text-muted-foreground" />
         </div>
         <h3 className="text-sm lg:text-base font-semibold">{t('welcome.title')}</h3>
         <p className="text-xs lg:text-sm text-muted-foreground mt-1 max-w-xs">
           {t('welcome.description')}
         </p>
+        <div className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground/70">
+          <Plus className="h-3 w-3" />
+          <span>{t('sidebar.addServer')}</span>
+        </div>
       </div>
     </div>
   );
@@ -66,15 +70,20 @@ export function ServerList({
 
   return (
     <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-      {servers.map((server) => (
-        <ServerCard
+      {servers.map((server, index) => (
+        <div
           key={server.id}
-          server={server}
-          isSelected={selectedServerId === server.id}
-          onSelect={() => onSelectServer?.(server.id)}
-          onStart={() => onStartServer?.(server.id)}
-          onStop={() => onStopServer?.(server.id)}
-        />
+          className="animate-fade-in-up"
+          style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+        >
+          <ServerCard
+            server={server}
+            isSelected={selectedServerId === server.id}
+            onSelect={() => onSelectServer?.(server.id)}
+            onStart={() => onStartServer?.(server.id)}
+            onStop={() => onStopServer?.(server.id)}
+          />
+        </div>
       ))}
     </div>
   );

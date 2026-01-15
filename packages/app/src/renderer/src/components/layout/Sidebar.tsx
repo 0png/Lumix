@@ -27,24 +27,31 @@ interface ServerNavItemProps {
 
 /** 伺服器導航項目 */
 function ServerNavItem({ server, isSelected, onSelect, isCollapsed, showText }: ServerNavItemProps) {
+  const isRunning = server.status === 'running';
+  
   const content = (
     <button
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center rounded-md transition-colors',
+        'flex w-full items-center rounded-md transition-all duration-200',
         'hover:bg-accent hover:text-accent-foreground',
         isSelected && 'bg-accent text-accent-foreground',
-        isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2 text-sm'
+        isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2 text-sm',
+        'group'
       )}
     >
       <span
         className={cn(
-          'rounded-full shrink-0',
-          server.status === 'running' ? 'bg-green-500' : 'bg-muted-foreground',
+          'rounded-full shrink-0 transition-all duration-300',
+          isRunning ? 'status-glow-running' : 'bg-muted-foreground',
           isCollapsed ? 'h-2.5 w-2.5' : 'h-2 w-2'
         )}
       />
-      {showText && <span className="truncate">{server.name}</span>}
+      {showText && (
+        <span className="truncate group-hover:text-foreground transition-colors">
+          {server.name}
+        </span>
+      )}
     </button>
   );
 
@@ -52,7 +59,15 @@ function ServerNavItem({ server, isSelected, onSelect, isCollapsed, showText }: 
     return (
       <Tooltip>
         <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent side="right">{server.name}</TooltipContent>
+        <TooltipContent side="right" className="flex items-center gap-2">
+          <span
+            className={cn(
+              'h-2 w-2 rounded-full',
+              isRunning ? 'bg-green-500' : 'bg-muted-foreground'
+            )}
+          />
+          {server.name}
+        </TooltipContent>
       </Tooltip>
     );
   }
@@ -164,7 +179,8 @@ export function Sidebar({
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          'flex h-full flex-col border-r bg-muted/20 shrink-0 transition-[width] duration-300 ease-in-out',
+          'flex h-full flex-col border-r bg-muted/10 backdrop-blur-sm shrink-0 transition-[width] duration-300 ease-in-out',
+          'border-border/50',
           isCollapsed ? 'w-16' : 'w-52 lg:w-64'
         )}
       >
