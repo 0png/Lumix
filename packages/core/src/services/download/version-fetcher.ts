@@ -205,65 +205,114 @@ export async function getFabricServerUrl(version: string): Promise<string> {
 }
 
 // ============================================================================
-// Forge
+// Forge (使用 mc-versions-api.net 動態取得版本)
 // ============================================================================
 
-const FORGE_MAVEN_BASE = 'https://maven.minecraftforge.net';
-const FORGE_FILES_API = 'https://files.minecraftforge.net/net/minecraftforge/forge';
+const MC_VERSIONS_API = 'https://mc-versions-api.net/api';
 
-// Forge MC 版本與最新 Forge 版本對應表
-// 這個表需要定期更新，或者可以從 Forge API 動態取得
-const FORGE_VERSION_MAP: Record<string, string> = {
-  // 1.21.x
-  '1.21.4': '54.0.23',
-  '1.21.3': '53.0.23',
-  '1.21.1': '52.0.28',
-  '1.21': '51.0.33',
-  // 1.20.x
-  '1.20.6': '50.1.32',
-  '1.20.4': '49.1.13',
-  '1.20.3': '49.0.30',
-  '1.20.2': '48.1.0',
-  '1.20.1': '47.3.12',
-  '1.20': '46.0.14',
-  // 1.19.x
-  '1.19.4': '45.3.0',
-  '1.19.3': '44.1.23',
-  '1.19.2': '43.4.4',
-  '1.19.1': '42.0.9',
-  '1.19': '41.1.0',
-  // 1.18.x
-  '1.18.2': '40.2.21',
-  '1.18.1': '39.1.2',
-  '1.18': '38.0.17',
-  // 1.17.x
-  '1.17.1': '37.1.1',
-  // 1.16.x
-  '1.16.5': '36.2.42',
-  '1.16.4': '35.1.37',
-  '1.16.3': '34.1.42',
-  '1.16.2': '33.0.61',
-  '1.16.1': '32.0.108',
-  // 1.15.x
-  '1.15.2': '31.2.57',
-  // 1.14.x
-  '1.14.4': '28.2.26',
-  // 1.12.x (經典版本)
-  '1.12.2': '14.23.5.2860',
-  '1.12.1': '14.22.1.2485',
-  '1.12': '14.21.1.2443',
-  // 1.7.x (經典版本)
-  '1.7.10': '10.13.4.1614',
-};
+interface ForgeVersionInfo {
+  mcversion: string;
+  version: string;
+  download: string;
+}
 
 /**
- * 取得 Forge 版本列表
+ * 取得 Forge 版本列表（動態從 API 取得）
  */
 export async function getForgeVersions(): Promise<string[]> {
-  // 回傳所有支援的 MC 版本（按版本號降序排列）
-  return Object.keys(FORGE_VERSION_MAP).sort((a, b) => {
-    return compareMinecraftVersions(b, a);
-  });
+  try {
+    const response = await fetch(`${MC_VERSIONS_API}/forge`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Forge versions: ${response.status}`);
+    }
+
+    const data = (await response.json()) as ForgeVersionInfo[];
+    
+    // 提取唯一的 MC 版本並排序
+    const mcVersions = [...new Set(data.map((v) => v.mcversion))];
+    
+    return mcVersions.sort((a, b) => compareMinecraftVersions(b, a));
+  } catch (error) {
+    // 如果 API 失敗，回退到硬編碼列表
+    console.warn('Failed to fetch Forge versions from API, using fallback:', error);
+    return getForgeFallbackVersions();
+  }
+}
+
+/**
+ * 取得指定 MC 版本的 Forge 下載 URL
+ */
+export async function getForgeServerUrl(mcVersion: string): Promise<string> {
+  try {
+    const response = await fetch(`${MC_VERSIONS_API}/forge?version=${mcVersion}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Forge version info: ${response.status}`);
+    }
+
+    const data = (await response.json()) as ForgeVersionInfo[];
+    
+    if (data.length === 0) {
+      throw new Error(`No Forge version found for MC ${mcVersion}`);
+    }
+
+    // 取得最新的 Forge 版本（第一個）
+    const latestForge = data[0]!;
+    
+    return latestForge.download;
+  } catch (error) {
+    // 如果 API 失敗，嘗試使用備用方法
+    console.warn('Failed to fetch Forge download URL from API:', error);
+    return getForgeFallbackUrl(mcVersion);
+  }
+}
+
+/**
+ * 備用：硬編碼的 Forge 版本列表
+ */
+function getForgeFallbackVersions(): string[] {
+  return [
+    '1.21.4', '1.21.3', '1.21.1', '1.21',
+    '1.20.6', '1.20.4', '1.20.2', '1.20.1', '1.20',
+    '1.19.4', '1.19.2', '1.18.2', '1.17.1',
+    '1.16.5', '1.15.2', '1.14.4', '1.12.2', '1.7.10',
+  ];
+}
+
+/**
+ * 備用：硬編碼的 Forge 下載 URL
+ */
+function getForgeFallbackUrl(mcVersion: string): string {
+  const FORGE_MAVEN_BASE = 'https://maven.minecraftforge.net';
+  
+  const forgeVersionMap: Record<string, string> = {
+    '1.21.4': '54.0.23',
+    '1.21.3': '53.0.23',
+    '1.21.1': '52.0.28',
+    '1.21': '51.0.33',
+    '1.20.6': '50.1.32',
+    '1.20.4': '49.1.13',
+    '1.20.2': '48.1.0',
+    '1.20.1': '47.3.12',
+    '1.20': '46.0.14',
+    '1.19.4': '45.3.0',
+    '1.19.2': '43.4.4',
+    '1.18.2': '40.2.21',
+    '1.17.1': '37.1.1',
+    '1.16.5': '36.2.42',
+    '1.15.2': '31.2.57',
+    '1.14.4': '28.2.26',
+    '1.12.2': '14.23.5.2860',
+    '1.7.10': '10.13.4.1614',
+  };
+
+  const forgeVersion = forgeVersionMap[mcVersion];
+  if (!forgeVersion) {
+    throw new Error(`Forge version for MC ${mcVersion} not found in fallback`);
+  }
+
+  return `${FORGE_MAVEN_BASE}/net/minecraftforge/forge/${mcVersion}-${forgeVersion}/forge-${mcVersion}-${forgeVersion}-installer.jar`;
 }
 
 /**
@@ -284,23 +333,15 @@ function compareMinecraftVersions(a: string, b: string): number {
 }
 
 /**
- * 取得 Forge 伺服器下載 URL
- * 注意：Forge 需要安裝器，這裡回傳安裝器 URL
- */
-export async function getForgeServerUrl(version: string): Promise<string> {
-  const forgeVersion = FORGE_VERSION_MAP[version];
-  if (!forgeVersion) {
-    throw new Error(`Forge version for MC ${version} not found. Available versions: ${Object.keys(FORGE_VERSION_MAP).join(', ')}`);
-  }
-
-  return `${FORGE_MAVEN_BASE}/net/minecraftforge/forge/${version}-${forgeVersion}/forge-${version}-${forgeVersion}-installer.jar`;
-}
-
-/**
  * 檢查 Forge 是否支援指定的 MC 版本
  */
-export function isForgeVersionSupported(mcVersion: string): boolean {
-  return mcVersion in FORGE_VERSION_MAP;
+export async function isForgeVersionSupported(mcVersion: string): Promise<boolean> {
+  try {
+    const versions = await getForgeVersions();
+    return versions.includes(mcVersion);
+  } catch {
+    return getForgeFallbackVersions().includes(mcVersion);
+  }
 }
 
 // ============================================================================
