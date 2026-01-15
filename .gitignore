@@ -36,8 +36,10 @@ coverage/
 # Electron
 release/
 
-# Spec and steering files
-.kiro/
+# Kiro settings (keep specs and steering)
+.kiro/settings/
+!.kiro/specs/
+!.kiro/steering/
 
 # Reference files (Lumix design language)
 /components/
