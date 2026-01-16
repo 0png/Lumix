@@ -117,7 +117,14 @@ export function CreateServerDialog({
       if (result) {
         setRequiredJava(result.requiredMajor);
         // 檢查是否有相容的 Java
-        const hasCompatible = installations.some((j) => j.majorVersion >= result.requiredMajor);
+        // 對於 Java 8 需求，必須有 Java 8（新版 Java 不相容舊版 MC）
+        // 對於其他版本，可以使用更新的 Java
+        let hasCompatible: boolean;
+        if (result.requiredMajor === 8) {
+          hasCompatible = installations.some((j) => j.majorVersion === 8);
+        } else {
+          hasCompatible = installations.some((j) => j.majorVersion >= result.requiredMajor);
+        }
         setJavaCompatible(hasCompatible);
       }
     });
