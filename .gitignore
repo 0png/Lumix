@@ -36,13 +36,8 @@ coverage/
 # Electron
 release/
 
-# Kiro (keep specs and steering only)
-.kiro/settings/
-.kiro/hooks/
-.kiro/review_todo.md
-!.kiro/specs/
-!.kiro/steering/
-.kiro
+# Kiro - 完全忽略，不提交任何 .kiro 內容
+.kiro/
 
 # AI Agent 生成的臨時檔案
 tests/auto_generated_tests/
