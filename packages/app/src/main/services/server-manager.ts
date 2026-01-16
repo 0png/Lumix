@@ -46,6 +46,7 @@ export class ServerManager extends EventEmitter {
   private processManager: ProcessManager;
   private servers: Map<string, ServerInstanceDto> = new Map();
   private defaultJavaPath: string;
+  private stopTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(config: ServerManagerConfig) {
     super();
@@ -251,6 +252,13 @@ export class ServerManager extends EventEmitter {
 
     this.updateServerStatus(id, 'starting');
 
+    // 清除舊的 stop timeout（避免誤殺新程序）
+    const existingTimeout = this.stopTimeouts.get(id);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      this.stopTimeouts.delete(id);
+    }
+
     try {
       const processConfig: ProcessConfig = {
         serverId: id,
@@ -298,11 +306,14 @@ export class ServerManager extends EventEmitter {
       this.processManager.kill(id);
     }
 
-    setTimeout(() => {
+    // 追蹤 timeout，以便在 startServer 時可以清除
+    const timeout = setTimeout(() => {
+      this.stopTimeouts.delete(id);
       if (this.processManager.isRunning(id)) {
         this.processManager.forceKill(id);
       }
     }, 30000);
+    this.stopTimeouts.set(id, timeout);
   }
 
   async sendCommand(id: string, command: string): Promise<void> {
@@ -360,6 +371,11 @@ export class ServerManager extends EventEmitter {
   }
 
   async cleanup(): Promise<void> {
+    // 清除所有 stop timeouts
+    for (const timeout of this.stopTimeouts.values()) {
+      clearTimeout(timeout);
+    }
+    this.stopTimeouts.clear();
     this.processManager.killAll();
   }
 

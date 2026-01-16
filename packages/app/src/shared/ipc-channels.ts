@@ -27,6 +27,25 @@ export const ServerChannels = {
   LOG_ENTRY: 'server:log-entry',
 } as const;
 
+/**
+ * 取得所有需要 ipcMain.handle 的 Server channels（不含 event channels）
+ * 用於 cleanup 時移除 handlers
+ */
+export function getAllServerChannels(): string[] {
+  return [
+    ServerChannels.GET_ALL,
+    ServerChannels.GET_BY_ID,
+    ServerChannels.CREATE,
+    ServerChannels.UPDATE,
+    ServerChannels.DELETE,
+    ServerChannels.START,
+    ServerChannels.STOP,
+    ServerChannels.SEND_COMMAND,
+    ServerChannels.GET_PROPERTIES,
+    ServerChannels.UPDATE_PROPERTIES,
+  ];
+}
+
 // ============================================================================
 // Java Management Channels
 // ============================================================================

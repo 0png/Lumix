@@ -57,11 +57,22 @@ export class ProcessManager extends EventEmitter {
     // 建構 JVM 參數
     const args = this.buildJvmArgs(config);
 
-    // 啟動程序
-    const proc = spawn(config.javaPath, args, {
-      cwd: config.workingDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    // 啟動程序（spawn 可能同步拋出 ENOENT 等錯誤）
+    let proc: ChildProcess;
+    try {
+      proc = spawn(config.javaPath, args, {
+        cwd: config.workingDir,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (error) {
+      // 同步錯誤（如 ENOENT），emit error 事件讓上層處理
+      const err = error instanceof Error ? error : new Error(String(error));
+      // 使用 setImmediate 確保事件監聽器已設置
+      setImmediate(() => {
+        this.emit('error', config.serverId, err);
+      });
+      throw err;
+    }
 
     // 儲存程序資訊
     const processInfo: ProcessInfo = {
@@ -71,7 +82,7 @@ export class ProcessManager extends EventEmitter {
     };
     this.processes.set(config.serverId, processInfo);
 
-    // 設定事件監聽
+    // 設定事件監聯
     this.setupProcessListeners(config.serverId, proc);
 
     return proc;

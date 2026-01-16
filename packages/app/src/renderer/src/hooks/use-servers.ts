@@ -27,8 +27,8 @@ interface UseServersReturn {
   createServer: (data: CreateServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
   updateServer: (data: UpdateServerRequest) => Promise<ServerInstanceDto | null>;
   deleteServer: (id: string) => Promise<boolean>;
-  startServer: (id: string) => Promise<boolean>;
-  stopServer: (id: string) => Promise<boolean>;
+  startServer: (id: string) => Promise<{ success: boolean; error?: string }>;
+  stopServer: (id: string) => Promise<{ success: boolean; error?: string }>;
   sendCommand: (id: string, command: string) => Promise<boolean>;
   clearLogs: (serverId: string) => void;
 }
@@ -86,8 +86,12 @@ export function useServers(): UseServersReturn {
 
       if (!downloadResult.success) {
         console.error('[useServers] Download failed:', downloadResult.error);
-        // 下載失敗，刪除已建立的伺服器
-        await window.electronAPI.server.delete(server.id);
+        // 下載失敗，嘗試刪除已建立的伺服器
+        const deleteResult = await window.electronAPI.server.delete(server.id);
+        if (!deleteResult.success) {
+          console.error('[useServers] Failed to cleanup server after download failure:', deleteResult.error);
+        }
+        // 無論 delete 是否成功，都從 UI 移除（因為伺服器已不可用）
         setServers((prev) => prev.filter((s) => s.id !== server.id));
         const errorStr = downloadResult.error || 'Failed to download server.jar';
         setError(errorStr);
@@ -138,31 +142,37 @@ export function useServers(): UseServersReturn {
     }
   }, []);
 
-  // 啟動伺服器
-  const startServer = useCallback(async (id: string): Promise<boolean> => {
+  // 啟動伺服器 - 回傳 { success, error } 讓呼叫端可以立即取得錯誤訊息
+  const startServer = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const result = await window.electronAPI.server.start(id);
       if (!result.success) {
-        setError(result.error || 'Failed to start server');
+        const errorMsg = result.error || 'Failed to start server';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
-      return result.success;
+      return { success: true };
     } catch (err) {
-      setError(String(err));
-      return false;
+      const errorMsg = String(err);
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }, []);
 
-  // 停止伺服器
-  const stopServer = useCallback(async (id: string): Promise<boolean> => {
+  // 停止伺服器 - 回傳 { success, error } 讓呼叫端可以立即取得錯誤訊息
+  const stopServer = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const result = await window.electronAPI.server.stop(id);
       if (!result.success) {
-        setError(result.error || 'Failed to stop server');
+        const errorMsg = result.error || 'Failed to stop server';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
-      return result.success;
+      return { success: true };
     } catch (err) {
-      setError(String(err));
-      return false;
+      const errorMsg = String(err);
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }, []);
 
@@ -198,13 +208,20 @@ export function useServers(): UseServersReturn {
     };
   }, []);
 
-  // 訂閱日誌事件
+  // 訂閱日誌事件（限制最多 1000 條，避免記憶體洩漏）
   useEffect(() => {
+    const MAX_LOG_ENTRIES = 1000;
     const unsubscribe = window.electronAPI.server.onLogEntry((event: ServerLogEvent) => {
       setLogs((prev) => {
         const next = new Map(prev);
         const serverLogs = next.get(event.serverId) || [];
-        next.set(event.serverId, [...serverLogs, event.entry]);
+        const newLogs = [...serverLogs, event.entry];
+        // 超過上限時移除最舊的
+        if (newLogs.length > MAX_LOG_ENTRIES) {
+          next.set(event.serverId, newLogs.slice(-MAX_LOG_ENTRIES));
+        } else {
+          next.set(event.serverId, newLogs);
+        }
         return next;
       });
     });

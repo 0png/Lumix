@@ -4,7 +4,7 @@
  */
 
 import { ipcMain, BrowserWindow } from 'electron';
-import { ServerChannels } from '../../shared/ipc-channels';
+import { ServerChannels, getAllServerChannels } from '../../shared/ipc-channels';
 import { ServerManager } from '../services/server-manager';
 import type {
   IpcResult,
@@ -203,6 +203,11 @@ function broadcastToAllWindows(channel: string, data: unknown): void {
 // ============================================================================
 
 export function cleanupServerHandlers(): void {
+  // 移除所有 IPC handlers（避免 hot reload 重複註冊）
+  for (const channel of getAllServerChannels()) {
+    ipcMain.removeHandler(channel);
+  }
+
   if (serverManager) {
     serverManager.cleanup();
     serverManager = null;

@@ -36,10 +36,25 @@ coverage/
 # Electron
 release/
 
-# Kiro settings (keep specs and steering)
+# Kiro (keep specs and steering only)
 .kiro/settings/
+.kiro/hooks/
+.kiro/review_todo.md
 !.kiro/specs/
 !.kiro/steering/
+.kiro
+
+# AI Agent 生成的臨時檔案
+tests/auto_generated_tests/
+IMPLEMENTATION_PLAN.md
+review_todo.md
+*.auto-generated.*
+.ai-temp/
+.agent-cache/
+
+# Vite cache
+.vite/
+**/.vite/
 
 # Reference files (Lumix design language)
 /components/

@@ -47,7 +47,6 @@ function AppContent() {
   const {
     servers: serverDtos,
     loading,
-    error,
     logs: serverLogs,
     createServer,
     updateServer,
@@ -144,20 +143,20 @@ function AppContent() {
       await updateServer({ id, javaPath: selectResult.data.path });
     }
 
-    const success = await startServer(id);
-    if (success) {
+    const result = await startServer(id);
+    if (result.success) {
       toast.success(t('toast.serverStarted'));
     } else {
-      toast.error(t('toast.startFailed'), error || undefined);
+      toast.error(t('toast.startFailed'), result.error);
     }
-  }, [startServer, t, error, serverDtos, updateServer]);
+  }, [startServer, t, serverDtos, updateServer]);
 
   const handleStopServer = useCallback(async (id: string) => {
-    const success = await stopServer(id);
-    if (success) {
+    const result = await stopServer(id);
+    if (result.success) {
       toast.success(t('toast.serverStopped'));
     } else {
-      toast.error(t('toast.stopFailed'));
+      toast.error(t('toast.stopFailed'), result.error);
     }
   }, [stopServer, t]);
 

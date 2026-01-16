@@ -109,7 +109,26 @@ pause
   async readServerJson(serverPath: string): Promise<ServerMetadata> {
     const jsonPath = path.join(serverPath, 'server.json');
     const content = await fs.readFile(jsonPath, 'utf-8');
-    return JSON.parse(content) as ServerMetadata;
+    const data = JSON.parse(content);
+    
+    // 驗證必要欄位
+    if (!data || typeof data !== 'object') {
+      throw new Error(`Invalid server.json: not an object`);
+    }
+    if (typeof data.id !== 'string' || !data.id) {
+      throw new Error(`Invalid server.json: missing or invalid 'id'`);
+    }
+    if (typeof data.name !== 'string' || !data.name) {
+      throw new Error(`Invalid server.json: missing or invalid 'name'`);
+    }
+    if (typeof data.coreType !== 'string') {
+      throw new Error(`Invalid server.json: missing or invalid 'coreType'`);
+    }
+    if (typeof data.mcVersion !== 'string') {
+      throw new Error(`Invalid server.json: missing or invalid 'mcVersion'`);
+    }
+    
+    return data as ServerMetadata;
   }
 
   /**
