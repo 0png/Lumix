@@ -219,9 +219,6 @@ export class ServerManager extends EventEmitter {
       )));
     }
 
-    console.log('[ServerManager] startServer called for:', id);
-    console.log('[ServerManager] Server info:', JSON.stringify(server, null, 2));
-
     if (server.status === 'running' || server.status === 'starting') {
       throw new Error(formatIpcError(createIpcError(
         IpcErrorCode.SERVER_INVALID_STATE,
@@ -230,20 +227,15 @@ export class ServerManager extends EventEmitter {
     }
 
     const javaPath = server.javaPath || this.defaultJavaPath;
-    console.log('[ServerManager] Using javaPath:', javaPath);
-    console.log('[ServerManager] defaultJavaPath:', this.defaultJavaPath);
 
     let javaValid = await this.validateJava(javaPath);
-    console.log('[ServerManager] Java validation result:', javaValid);
 
     // 如果指定的 javaPath 無效，嘗試使用預設的 'java'
     let effectiveJavaPath = javaPath;
     if (!javaValid && javaPath !== this.defaultJavaPath) {
-      console.log('[ServerManager] Specified javaPath invalid, trying default:', this.defaultJavaPath);
       javaValid = await this.validateJava(this.defaultJavaPath);
       if (javaValid) {
         effectiveJavaPath = this.defaultJavaPath;
-        console.log('[ServerManager] Using default java instead');
       }
     }
 
@@ -256,7 +248,6 @@ export class ServerManager extends EventEmitter {
     }
 
     const jarPath = path.join(server.directory, 'server.jar');
-    console.log('[ServerManager] Checking jar at:', jarPath);
     
     // 檢查是否為新版 Forge
     let forgeArgsFile: string | undefined;
@@ -266,7 +257,6 @@ export class ServerManager extends EventEmitter {
       const forgeConfig = JSON.parse(forgeConfigContent);
       if (forgeConfig.type === 'forge-new' && forgeConfig.argsFile) {
         forgeArgsFile = forgeConfig.argsFile;
-        console.log('[ServerManager] New Forge detected, using args file:', forgeArgsFile);
       }
     } catch {
       // 不是新版 Forge，使用標準方式
@@ -276,9 +266,7 @@ export class ServerManager extends EventEmitter {
     if (!forgeArgsFile) {
       try {
         await fs.access(jarPath);
-        console.log('[ServerManager] server.jar found');
-      } catch (err) {
-        console.log('[ServerManager] server.jar NOT found:', err);
+      } catch {
         throw new Error(formatIpcError(createIpcError(
           IpcErrorCode.SERVER_JAR_NOT_FOUND,
           '找不到 server.jar 檔案',
@@ -308,13 +296,10 @@ export class ServerManager extends EventEmitter {
         forgeArgsFile,
       };
 
-      console.log('[ServerManager] Spawning process with config:', JSON.stringify(processConfig, null, 2));
       this.processManager.spawn(processConfig);
       await this.updateLastStartedAt(id);
       this.updateServerStatus(id, 'running');
-      console.log('[ServerManager] Server started successfully');
     } catch (error) {
-      console.log('[ServerManager] Failed to start server:', error);
       this.updateServerStatus(id, 'stopped');
       throw error;
     }
@@ -480,6 +465,13 @@ export class ServerManager extends EventEmitter {
     const server = this.servers.get(serverId);
     if (!server) return;
 
+    // 清除對應的 stop timeout，避免不必要的 forceKill
+    const timeout = this.stopTimeouts.get(serverId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.stopTimeouts.delete(serverId);
+    }
+
     const event: ServerStatusEvent = {
       serverId,
       status: 'stopped',
@@ -509,29 +501,19 @@ export class ServerManager extends EventEmitter {
   }
 
   private async validateJava(javaPath: string): Promise<boolean> {
-    console.log('[ServerManager] validateJava called with:', javaPath);
     return new Promise((resolve) => {
       const { spawn } = require('child_process');
-      let output = '';
-      let errorOutput = '';
       let resolved = false;
 
-      console.log('[ServerManager] Spawning java -version...');
       const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        windowsVerbatimArguments: true, // Windows 上保留參數原樣
+        windowsVerbatimArguments: true,
       });
 
-      proc.stdout?.on('data', (data: Buffer) => {
-        output += data.toString();
-      });
+      proc.stdout?.on('data', () => {});
+      proc.stderr?.on('data', () => {});
 
-      proc.stderr?.on('data', (data: Buffer) => {
-        errorOutput += data.toString();
-      });
-
-      proc.on('error', (err: Error) => {
-        console.log('[ServerManager] Java spawn error:', err.message);
+      proc.on('error', () => {
         if (!resolved) {
           resolved = true;
           resolve(false);
@@ -539,22 +521,17 @@ export class ServerManager extends EventEmitter {
       });
 
       proc.on('close', (code: number | null) => {
-        console.log('[ServerManager] Java process exited with code:', code);
-        console.log('[ServerManager] Java stdout:', output);
-        console.log('[ServerManager] Java stderr:', errorOutput);
         if (!resolved) {
           resolved = true;
           resolve(code === 0);
         }
       });
 
-      // 設定超時，避免卡住
+      // 設定超時，避免卡住；超時後 kill 並等待 close 事件處理
       setTimeout(() => {
         if (!resolved) {
-          console.log('[ServerManager] Java validation timeout');
-          resolved = true;
           proc.kill();
-          resolve(false);
+          // close 事件會在 kill 後觸發，届時 code 會是 null，resolve(false)
         }
       }, 5000);
     });

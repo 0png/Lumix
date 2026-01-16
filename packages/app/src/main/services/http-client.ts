@@ -16,8 +16,15 @@ export interface DownloadProgressCallback {
 /**
  * 發送 HTTP GET 請求並解析 JSON 回應
  */
-export function fetchJson<T>(url: string): Promise<T> {
+export function fetchJson<T>(url: string, redirectCount: number = 0): Promise<T> {
+  const MAX_REDIRECTS = 5;
+  
   return new Promise((resolve, reject) => {
+    if (redirectCount >= MAX_REDIRECTS) {
+      reject(new Error(`HTTP_ERROR: 超過最大重定向次數 (${MAX_REDIRECTS}) - ${url}`));
+      return;
+    }
+
     const protocol = url.startsWith('https') ? https : http;
     const options = {
       headers: { 'User-Agent': USER_AGENT },
@@ -34,7 +41,7 @@ export function fetchJson<T>(url: string): Promise<T> {
               const baseUrl = new URL(url);
               redirectUrl = `${baseUrl.protocol}//${baseUrl.host}${redirectUrl}`;
             }
-            fetchJson<T>(redirectUrl).then(resolve).catch(reject);
+            fetchJson<T>(redirectUrl, redirectCount + 1).then(resolve).catch(reject);
             return;
           }
         }
@@ -65,9 +72,17 @@ export function downloadFile(
   url: string,
   destPath: string,
   expectedSize: number,
-  onProgress?: DownloadProgressCallback
+  onProgress?: DownloadProgressCallback,
+  redirectCount: number = 0
 ): Promise<void> {
+  const MAX_REDIRECTS = 5;
+
   return new Promise((resolve, reject) => {
+    if (redirectCount >= MAX_REDIRECTS) {
+      reject(new Error(`DOWNLOAD_ERROR: 超過最大重定向次數 (${MAX_REDIRECTS}) - ${url}`));
+      return;
+    }
+
     const protocol = url.startsWith('https') ? https : http;
     const options = {
       headers: { 'User-Agent': USER_AGENT },
@@ -84,7 +99,7 @@ export function downloadFile(
               const baseUrl = new URL(url);
               redirectUrl = `${baseUrl.protocol}//${baseUrl.host}${redirectUrl}`;
             }
-            downloadFile(redirectUrl, destPath, expectedSize, onProgress)
+            downloadFile(redirectUrl, destPath, expectedSize, onProgress, redirectCount + 1)
               .then(resolve)
               .catch(reject);
             return;
