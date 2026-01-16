@@ -246,7 +246,17 @@ export class JavaDetector {
 
     const { requiredMajor } = this.getRequiredJavaVersion(mcVersion);
 
-    // 找到符合要求的最新版本
+    // 對於舊版 MC (Java 8)，優先選擇 Java 8，因為新版 Java 可能不相容
+    // 對於新版 MC，選擇符合要求的最新版本
+    if (requiredMajor === 8) {
+      // 優先找 Java 8
+      const java8 = installations.find((j) => j.majorVersion === 8);
+      if (java8) return java8;
+      // 沒有 Java 8，回傳 null（不要用新版 Java，會不相容）
+      return null;
+    }
+
+    // 新版 MC：找到符合要求的最新版本
     const compatible = installations
       .filter((j) => j.majorVersion >= requiredMajor)
       .sort((a, b) => b.majorVersion - a.majorVersion);

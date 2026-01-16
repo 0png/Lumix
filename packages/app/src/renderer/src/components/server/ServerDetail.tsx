@@ -486,10 +486,12 @@ export function ServerDetail({
               <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
               {t('server.delete')}
             </DialogTitle>
-            <DialogDescription className="text-xs lg:text-sm space-y-2">
-              <p>{t('server.deleteConfirm', '確定要刪除此伺服器嗎？')}</p>
-              <p className="font-medium text-foreground">{t('server.name')}: {server.name}</p>
-              <p className="text-destructive">{t('server.deleteWarning', '此操作無法復原，所有伺服器資料將被永久刪除。')}</p>
+            <DialogDescription asChild>
+              <div className="text-xs lg:text-sm space-y-2 text-muted-foreground">
+                <p>{t('server.deleteConfirm', '確定要刪除此伺服器嗎？')}</p>
+                <p className="font-medium text-foreground">{t('server.name')}: {server.name}</p>
+                <p className="text-destructive">{t('server.deleteWarning', '此操作無法復原，所有伺服器資料將被永久刪除。')}</p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
