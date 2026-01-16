@@ -5,8 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Minecraft Server Launcher</strong><br>
-  A modern, cross-platform Minecraft server management tool
+  <strong>Minecraft Server Launcher for Windows</strong>
 </p>
 
 <p align="center">
@@ -14,7 +13,7 @@
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
   <a href="#development">Development</a> •
-  <a href="#license">License</a>
+  <a href="#中文說明">中文說明</a>
 </p>
 
 ---
@@ -22,162 +21,145 @@
 ## Features
 
 - **Multi-Core Support** - Vanilla, Paper, Fabric, Forge
-- **Auto Java Detection** - Automatically detects and selects the appropriate Java version
-- **Server Lifecycle Management** - Start, stop, restart servers with ease
-- **Real-time Console** - View server logs in real-time
-- **Server Properties Editor** - Edit server.properties through GUI
-- **Multi-language Support** - English and Traditional Chinese
-- **Dark/Light Theme** - System theme detection with manual override
-- **Cross-platform** - Windows, macOS, Linux
+- **Auto Java Detection** - Automatically detects installed Java versions
+- **Server Management** - Create, start, stop, delete servers
+- **Real-time Console** - View server logs and send commands
+- **Server Properties Editor** - Edit server.properties via GUI
+- **Multi-language** - English / 繁體中文
+- **Dark/Light Theme** - Follows system or manual selection
 
-## Screenshots
+## Requirements
 
-| Server List | Server Console |
-|-------------|----------------|
-| Create and manage multiple servers | Real-time log viewing |
+- **Windows 10** or later
+- **Java 8+** (auto-detected)
+- **4GB RAM** minimum
 
 ## Installation
 
-### Download
+Download from [GitHub Releases](https://github.com/0png/Lumix/releases):
 
-Download the latest release from [GitHub Releases](https://github.com/0png/Lumix/releases).
-
-| Platform | Download |
-|----------|----------|
-| Windows | `Lumix-Setup-x.x.x.exe` |
-| macOS | `Lumix-x.x.x.dmg` |
-| Linux | `Lumix-x.x.x.AppImage` |
-
-### Requirements
-
-- **Operating System**: Windows 10+, macOS 10.15+, Ubuntu 20.04+
-- **Java**: Java 8+ (auto-detected, or manually specify)
-- **Memory**: 4GB RAM minimum (8GB+ recommended)
-- **Storage**: 500MB for app + space for servers
+- `Lumix-Setup-x.x.x.exe` - Installer
+- `Lumix-x.x.x-portable.exe` - Portable version
 
 ## Usage
 
-### Creating a Server
+### Create Server
 
-1. Click the **"+"** button in the sidebar
+1. Click **"+"** button
 2. Enter server name
-3. Select Minecraft version
-4. Choose server core type (Vanilla, Paper, Fabric, Forge)
-5. Configure memory allocation
-6. Click **Create**
+3. Select version and core type
+4. Set memory allocation
+5. Click **Create**
 
-### Starting a Server
+### Start/Stop Server
 
-1. Select a server from the list
-2. Click the **Start** button
-3. View real-time logs in the console
-
-### Server Console
-
-- View real-time server output
-- Send commands directly to the server
-- Auto-scroll with manual override
+- Select server → Click **Start** or **Stop**
+- View logs in console panel
+- Send commands via input field
 
 ### Settings
 
-- **Language**: English / 繁體中文
-- **Theme**: Light / Dark / System
-- **Java Path**: Auto-detect or manual configuration
-- **Default Memory**: Set default RAM allocation
+- Language: English / 繁體中文
+- Theme: Light / Dark / System
+- Java path configuration
+- Default memory settings
 
-## Supported Server Cores
+## Supported Cores
 
-| Core | Versions | Description |
-|------|----------|-------------|
-| Vanilla | 1.7+ | Official Minecraft server |
-| Paper | 1.8+ | High-performance Spigot fork |
-| Fabric | 1.14+ | Lightweight modding platform |
-| Forge | 1.7+ | Popular modding platform |
+| Core | Description |
+|------|-------------|
+| Vanilla | Official Minecraft server |
+| Paper | High-performance fork |
+| Fabric | Lightweight mod loader |
+| Forge | Popular mod platform |
 
 ## Development
 
-### Tech Stack
-
-- **Framework**: Electron + Vite
-- **Frontend**: React + TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **State Management**: React Hooks
-- **Testing**: Vitest
-- **Package Manager**: pnpm
-
-### Project Structure
-
-```
-lumix/
-├── packages/
-│   └── app/                  # Electron application
-│       ├── src/
-│       │   ├── main/         # Electron main process
-│       │   ├── preload/      # Preload scripts
-│       │   ├── renderer/     # React frontend
-│       │   └── shared/       # Shared types
-│       └── tests/            # Test files
-├── package.json
-├── pnpm-workspace.yaml
-└── tsconfig.base.json
-```
-
-### Getting Started
-
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/0png/Lumix.git
 cd Lumix
 
-# Install dependencies
+# Install
 pnpm install
 
-# Start development server
-pnpm --filter @lumix/app dev
-
-# Build for production
-pnpm --filter @lumix/app build
-```
-
-### Scripts
-
-```bash
-# Development
+# Dev
 pnpm --filter @lumix/app dev
 
 # Build
 pnpm --filter @lumix/app build
-
-# Run tests
-pnpm --filter @lumix/app test
-
-# Lint
-pnpm --filter @lumix/app lint
 ```
 
-## Contributing
+### Tech Stack
 
-Contributions are welcome! Please read our contributing guidelines before submitting a PR.
+- Electron + Vite
+- React + TypeScript
+- Tailwind CSS + shadcn/ui
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+---
+
+# 中文說明
+
+## 功能特色
+
+- **多核心支援** - Vanilla、Paper、Fabric、Forge
+- **自動偵測 Java** - 自動找到系統安裝的 Java
+- **伺服器管理** - 建立、啟動、停止、刪除伺服器
+- **即時控制台** - 查看日誌並發送指令
+- **屬性編輯器** - 透過介面編輯 server.properties
+- **多語言** - English / 繁體中文
+- **深色/淺色主題** - 跟隨系統或手動選擇
+
+## 系統需求
+
+- **Windows 10** 或更新版本
+- **Java 8+**（自動偵測）
+- **4GB RAM** 最低需求
+
+## 安裝
+
+從 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
+
+- `Lumix-Setup-x.x.x.exe` - 安裝版
+- `Lumix-x.x.x-portable.exe` - 免安裝版
+
+## 使用方式
+
+### 建立伺服器
+
+1. 點擊 **"+"** 按鈕
+2. 輸入伺服器名稱
+3. 選擇版本和核心類型
+4. 設定記憶體配置
+5. 點擊 **建立**
+
+### 啟動/停止伺服器
+
+- 選擇伺服器 → 點擊 **啟動** 或 **停止**
+- 在控制台面板查看日誌
+- 透過輸入框發送指令
+
+### 設定
+
+- 語言：English / 繁體中文
+- 主題：淺色 / 深色 / 跟隨系統
+- Java 路徑設定
+- 預設記憶體設定
+
+## 支援的核心
+
+| 核心 | 說明 |
+|------|------|
+| Vanilla | 官方 Minecraft 伺服器 |
+| Paper | 高效能分支 |
+| Fabric | 輕量模組載入器 |
+| Forge | 熱門模組平台 |
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Electron](https://www.electronjs.org/)
-- [React](https://react.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [shadcn/ui](https://ui.shadcn.com/)
-- [PaperMC](https://papermc.io/)
-- [FabricMC](https://fabricmc.net/)
-- [MinecraftForge](https://minecraftforge.net/)
+MIT License
 
 ---
 
