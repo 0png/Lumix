@@ -33,6 +33,11 @@ pnpm-debug.log*
 # Test coverage
 coverage/
 
+# Test files - 本地開發用，不提交
+packages/app/tests/
+**/*.test.ts
+**/*.property.test.ts
+
 # Electron
 release/
 
