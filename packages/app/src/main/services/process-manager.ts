@@ -58,12 +58,13 @@ export class ProcessManager extends EventEmitter {
     const args = this.buildJvmArgs(config);
 
     // 啟動程序（spawn 可能同步拋出 ENOENT 等錯誤）
+    // 不使用 shell: true 以避免命令注入風險，spawn 原生支援空格路徑
     let proc: ChildProcess;
     try {
       proc = spawn(config.javaPath, args, {
         cwd: config.workingDir,
         stdio: ['pipe', 'pipe', 'pipe'],
-        shell: true, // Windows 上需要 shell 來正確解析 PATH 和處理空格路徑
+        windowsVerbatimArguments: true, // Windows 上保留參數原樣
       });
     } catch (error) {
       // 同步錯誤（如 ENOENT），emit error 事件讓上層處理
@@ -185,13 +186,9 @@ export class ProcessManager extends EventEmitter {
 
   /**
    * 建構 JVM 啟動參數
+   * 注意：不使用 shell: true，所以不需要手動加引號，spawn 會正確處理空格路徑
    */
   private buildJvmArgs(config: ProcessConfig): string[] {
-    // 輔助函式：為包含空格的路徑加上引號（shell: true 時需要）
-    const quotePath = (p: string): string => {
-      return p.includes(' ') ? `"${p}"` : p;
-    };
-
     // 新版 Forge 使用 @args.txt 方式啟動
     if (config.forgeArgsFile) {
       const args: string[] = [
@@ -211,7 +208,7 @@ export class ProcessManager extends EventEmitter {
       `-Xmx${config.ramMax}M`,
       ...config.jvmArgs,
       '-jar',
-      quotePath(config.jarPath),
+      config.jarPath,
       'nogui',
     ];
     return args;

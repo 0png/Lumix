@@ -162,11 +162,48 @@ export class ServerManager extends EventEmitter {
     }
 
     if (server.status !== 'stopped') {
-      await this.stopServer(id);
+      // 等待伺服器真正停止後再刪除
+      await this.stopServerAndWait(id);
     }
 
     await this.fileManager.deleteServerDirectory(server.directory);
     this.servers.delete(id);
+  }
+
+  /**
+   * 停止伺服器並等待程序真正結束
+   */
+  private async stopServerAndWait(id: string, timeoutMs: number = 30000): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const onExit = (serverId: string): void => {
+        if (serverId === id) {
+          cleanup();
+          resolve();
+        }
+      };
+
+      const timeout = setTimeout(() => {
+        cleanup();
+        // 超時後強制終止
+        this.processManager.forceKill(id);
+        // 給一點時間讓 forceKill 生效
+        setTimeout(resolve, 500);
+      }, timeoutMs);
+
+      const cleanup = (): void => {
+        clearTimeout(timeout);
+        this.processManager.off('exit', onExit);
+      };
+
+      this.processManager.on('exit', onExit);
+
+      // 發送停止指令
+      this.updateServerStatus(id, 'stopping');
+      const sent = this.processManager.writeStdin(id, 'stop');
+      if (!sent) {
+        this.processManager.kill(id);
+      }
+    });
   }
 
   // ==========================================================================
@@ -482,7 +519,7 @@ export class ServerManager extends EventEmitter {
       console.log('[ServerManager] Spawning java -version...');
       const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: true, // 使用 shell 來解析 PATH
+        windowsVerbatimArguments: true, // Windows 上保留參數原樣
       });
 
       proc.stdout?.on('data', (data: Buffer) => {

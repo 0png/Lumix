@@ -13,16 +13,15 @@ import { spawn } from 'child_process';
 export function runForgeInstaller(installerPath: string, targetDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Forge installer 使用 --installServer 參數進行無頭安裝
-    // 使用引號包裹路徑以處理空格
-    const quotedInstallerPath = `"${installerPath}"`;
-    const args = ['-jar', quotedInstallerPath, '--installServer'];
+    // 不使用 shell: true 以避免命令注入風險
+    const args = ['-jar', installerPath, '--installServer'];
     console.log('[ForgeInstaller] Args:', args);
     console.log('[ForgeInstaller] Working directory:', targetDir);
 
     const proc = spawn('java', args, {
       cwd: targetDir,
-      shell: true,
       stdio: ['ignore', 'pipe', 'pipe'],
+      windowsVerbatimArguments: true, // Windows 上保留參數原樣
     });
 
     proc.stdout?.on('data', (data: Buffer) => {
@@ -164,9 +163,8 @@ async function setupNewForgeServer(
         await fs.writeFile(userJvmArgsPath, '# Add custom JVM arguments here\n');
       }
 
-      // 對於新版 Forge，我們需要修改 ServerManager 的啟動邏輯
-      // 暫時建立一個 marker 檔案
-      await fs.writeFile(serverJarPath, 'FORGE_NEW_VERSION');
+      // 新版 Forge 不需要 server.jar，ServerManager 會讀取 forge-config.json 來決定啟動方式
+      // 不建立假的 server.jar 以避免 Java 錯誤
       return;
     }
   }
