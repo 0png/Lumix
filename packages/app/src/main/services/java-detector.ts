@@ -218,6 +218,24 @@ export class JavaDetector {
   }
 
   /**
+   * 根據 Minecraft 版本取得所需的 Java 版本
+   */
+  getRequiredJavaVersion(mcVersion: string): { requiredMajor: number; reason: string } {
+    const parts = mcVersion.split('.');
+    const major = parseInt(parts[0] || '1', 10);
+    const minor = parseInt(parts[1] || '0', 10);
+
+    if (major >= 1 && minor >= 21) {
+      return { requiredMajor: 21, reason: 'MC 1.21+ requires Java 21' };
+    } else if (major >= 1 && minor >= 18) {
+      return { requiredMajor: 17, reason: 'MC 1.18-1.20 requires Java 17' };
+    } else if (major >= 1 && minor >= 17) {
+      return { requiredMajor: 16, reason: 'MC 1.17 requires Java 16+' };
+    }
+    return { requiredMajor: 8, reason: 'MC 1.16 and below requires Java 8' };
+  }
+
+  /**
    * 根據 Minecraft 版本選擇適合的 Java
    */
   selectForMinecraft(
@@ -226,29 +244,13 @@ export class JavaDetector {
   ): JavaInstallationDto | null {
     if (installations.length === 0) return null;
 
-    // 解析 MC 版本
-    const parts = mcVersion.split('.');
-    const major = parseInt(parts[0] || '1', 10);
-    const minor = parseInt(parts[1] || '0', 10);
-
-    // MC 1.21+ 需要 Java 21
-    // MC 1.18-1.20 需要 Java 17
-    // MC 1.17 需要 Java 16+
-    // MC 1.12-1.16 需要 Java 8
-    let requiredMajor = 8;
-    if (major >= 1 && minor >= 21) {
-      requiredMajor = 21;
-    } else if (major >= 1 && minor >= 18) {
-      requiredMajor = 17;
-    } else if (major >= 1 && minor >= 17) {
-      requiredMajor = 16;
-    }
+    const { requiredMajor } = this.getRequiredJavaVersion(mcVersion);
 
     // 找到符合要求的最新版本
     const compatible = installations
       .filter((j) => j.majorVersion >= requiredMajor)
       .sort((a, b) => b.majorVersion - a.majorVersion);
 
-    return compatible[0] || installations[0] || null;
+    return compatible[0] || null;
   }
 }

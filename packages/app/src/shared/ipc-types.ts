@@ -186,6 +186,11 @@ export interface JavaInstallRequest {
   majorVersion: 8 | 17 | 21;
 }
 
+export interface JavaRequiredVersionResult {
+  requiredMajor: number;
+  reason: string;
+}
+
 export interface JavaInstallProgressEvent {
   majorVersion: number;
   progress: DownloadProgress;

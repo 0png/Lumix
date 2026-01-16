@@ -84,7 +84,11 @@
     "minRam": "Min RAM",
     "maxRam": "Max RAM",
     "eulaAgree": "I agree to the Minecraft EULA",
-    "eulaDescription": "You must agree to the"
+    "eulaDescription": "You must agree to the",
+    "javaRequired": "Requires Java {{version}}+",
+    "javaNotFound": "Java {{version}}+ not found",
+    "installJava": "Install Java {{version}}",
+    "installingJava": "Installing Java..."
   },
   "coreType": {
     "vanilla": "Vanilla",

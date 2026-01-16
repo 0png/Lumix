@@ -84,7 +84,11 @@
     "minRam": "最小記憶體",
     "maxRam": "最大記憶體",
     "eulaAgree": "我同意 Minecraft EULA",
-    "eulaDescription": "您必須同意"
+    "eulaDescription": "您必須同意",
+    "javaRequired": "需要 Java {{version}}+",
+    "javaNotFound": "找不到 Java {{version}}+",
+    "installJava": "安裝 Java {{version}}",
+    "installingJava": "正在安裝 Java..."
   },
   "coreType": {
     "vanilla": "原版",

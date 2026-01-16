@@ -55,6 +55,7 @@ export const JavaChannels = {
   GET_INSTALLATIONS: 'java:get-installations',
   INSTALL: 'java:install',
   SELECT_FOR_MC: 'java:select-for-mc',
+  GET_REQUIRED_VERSION: 'java:get-required-version',
   
   // Events
   INSTALL_PROGRESS: 'java:install-progress',

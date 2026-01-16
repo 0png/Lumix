@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type {
   JavaInstallationDto,
   JavaInstallProgressEvent,
+  JavaRequiredVersionResult,
 } from '../../../shared/ipc-types';
 
 interface UseJavaReturn {
@@ -15,6 +16,7 @@ interface UseJavaReturn {
   detect: () => Promise<JavaInstallationDto[]>;
   install: (majorVersion: 8 | 17 | 21) => Promise<JavaInstallationDto | null>;
   selectForMc: (mcVersion: string) => Promise<JavaInstallationDto | null>;
+  getRequiredVersion: (mcVersion: string) => Promise<JavaRequiredVersionResult | null>;
   refresh: () => Promise<void>;
 }
 
@@ -114,6 +116,19 @@ export function useJava(): UseJavaReturn {
     }
   }, []);
 
+  // 取得 MC 版本所需的 Java 版本
+  const getRequiredVersion = useCallback(async (mcVersion: string): Promise<JavaRequiredVersionResult | null> => {
+    try {
+      const result = await window.electronAPI.java.getRequiredVersion(mcVersion);
+      if (result.success && result.data) {
+        return result.data;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   // 訂閱安裝進度事件
   useEffect(() => {
     const unsubscribe = window.electronAPI.java.onInstallProgress((event: JavaInstallProgressEvent) => {
@@ -141,6 +156,7 @@ export function useJava(): UseJavaReturn {
     detect,
     install,
     selectForMc,
+    getRequiredVersion,
     refresh,
   };
 }

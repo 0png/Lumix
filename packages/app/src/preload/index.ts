@@ -21,6 +21,7 @@ import type {
   JavaInstallationDto,
   JavaInstallRequest,
   JavaInstallProgressEvent,
+  JavaRequiredVersionResult,
   FetchVersionsResult,
   DownloadServerRequest,
   DownloadProgressEvent,
@@ -96,6 +97,9 @@ const electronAPI = {
 
     selectForMc: (mcVersion: string): Promise<IpcResult<JavaInstallationDto | null>> =>
       ipcRenderer.invoke(JavaChannels.SELECT_FOR_MC, mcVersion),
+
+    getRequiredVersion: (mcVersion: string): Promise<IpcResult<JavaRequiredVersionResult>> =>
+      ipcRenderer.invoke(JavaChannels.GET_REQUIRED_VERSION, mcVersion),
 
     onInstallProgress: (callback: (event: JavaInstallProgressEvent) => void) => {
       const handler = (_: Electron.IpcRendererEvent, data: JavaInstallProgressEvent) => callback(data);

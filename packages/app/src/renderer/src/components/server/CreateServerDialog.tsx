@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { VersionCombobox } from '@/components/ui/version-combobox';
+import { useJava } from '@/hooks/use-java';
 import type { CoreType } from './ServerList';
 import type { CreateServerError } from '@/hooks/use-servers';
 import { IpcErrorCode } from '../../../../shared/ipc-types';
@@ -52,6 +53,7 @@ export function CreateServerDialog({
   existingNames = [],
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
+  const { installations, getRequiredVersion, install, installProgress } = useJava();
   const [name, setName] = useState('');
   const [coreType, setCoreType] = useState<CoreType>('paper');
   const [mcVersion, setMcVersion] = useState('');
@@ -62,6 +64,11 @@ export function CreateServerDialog({
   const [nameError, setNameError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eulaAccepted, setEulaAccepted] = useState(false);
+  
+  // Java 版本需求狀態
+  const [requiredJava, setRequiredJava] = useState<number | null>(null);
+  const [javaCompatible, setJavaCompatible] = useState<boolean>(true);
+  const [isInstallingJava, setIsInstallingJava] = useState(false);
 
   const fetchVersions = useCallback(async (type: CoreType) => {
     setLoading(true);
@@ -97,6 +104,33 @@ export function CreateServerDialog({
       fetchVersions(coreType);
     }
   }, [open, coreType, fetchVersions]);
+
+  // 檢查 Java 版本需求
+  useEffect(() => {
+    if (!mcVersion) {
+      setRequiredJava(null);
+      setJavaCompatible(true);
+      return;
+    }
+    
+    getRequiredVersion(mcVersion).then((result) => {
+      if (result) {
+        setRequiredJava(result.requiredMajor);
+        // 檢查是否有相容的 Java
+        const hasCompatible = installations.some((j) => j.majorVersion >= result.requiredMajor);
+        setJavaCompatible(hasCompatible);
+      }
+    });
+  }, [mcVersion, installations, getRequiredVersion]);
+
+  // 安裝 Java
+  const handleInstallJava = async () => {
+    if (!requiredJava) return;
+    setIsInstallingJava(true);
+    const version = requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8;
+    await install(version as 8 | 17 | 21);
+    setIsInstallingJava(false);
+  };
 
   const handleCoreTypeChange = (value: string) => {
     const newType = value as CoreType;
@@ -206,6 +240,32 @@ export function CreateServerDialog({
               emptyText={error || t('createServer.noVersionFound')}
               loading={loading}
             />
+            {/* Java 版本需求提示 */}
+            {mcVersion && requiredJava && (
+              <div className={`text-sm p-2 rounded ${javaCompatible ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'}`}>
+                {javaCompatible ? (
+                  <span>✓ {t('createServer.javaRequired', { version: requiredJava })}</span>
+                ) : (
+                  <div className="space-y-2">
+                    <span>⚠ {t('createServer.javaNotFound', { version: requiredJava })}</span>
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleInstallJava}
+                        disabled={isInstallingJava}
+                      >
+                        {isInstallingJava 
+                          ? `${t('createServer.installingJava')} ${installProgress.get(requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8) || 0}%`
+                          : t('createServer.installJava', { version: requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8 })
+                        }
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
