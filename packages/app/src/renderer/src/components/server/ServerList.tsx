@@ -1,12 +1,14 @@
 /**
  * ServerList 元件 - 伺服器列表
  * 設計語言與 Lumix 保持一致
- * 支援響應式設計
+ * 支援響應式設計、骨架屏載入、交錯動畫
  */
 
 import { useTranslation } from 'react-i18next';
-import { Server, Plus } from 'lucide-react';
+import { Server, Plus, Sparkles } from 'lucide-react';
 import { ServerCard } from './ServerCard';
+import { ListSkeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type CoreType = 'vanilla' | 'paper' | 'fabric' | 'forge';
@@ -18,7 +20,7 @@ export interface ServerInstance {
   mcVersion: string;
   status: ServerStatus;
   ramMax: number;
-  isReady?: boolean; // server.jar 是否已下載完成
+  isReady?: boolean;
 }
 
 interface ServerListProps {
@@ -27,28 +29,51 @@ interface ServerListProps {
   onSelectServer?: (id: string) => void;
   onStartServer?: (id: string) => void;
   onStopServer?: (id: string) => void;
+  onCreateServer?: () => void;
+  /** 是否正在載入 */
+  loading?: boolean;
+  /** 各伺服器的下載進度 */
+  downloadProgress?: Map<string, number>;
 }
 
 /**
- * 空狀態元件 - 帶動畫效果
+ * 空狀態元件 - 帶動畫效果和引導
  */
-function EmptyState() {
+function EmptyState({ onCreateServer }: { onCreateServer?: () => void }) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex-1 border-2 border-dashed rounded-lg flex flex-col items-center justify-center border-muted-foreground/25 bg-muted/30 min-h-[200px] animate-fade-in backdrop-blur-sm">
-      <div className="text-center p-4 lg:p-6">
-        <div className="rounded-full bg-gradient-to-br from-background to-muted p-2 lg:p-3 w-12 h-12 lg:w-14 lg:h-14 mx-auto mb-3 lg:mb-4 flex items-center justify-center shadow-lg shadow-primary/5 border border-border/50">
-          <Server className="h-5 w-5 lg:h-6 lg:w-6 text-muted-foreground" />
+    <div 
+      className="flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center border-muted-foreground/25 bg-gradient-subtle min-h-[280px] animate-fade-in"
+      role="region"
+      aria-label={t('welcome.title')}
+    >
+      <div className="text-center p-6 lg:p-8 max-w-md">
+        {/* 圖示區域 */}
+        <div className="relative mx-auto mb-6">
+          <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 w-20 h-20 mx-auto flex items-center justify-center shadow-lg shadow-primary/5 border border-primary/10">
+            <Server className="h-10 w-10 text-primary/70" aria-hidden="true" />
+          </div>
+          <div className="absolute -top-1 -right-1 rounded-full bg-primary/20 p-1.5 animate-pulse">
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+          </div>
         </div>
-        <h3 className="text-sm lg:text-base font-semibold">{t('welcome.title')}</h3>
-        <p className="text-xs lg:text-sm text-muted-foreground mt-1 max-w-xs">
+
+        {/* 文字區域 */}
+        <h3 className="text-lg lg:text-xl font-semibold mb-2">{t('welcome.title')}</h3>
+        <p className="text-sm lg:text-base text-muted-foreground mb-6 leading-relaxed">
           {t('welcome.description')}
         </p>
-        <div className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground/70">
-          <Plus className="h-3 w-3" />
-          <span>{t('sidebar.addServer')}</span>
-        </div>
+
+        {/* CTA 按鈕 */}
+        <Button 
+          onClick={onCreateServer}
+          className="gap-2 ripple"
+          aria-label={t('sidebar.addServer')}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {t('sidebar.addServer')}
+        </Button>
       </div>
     </div>
   );
@@ -63,18 +88,35 @@ export function ServerList({
   onSelectServer,
   onStartServer,
   onStopServer,
+  onCreateServer,
+  loading = false,
+  downloadProgress,
 }: ServerListProps) {
+  // 載入中顯示骨架屏
+  if (loading) {
+    return <ListSkeleton count={3} />;
+  }
+
+  // 空狀態
   if (servers.length === 0) {
-    return <EmptyState />;
+    return <EmptyState onCreateServer={onCreateServer} />;
   }
 
   return (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+    <div 
+      className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+      role="list"
+      aria-label="伺服器列表"
+    >
       {servers.map((server, index) => (
         <div
           key={server.id}
           className="animate-fade-in-up"
-          style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+          style={{ 
+            animationDelay: `${index * 50}ms`, 
+            animationFillMode: 'backwards' 
+          }}
+          role="listitem"
         >
           <ServerCard
             server={server}
@@ -82,6 +124,7 @@ export function ServerList({
             onSelect={() => onSelectServer?.(server.id)}
             onStart={() => onStartServer?.(server.id)}
             onStop={() => onStopServer?.(server.id)}
+            downloadProgress={downloadProgress?.get(server.id)}
           />
         </div>
       ))}

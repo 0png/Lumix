@@ -21,7 +21,9 @@
     "settings": "設定",
     "collapse": "收縮",
     "expand": "展開",
-    "about": "關於"
+    "about": "關於",
+    "navigation": "主要導航",
+    "actions": "功能選單"
   },
   "theme": {
     "light": "淺色",
@@ -61,7 +63,15 @@
     "gamemode": "遊戲模式",
     "maxPlayers": "最大玩家數",
     "onlineMode": "正版驗證",
-    "whiteList": "白名單"
+    "whiteList": "白名單",
+    "actions": "伺服器操作",
+    "consoleEmpty": "控制台目前沒有日誌",
+    "consoleHint": "伺服器啟動後，日誌將顯示在這裡",
+    "clearConsole": "清除控制台",
+    "clearConsoleConfirm": "確定要清除所有日誌嗎？此操作無法復原。",
+    "sendCommand": "發送指令",
+    "deleteConfirm": "確定要刪除此伺服器嗎？",
+    "deleteWarning": "此操作無法復原，所有伺服器資料將被永久刪除。"
   },
   "createServer": {
     "title": "建立新伺服器",
