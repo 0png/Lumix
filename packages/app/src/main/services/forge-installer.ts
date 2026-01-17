@@ -13,7 +13,7 @@ import { spawn } from 'child_process';
 export function runForgeInstaller(installerPath: string, targetDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Forge installer 使用 --installServer 參數進行無頭安裝
-    // 不使用 shell: true 以避免命令注入風險
+    // Windows 上路徑包含空格時，spawn 會自動處理引號
     const args = ['-jar', installerPath, '--installServer'];
     console.log('[ForgeInstaller] Args:', args);
     console.log('[ForgeInstaller] Working directory:', targetDir);
@@ -21,7 +21,7 @@ export function runForgeInstaller(installerPath: string, targetDir: string): Pro
     const proc = spawn('java', args, {
       cwd: targetDir,
       stdio: ['ignore', 'pipe', 'pipe'],
-      windowsVerbatimArguments: true, // Windows 上保留參數原樣
+      // 移除 windowsVerbatimArguments，讓 Node.js 自動處理路徑引號
     });
 
     proc.stdout?.on('data', (data: Buffer) => {

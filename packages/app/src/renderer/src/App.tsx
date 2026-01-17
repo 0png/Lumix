@@ -234,6 +234,7 @@ function AppContent() {
                 onSelectServer={handleSelectServer}
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
+                onCreateServer={() => setShowCreateDialog(true)}
               />
             )}
           </div>
