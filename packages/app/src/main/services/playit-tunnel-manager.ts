@@ -434,14 +434,13 @@ export class PlayitTunnelManager extends EventEmitter {
     // 使用絕對路徑指向全域 secret.txt（所有 server 共用同一個 secret）
     const globalSecretPath = path.join(this.getAgentDirectory(), 'secret.txt');
     
-    // 使用相對路徑指向全域 secret.txt（從配置目錄到 agent 目錄）
-    // 例如：configs/server1/ -> ../../secret.txt
-    const relativeSecretPath = path.relative(agentDir, globalSecretPath).replace(/\\/g, '/');
+    // 將 Windows 路徑的反斜線轉換為斜線（TOML 格式要求）
+    const secretPathForToml = globalSecretPath.replace(/\\/g, '/');
     
     // 如果有 secret，使用 secret_path；否則讓 playit-agent 自動處理 claim
     const configContent = secretKey
       ? `agent_name = "lumix-${serverId}"
-secret_path = "${relativeSecretPath}"
+secret_path = "${secretPathForToml}"
 
 [[tunnels]]
 name = "minecraft-${serverId}"
@@ -451,7 +450,7 @@ local = ${localPort}
 special_lan = true
 `
       : `agent_name = "lumix-${serverId}"
-secret_path = "${relativeSecretPath}"
+secret_path = "${secretPathForToml}"
 
 [[tunnels]]
 name = "minecraft-${serverId}"
