@@ -161,6 +161,18 @@ function AppContent() {
   }, [startServer, t, serverDtos, updateServer]);
 
   const handleStopServer = useCallback(async (id: string) => {
+    // 先停止隧道（如果正在運行）
+    try {
+      const tunnelStatus = await window.electronAPI.tunnel.getStatus(id);
+      if (tunnelStatus.success && tunnelStatus.data && tunnelStatus.data !== 'stopped') {
+        await window.electronAPI.tunnel.stop(id);
+      }
+    } catch (error) {
+      console.error('Failed to stop tunnel:', error);
+      // 繼續停止伺服器，即使隧道停止失敗
+    }
+
+    // 停止伺服器
     const result = await stopServer(id);
     if (result.success) {
       toast.success(t('toast.serverStopped'));

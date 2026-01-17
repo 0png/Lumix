@@ -53,6 +53,68 @@ export class PlayitTunnelManager extends EventEmitter {
 
   constructor() {
     super();
+    // 啟動時載入已保存的隧道資訊
+    this.loadTunnelInfo();
+  }
+
+  /**
+   * 獲取隧道資訊檔案路徑
+   */
+  private getTunnelInfoPath(serverId: string): string {
+    const agentDir = this.getAgentDirectory();
+    return path.join(agentDir, 'configs', serverId, 'tunnel-info.json');
+  }
+
+  /**
+   * 載入已保存的隧道資訊
+   */
+  private async loadTunnelInfo(): Promise<void> {
+    try {
+      const agentDir = this.getAgentDirectory();
+      const configsDir = path.join(agentDir, 'configs');
+      
+      // 檢查 configs 目錄是否存在
+      try {
+        await fs.access(configsDir);
+      } catch {
+        return; // 目錄不存在，跳過載入
+      }
+
+      // 讀取所有伺服器的配置目錄
+      const serverDirs = await fs.readdir(configsDir);
+      
+      for (const serverId of serverDirs) {
+        const infoPath = this.getTunnelInfoPath(serverId);
+        try {
+          const data = await fs.readFile(infoPath, 'utf-8');
+          const tunnelInfo: TunnelInfo = JSON.parse(data);
+          // 設置狀態為 stopped（因為重啟後進程不存在）
+          tunnelInfo.status = 'stopped';
+          this.tunnels.set(serverId, tunnelInfo);
+        } catch {
+          // 檔案不存在或解析失敗，跳過
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load tunnel info:', error);
+    }
+  }
+
+  /**
+   * 保存隧道資訊到檔案
+   */
+  private async saveTunnelInfo(serverId: string): Promise<void> {
+    const tunnel = this.tunnels.get(serverId);
+    if (!tunnel) return;
+
+    try {
+      const infoPath = this.getTunnelInfoPath(serverId);
+      const dir = path.dirname(infoPath);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(infoPath, JSON.stringify(tunnel, null, 2), 'utf-8');
+    } catch (error) {
+      console.error(`[Tunnel ${serverId}] Failed to save tunnel info:`, error);
+    }
   }
 
   /**
@@ -659,6 +721,7 @@ special_lan = true
             tunnel.publicPort = parseInt(String(port), 10);
             this.tunnels.set(serverId, tunnel);
             this.emit('info-updated', serverId, tunnel);
+            await this.saveTunnelInfo(serverId);
             console.log(`[Tunnel ${serverId}] 從 JSON 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
             return;
           }
@@ -674,6 +737,7 @@ special_lan = true
               tunnel.publicPort = parseInt(String(port), 10);
               this.tunnels.set(serverId, tunnel);
               this.emit('info-updated', serverId, tunnel);
+              await this.saveTunnelInfo(serverId);
               console.log(`[Tunnel ${serverId}] 從 JSON 數組解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
               return;
             }
@@ -692,6 +756,7 @@ special_lan = true
       tunnel.publicPort = parseInt(match[2], 10);
       this.tunnels.set(serverId, tunnel);
       this.emit('info-updated', serverId, tunnel);
+      await this.saveTunnelInfo(serverId); // 保存到檔案
       console.log(`[Tunnel ${serverId}] 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
       return;
     }
@@ -703,6 +768,7 @@ special_lan = true
       tunnel.publicPort = parseInt(match[2], 10);
       this.tunnels.set(serverId, tunnel);
       this.emit('info-updated', serverId, tunnel);
+      await this.saveTunnelInfo(serverId);
       console.log(`[Tunnel ${serverId}] 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
       return;
     }
@@ -714,6 +780,7 @@ special_lan = true
       tunnel.publicPort = parseInt(match[2], 10);
       this.tunnels.set(serverId, tunnel);
       this.emit('info-updated', serverId, tunnel);
+      await this.saveTunnelInfo(serverId);
       console.log(`[Tunnel ${serverId}] 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
       return;
     }
@@ -725,6 +792,7 @@ special_lan = true
       tunnel.publicPort = parseInt(match[2], 10);
       this.tunnels.set(serverId, tunnel);
       this.emit('info-updated', serverId, tunnel);
+      await this.saveTunnelInfo(serverId);
       console.log(`[Tunnel ${serverId}] 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
       return;
     }
@@ -736,6 +804,7 @@ special_lan = true
       tunnel.publicPort = parseInt(match[2], 10);
       this.tunnels.set(serverId, tunnel);
       this.emit('info-updated', serverId, tunnel);
+      await this.saveTunnelInfo(serverId);
       console.log(`[Tunnel ${serverId}] 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
       return;
     }
@@ -748,6 +817,7 @@ special_lan = true
       tunnel.publicPort = parseInt(match[2], 10);
       this.tunnels.set(serverId, tunnel);
       this.emit('info-updated', serverId, tunnel);
+      await this.saveTunnelInfo(serverId);
       console.log(`[Tunnel ${serverId}] 解析到地址: ${tunnel.publicAddress}:${tunnel.publicPort}`);
       return;
     }
