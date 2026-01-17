@@ -423,36 +423,17 @@ export class PlayitTunnelManager extends EventEmitter {
    * 創建 playit.toml 配置文件
    * 將配置文件放在 agent 所在目錄，命名為 playit.toml（playit-agent 會自動查找）
    * 所有 server 共用同一個 tunnel 名稱，以確保使用同一個公網 IP
+   * 不指定 secret_path，讓 playit-agent 使用預設位置管理 secret
    */
   private async createConfigFile(serverId: string, localPort: number, agentDir: string): Promise<string> {
     await fs.mkdir(agentDir, { recursive: true });
     // 將配置文件放在 agent 所在目錄，命名為 playit.toml
     const configPath = path.join(agentDir, 'playit.toml');
     
-    // 獲取 secret key（如果沒有，playit-agent 會自動處理）
-    const secretKey = await this.getOrCreateSecretKey();
-    
-    // 使用絕對路徑指向全域 secret.txt（所有 server 共用同一個 secret）
-    const globalSecretPath = path.join(this.getAgentDirectory(), 'secret.txt');
-    
-    // 將 Windows 路徑的反斜線轉換為斜線（TOML 格式要求）
-    const secretPathForToml = globalSecretPath.replace(/\\/g, '/');
-    
     // 使用固定的 tunnel 名稱，讓所有 server 共用同一個公網 IP
     // 只有 local port 不同，用於區分不同的 server
-    const configContent = secretKey
-      ? `agent_name = "lumix-${serverId}"
-secret_path = "${secretPathForToml}"
-
-[[tunnels]]
-name = "minecraft"
-proto = "tcp"
-port_count = 1
-local = ${localPort}
-special_lan = true
-`
-      : `agent_name = "lumix-${serverId}"
-secret_path = "${secretPathForToml}"
+    // 不指定 secret_path，讓 playit-agent 自己管理 secret（會儲存在預設位置）
+    const configContent = `agent_name = "lumix-${serverId}"
 
 [[tunnels]]
 name = "minecraft"
