@@ -139,7 +139,10 @@
     "invalidServerName": "Server name cannot be empty",
     "createFailed": "Failed to create server",
     "propertiesSaved": "Server properties saved",
-    "propertiesSaveFailed": "Failed to save server properties"
+    "propertiesSaveFailed": "Failed to save server properties",
+    "detectingJava": "Detecting system Java...",
+    "javaDetected": "Detected {{count}} Java installation(s)",
+    "javaCannotRemove": "System-detected Java cannot be manually removed"
   },
   "about": {
     "title": "About",

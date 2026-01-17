@@ -15,6 +15,7 @@ import {
 } from '@/components/server';
 import { SettingsView, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
+import { useJava } from '@/hooks/use-java';
 import { toast } from '@/lib/toast';
 import '@/i18n';
 
@@ -57,6 +58,10 @@ function AppContent() {
     stopServer,
     sendCommand,
   } = useServers();
+  const {
+    installations: javaInstallations,
+    detect: detectJava,
+  } = useJava();
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -193,6 +198,22 @@ function AppContent() {
     await window.electronAPI.app.openFolder(directory);
   }, []);
 
+  const handleAddJavaPath = useCallback(async () => {
+    toast.info(t('toast.detectingJava'));
+    const detectedJava = await detectJava();
+    if (detectedJava.length > 0) {
+      toast.success(t('toast.javaDetected', { count: detectedJava.length }));
+    } else {
+      toast.error(t('toast.noJavaFound'));
+    }
+  }, [detectJava, t]);
+
+  const handleRemoveJavaPath = useCallback(async (_path: string) => {
+    // Java installations 是由系統偵測的，無法手動移除
+    // 這個功能暫時不實作
+    toast.info(t('toast.javaCannotRemove'));
+  }, [t]);
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -204,7 +225,14 @@ function AppContent() {
 
     switch (currentView) {
       case 'settings':
-        return <SettingsView onBack={handleBackToServers} />;
+        return (
+          <SettingsView
+            onBack={handleBackToServers}
+            javaInstallations={javaInstallations}
+            onAddJavaPath={handleAddJavaPath}
+            onRemoveJavaPath={handleRemoveJavaPath}
+          />
+        );
       case 'about':
         return <AboutView onBack={handleBackToServers} />;
       default:

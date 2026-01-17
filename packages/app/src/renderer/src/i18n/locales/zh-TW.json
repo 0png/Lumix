@@ -139,7 +139,10 @@
     "invalidServerName": "伺服器名稱不能為空",
     "createFailed": "建立伺服器失敗",
     "propertiesSaved": "伺服器屬性已儲存",
-    "propertiesSaveFailed": "儲存伺服器屬性失敗"
+    "propertiesSaveFailed": "儲存伺服器屬性失敗",
+    "detectingJava": "正在偵測系統 Java...",
+    "javaDetected": "偵測到 {{count}} 個 Java 安裝",
+    "javaCannotRemove": "系統偵測的 Java 無法手動移除"
   },
   "about": {
     "title": "關於",
