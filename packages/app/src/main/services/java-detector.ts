@@ -132,6 +132,7 @@ export class JavaDetector {
       });
 
       let output = '';
+      let errorOccurred = false;
 
       proc.stderr?.on('data', (data: Buffer) => {
         output += data.toString();
@@ -141,23 +142,34 @@ export class JavaDetector {
         output += data.toString();
       });
 
-      proc.on('error', () => {
+      proc.on('error', (err) => {
+        console.log(`[JavaDetector] Spawn error for ${javaPath}:`, err.message);
+        errorOccurred = true;
         resolve(null);
       });
 
       proc.on('close', (code) => {
+        if (errorOccurred) return;
+        
         if (code !== 0) {
+          console.log(`[JavaDetector] Exit code ${code} for ${javaPath}`);
           resolve(null);
           return;
         }
 
         const info = this.parseJavaVersion(output, javaPath);
+        if (!info) {
+          console.log(`[JavaDetector] Failed to parse version from output:`, output.substring(0, 100));
+        }
         resolve(info);
       });
 
       setTimeout(() => {
-        proc.kill();
-        resolve(null);
+        if (!errorOccurred) {
+          console.log(`[JavaDetector] Timeout for ${javaPath}`);
+          proc.kill();
+          resolve(null);
+        }
       }, 5000);
     });
   }
