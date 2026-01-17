@@ -5,9 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, ArrowLeft } from 'lucide-react';
+import { ExternalLink, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { UpdateDialog } from '@/components/updater/UpdateDialog';
 import appIcon from '@/assets/icon.png';
 
 interface AboutViewProps {
@@ -32,6 +33,7 @@ function GitHubIcon({ className }: { className?: string }) {
 export function AboutView({ onBack }: AboutViewProps) {
   const { t } = useTranslation();
   const [version, setVersion] = useState('0.1.0');
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 
   useEffect(() => {
     setVersion('0.1.0');
@@ -124,10 +126,20 @@ export function AboutView({ onBack }: AboutViewProps) {
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t('about.submitFeedback')}
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setUpdateDialogOpen(true)}
+                className="hover:bg-primary/10 hover:border-primary/50 transition-colors"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {t('updater.checkForUpdates')}
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <UpdateDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   DownloadChannels,
   SettingsChannels,
   AppChannels,
+  UpdaterChannels,
 } from '../shared/ipc-channels';
 import type {
   IpcResult,
@@ -29,6 +30,8 @@ import type {
   SettingsDto,
   SaveSettingsRequest,
   CoreType,
+  UpdateStatusDto,
+  UpdaterStatusEvent,
 } from '../shared/ipc-types';
 
 // ============================================================================
@@ -161,6 +164,29 @@ const electronAPI = {
 
     openExternal: (url: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_EXTERNAL, url),
+  },
+
+  // --------------------------------------------------------------------------
+  // Updater
+  // --------------------------------------------------------------------------
+  updater: {
+    checkForUpdates: (): Promise<IpcResult<UpdateStatusDto>> =>
+      ipcRenderer.invoke(UpdaterChannels.CHECK_FOR_UPDATES),
+
+    downloadUpdate: (): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(UpdaterChannels.DOWNLOAD_UPDATE),
+
+    installUpdate: (): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(UpdaterChannels.INSTALL_UPDATE),
+
+    getStatus: (): Promise<IpcResult<UpdateStatusDto>> =>
+      ipcRenderer.invoke(UpdaterChannels.GET_STATUS),
+
+    onStatus: (callback: (event: UpdaterStatusEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: UpdaterStatusEvent) => callback(data);
+      ipcRenderer.on(UpdaterChannels.STATUS, handler);
+      return () => ipcRenderer.removeListener(UpdaterChannels.STATUS, handler);
+    },
   },
 };
 

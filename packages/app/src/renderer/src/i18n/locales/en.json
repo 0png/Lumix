@@ -152,5 +152,17 @@
     "openSource": "Open Source",
     "viewOnGitHub": "View on GitHub",
     "submitFeedback": "Submit Feedback"
+  },
+  "updater": {
+    "title": "Software Update",
+    "checking": "Checking for updates...",
+    "upToDate": "You are up to date",
+    "available": "New version {{version}} available",
+    "downloading": "Downloading update...",
+    "download": "Download Update",
+    "install": "Install and Restart",
+    "retry": "Retry",
+    "error": "Error checking for updates: {{error}}",
+    "checkForUpdates": "Check for Updates"
   }
 }
