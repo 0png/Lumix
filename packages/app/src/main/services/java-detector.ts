@@ -91,21 +91,30 @@ export class JavaDetector {
     const installations: JavaInstallationDto[] = [];
     const searchPaths = this.getSearchPaths();
 
+    console.log('[JavaDetector] Scanning paths:', searchPaths);
+
     for (const basePath of searchPaths) {
       try {
         const entries = await fs.readdir(basePath, { withFileTypes: true });
+        console.log(`[JavaDetector] Found entries in ${basePath}:`, entries.map(e => e.name));
+        
         for (const entry of entries) {
           if (entry.isDirectory()) {
             const jdkPath = path.join(basePath, entry.name);
             const javaPath = this.getJavaExecutable(jdkPath);
+            console.log(`[JavaDetector] Checking ${javaPath}...`);
+            
             const info = await this.getJavaInfo(javaPath);
             if (info) {
+              console.log(`[JavaDetector] Found Java:`, info);
               installations.push(info);
+            } else {
+              console.log(`[JavaDetector] Not a valid Java installation: ${javaPath}`);
             }
           }
         }
-      } catch {
-        // 路徑不存在，跳過
+      } catch (error) {
+        console.log(`[JavaDetector] Path not accessible: ${basePath}`, error);
       }
     }
 
