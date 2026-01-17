@@ -97,20 +97,6 @@ export const AppChannels = {
 } as const;
 
 // ============================================================================
-// Updater Channels
-// ============================================================================
-
-export const UpdaterChannels = {
-  CHECK_FOR_UPDATES: 'updater:check-for-updates',
-  DOWNLOAD_UPDATE: 'updater:download-update',
-  INSTALL_UPDATE: 'updater:install-update',
-  GET_STATUS: 'updater:get-status',
-  
-  // Events
-  STATUS: 'updater:status',
-} as const;
-
-// ============================================================================
 // All Channels Export
 // ============================================================================
 
@@ -120,5 +106,4 @@ export const IpcChannels = {
   Download: DownloadChannels,
   Settings: SettingsChannels,
   App: AppChannels,
-  Updater: UpdaterChannels,
 } as const;

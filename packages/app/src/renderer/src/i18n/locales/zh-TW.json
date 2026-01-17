@@ -152,17 +152,5 @@
     "openSource": "開源專案",
     "viewOnGitHub": "在 GitHub 上查看",
     "submitFeedback": "提交回饋"
-  },
-  "updater": {
-    "title": "軟體更新",
-    "checking": "正在檢查更新...",
-    "upToDate": "目前已是最新版本",
-    "available": "發現新版本 {{version}}",
-    "downloading": "正在下載更新...",
-    "download": "下載更新",
-    "install": "安裝並重啟",
-    "retry": "重試",
-    "error": "檢查更新時發生錯誤：{{error}}",
-    "checkForUpdates": "檢查更新"
   }
 }

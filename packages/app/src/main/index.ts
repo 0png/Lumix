@@ -1,7 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { initAllIpcHandlers, cleanupAllIpcHandlers, getAutoUpdater } from './ipc';
+import { initAllIpcHandlers, cleanupAllIpcHandlers } from './ipc';
 
 // ============================================================================
 // Window Management
@@ -35,12 +35,6 @@ function createWindow(): void {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
-
-  // 設定 AutoUpdater 的主視窗
-  const updater = getAutoUpdater();
-  if (updater) {
-    updater.setMainWindow(mainWindow);
   }
 }
 

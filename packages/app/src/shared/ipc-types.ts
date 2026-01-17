@@ -274,27 +274,3 @@ export interface UpdateServerPropertiesRequest {
 export interface ServerReadyEvent {
   serverId: string;
 }
-
-// ============================================================================
-// Updater Types
-// ============================================================================
-
-export interface UpdateProgressDto {
-  bytesPerSecond: number;
-  percent: number;
-  transferred: number;
-  total: number;
-}
-
-export interface UpdateStatusDto {
-  available: boolean;
-  version?: string;
-  downloading?: boolean;
-  progress?: UpdateProgressDto;
-  error?: string;
-}
-
-export interface UpdaterStatusEvent {
-  event: string;
-  data?: unknown;
-}
