@@ -70,7 +70,42 @@ export class JavaDetector {
    * 從 PATH 環境變數偵測 Java
    */
   private async detectFromPath(): Promise<JavaInstallationDto | null> {
-    return this.getJavaInfo('java');
+    // 對於 PATH 中的 'java' 命令，需要使用 shell
+    return new Promise((resolve) => {
+      const proc = spawn('java', ['-version'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true,
+      });
+
+      let output = '';
+
+      proc.stderr?.on('data', (data: Buffer) => {
+        output += data.toString();
+      });
+
+      proc.stdout?.on('data', (data: Buffer) => {
+        output += data.toString();
+      });
+
+      proc.on('error', () => {
+        resolve(null);
+      });
+
+      proc.on('close', (code) => {
+        if (code !== 0) {
+          resolve(null);
+          return;
+        }
+
+        const info = this.parseJavaVersion(output, 'java');
+        resolve(info);
+      });
+
+      setTimeout(() => {
+        proc.kill();
+        resolve(null);
+      }, 5000);
+    });
   }
 
   /**
@@ -128,7 +163,6 @@ export class JavaDetector {
     return new Promise((resolve) => {
       const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: true,
       });
 
       let output = '';
