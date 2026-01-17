@@ -36,7 +36,12 @@ export function AboutView({ onBack }: AboutViewProps) {
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 
   useEffect(() => {
-    setVersion('0.1.0');
+    // 動態讀取版本號
+    window.electronAPI.app.getVersion().then((result) => {
+      if (result.success && result.data) {
+        setVersion(result.data);
+      }
+    });
   }, []);
 
   const techStack = ['Electron', 'React', 'Vite', 'TypeScript', 'Tailwind CSS', 'Radix UI'];
@@ -66,7 +71,7 @@ export function AboutView({ onBack }: AboutViewProps) {
             <div className="grid grid-cols-2 gap-4 mt-6">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t('about.version')}</p>
-                <p className="text-sm font-medium">{version}</p>
+                <p className="text-sm font-medium">Beta</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t('about.author')}</p>
@@ -78,7 +83,7 @@ export function AboutView({ onBack }: AboutViewProps) {
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t('about.copyright')}</p>
-                <p className="text-sm font-medium">© 2025 0png</p>
+                <p className="text-sm font-medium">© 2026 0png</p>
               </div>
             </div>
           </CardContent>

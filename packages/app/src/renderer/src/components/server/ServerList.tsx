@@ -44,15 +44,15 @@ function EmptyState({ onCreateServer }: { onCreateServer?: () => void }) {
 
   return (
     <div 
-      className="flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center border-muted-foreground/25 bg-gradient-subtle min-h-[280px] animate-fade-in"
+      className="flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center border-muted-foreground/25 bg-gradient-subtle min-h-[400px] animate-fade-in"
       role="region"
       aria-label={t('welcome.title')}
     >
-      <div className="text-center p-6 lg:p-8 max-w-md">
+      <div className="text-center p-8 max-w-md space-y-6">
         {/* 圖示區域 */}
-        <div className="relative mx-auto mb-6">
-          <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 w-20 h-20 mx-auto flex items-center justify-center shadow-lg shadow-primary/5 border border-primary/10">
-            <Server className="h-10 w-10 text-primary/70" aria-hidden="true" />
+        <div className="relative mx-auto w-fit">
+          <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-5 w-24 h-24 flex items-center justify-center shadow-lg shadow-primary/5 border border-primary/10">
+            <Server className="h-12 w-12 text-primary/70" aria-hidden="true" />
           </div>
           <div className="absolute -top-1 -right-1 rounded-full bg-primary/20 p-1.5 animate-pulse">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -60,10 +60,12 @@ function EmptyState({ onCreateServer }: { onCreateServer?: () => void }) {
         </div>
 
         {/* 文字區域 */}
-        <h3 className="text-lg lg:text-xl font-semibold mb-2">{t('welcome.title')}</h3>
-        <p className="text-sm lg:text-base text-muted-foreground mb-6 leading-relaxed">
-          {t('welcome.description')}
-        </p>
+        <div className="space-y-2">
+          <h3 className="text-xl font-semibold">{t('welcome.title')}</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {t('welcome.description')}
+          </p>
+        </div>
 
         {/* CTA 按鈕 */}
         <Button 
