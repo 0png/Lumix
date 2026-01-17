@@ -422,6 +422,7 @@ export class PlayitTunnelManager extends EventEmitter {
   /**
    * 創建 playit.toml 配置文件
    * 將配置文件放在 agent 所在目錄，命名為 playit.toml（playit-agent 會自動查找）
+   * 所有 server 共用同一個 tunnel 名稱，以確保使用同一個公網 IP
    */
   private async createConfigFile(serverId: string, localPort: number, agentDir: string): Promise<string> {
     await fs.mkdir(agentDir, { recursive: true });
@@ -437,13 +438,14 @@ export class PlayitTunnelManager extends EventEmitter {
     // 將 Windows 路徑的反斜線轉換為斜線（TOML 格式要求）
     const secretPathForToml = globalSecretPath.replace(/\\/g, '/');
     
-    // 如果有 secret，使用 secret_path；否則讓 playit-agent 自動處理 claim
+    // 使用固定的 tunnel 名稱，讓所有 server 共用同一個公網 IP
+    // 只有 local port 不同，用於區分不同的 server
     const configContent = secretKey
       ? `agent_name = "lumix-${serverId}"
 secret_path = "${secretPathForToml}"
 
 [[tunnels]]
-name = "minecraft-${serverId}"
+name = "minecraft"
 proto = "tcp"
 port_count = 1
 local = ${localPort}
@@ -453,7 +455,7 @@ special_lan = true
 secret_path = "${secretPathForToml}"
 
 [[tunnels]]
-name = "minecraft-${serverId}"
+name = "minecraft"
 proto = "tcp"
 port_count = 1
 local = ${localPort}
