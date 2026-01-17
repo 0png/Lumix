@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from '@/components/ui/sonner';
 import { MainLayout } from '@/components/layout';
@@ -8,14 +8,18 @@ import {
   ServerDetail,
   ServerConsole,
   CreateServerDialog,
+  EnableTunnelDialog,
   type ServerInstance,
   type LogEntry,
   type CreateServerData,
 } from '@/components/server';
+import { TunnelClaimDialog } from '@/components/server/TunnelClaimDialog';
 import { SettingsView, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
+import { useSettings } from '@/hooks/use-settings';
 import { toast } from '@/lib/toast';
 import '@/i18n';
+import type { ServerReadyEvent } from '../../../shared/ipc-types';
 
 type ViewType = 'servers' | 'settings' | 'about';
 
@@ -58,8 +62,13 @@ function AppContent() {
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showTunnelDialog, setShowTunnelDialog] = useState(false);
+  const [tunnelDialogServerId, setTunnelDialogServerId] = useState<string | null>(null);
+  const [showClaimDialog, setShowClaimDialog] = useState(false);
+  const [claimDialogData, setClaimDialogData] = useState<{ url: string; code: string } | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
+  const { settings } = useSettings();
 
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
@@ -191,6 +200,78 @@ function AppContent() {
     await window.electronAPI.app.openFolder(directory);
   }, []);
 
+  // 處理啟用隧道
+  const handleEnableTunnel = useCallback(async (serverId: string, dontAskAgain: boolean) => {
+    try {
+      // 讀取 server.properties 獲取端口
+      const propsResult = await window.electronAPI.server.getPropertiesRaw(serverId);
+      const localPort = propsResult.success && propsResult.data
+        ? parseInt(propsResult.data['server-port'] || '25565', 10)
+        : 25565;
+
+      // 創建並啟動隧道
+      const tunnelResult = await window.electronAPI.tunnel.create({
+        serverId,
+        localPort,
+        autoStart: true,
+      });
+
+      if (tunnelResult.success && tunnelResult.data) {
+        toast.success(t('tunnel.enabled'));
+        
+        // 如果用戶選擇"不再詢問"，保存設置
+        if (dontAskAgain) {
+          await window.electronAPI.settings.save({
+            tunnel: {
+              dontAskAgain: true,
+              autoEnable: false,
+            },
+          });
+        }
+      } else {
+        toast.error(tunnelResult.error || t('toast.error'));
+      }
+    } catch (error) {
+      console.error('Failed to enable tunnel:', error);
+      toast.error(t('toast.error'));
+    }
+  }, [t]);
+
+  // 監聽服務器就緒事件
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.server.onReady(async (event: ServerReadyEvent) => {
+      // 檢查用戶設置，如果選擇了"不再詢問"或"自動啟用"，則不顯示對話框
+      if (settings?.tunnel?.dontAskAgain || settings?.tunnel?.autoEnable) {
+        if (settings.tunnel.autoEnable) {
+          // 自動啟用隧道
+          await handleEnableTunnel(event.serverId, false);
+        }
+        return;
+      }
+
+      // 顯示對話框
+      setTunnelDialogServerId(event.serverId);
+      setShowTunnelDialog(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [settings, handleEnableTunnel]);
+
+  // 監聽隧道 claim 需求事件
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.tunnel.onClaimRequired((event) => {
+      console.log('Claim required event received:', event);
+      setClaimDialogData({ url: event.claimUrl, code: event.claimCode });
+      setShowClaimDialog(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -267,6 +348,24 @@ function AppContent() {
         disabled={isCreating}
         existingNames={servers.map((s) => s.name)}
       />
+
+      {tunnelDialogServerId && (
+        <EnableTunnelDialog
+          open={showTunnelDialog}
+          onOpenChange={setShowTunnelDialog}
+          serverId={tunnelDialogServerId}
+          onEnable={handleEnableTunnel}
+        />
+      )}
+
+      {claimDialogData && (
+        <TunnelClaimDialog
+          open={showClaimDialog}
+          onOpenChange={setShowClaimDialog}
+          claimUrl={claimDialogData.url}
+          claimCode={claimDialogData.code}
+        />
+      )}
 
       <Toaster position="bottom-right" richColors />
     </MainLayout>

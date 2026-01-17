@@ -13,6 +13,7 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerReadyEvent,
   ServerProperties,
   UpdateServerPropertiesRequest,
 } from '../../shared/ipc-types';
@@ -158,6 +159,19 @@ function registerHandlers(): void {
     }
   );
 
+  // GET_PROPERTIES_RAW - 取得伺服器屬性原始內容
+  ipcMain.handle(
+    ServerChannels.GET_PROPERTIES_RAW,
+    async (_, id: string): Promise<IpcResult<Record<string, string>>> => {
+      try {
+        const properties = await serverManager!.getServerPropertiesRaw(id);
+        return { success: true, data: properties };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
   // UPDATE_PROPERTIES - 更新伺服器屬性
   ipcMain.handle(
     ServerChannels.UPDATE_PROPERTIES,
@@ -187,6 +201,11 @@ function setupEventForwarding(): void {
   // 轉發日誌事件到所有視窗
   serverManager.on('log-entry', (event: ServerLogEvent) => {
     broadcastToAllWindows(ServerChannels.LOG_ENTRY, event);
+  });
+
+  // 轉發服務器就緒事件到所有視窗
+  serverManager.on('server-ready', (event: ServerReadyEvent) => {
+    broadcastToAllWindows(ServerChannels.READY, event);
   });
 }
 

@@ -29,7 +29,12 @@ function registerHandlers(): void {
   });
 
   ipcMain.handle(SettingsChannels.SAVE, async (_, data: SaveSettingsRequest): Promise<IpcResult<SettingsDto>> => {
-    mockSettings = { ...mockSettings, ...data };
+    mockSettings = { 
+      ...mockSettings, 
+      ...data,
+      // 合併隧道設置
+      tunnel: data.tunnel ? { ...mockSettings.tunnel, ...data.tunnel } : mockSettings.tunnel,
+    };
     return { success: true, data: mockSettings };
   });
 }

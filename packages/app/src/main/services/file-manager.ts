@@ -22,6 +22,14 @@ export interface ServerMetadata {
   javaPath?: string;
   createdAt: string;
   lastStartedAt?: string;
+  tunnel?: {
+    enabled: boolean;
+    localPort: number;
+    autoStart: boolean;
+    tunnelId?: string;
+    publicAddress?: string;
+    publicPort?: number;
+  };
 }
 
 export interface RunBatConfig {
@@ -207,6 +215,20 @@ pause
     } catch {
       // 檔案不存在，回傳預設值
       return defaults;
+    }
+  }
+
+  /**
+   * 讀取 server.properties 原始內容（用於獲取所有屬性，包括 server-port）
+   */
+  async readServerPropertiesRaw(serverPath: string): Promise<Record<string, string>> {
+    const propsPath = path.join(serverPath, 'server.properties');
+    
+    try {
+      const content = await fs.readFile(propsPath, 'utf-8');
+      return this.parseProperties(content);
+    } catch {
+      return {};
     }
   }
 

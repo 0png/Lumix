@@ -7,6 +7,7 @@ import {
   JavaChannels,
   DownloadChannels,
   SettingsChannels,
+  TunnelChannels,
   AppChannels,
 } from '../shared/ipc-channels';
 import type {
@@ -16,6 +17,7 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerReadyEvent,
   ServerProperties,
   UpdateServerPropertiesRequest,
   JavaInstallationDto,
@@ -27,6 +29,12 @@ import type {
   DownloadProgressEvent,
   SettingsDto,
   SaveSettingsRequest,
+  TunnelInfo,
+  TunnelStatus,
+  CreateTunnelRequest,
+  TunnelStatusEvent,
+  TunnelInfoEvent,
+  TunnelClaimRequiredEvent,
   CoreType,
 } from '../shared/ipc-types';
 
@@ -66,6 +74,9 @@ const electronAPI = {
     getProperties: (id: string): Promise<IpcResult<ServerProperties>> =>
       ipcRenderer.invoke(ServerChannels.GET_PROPERTIES, id),
 
+    getPropertiesRaw: (id: string): Promise<IpcResult<Record<string, string>>> =>
+      ipcRenderer.invoke(ServerChannels.GET_PROPERTIES_RAW, id),
+
     updateProperties: (data: UpdateServerPropertiesRequest): Promise<IpcResult<ServerProperties>> =>
       ipcRenderer.invoke(ServerChannels.UPDATE_PROPERTIES, data),
 
@@ -79,6 +90,12 @@ const electronAPI = {
       const handler = (_: Electron.IpcRendererEvent, data: ServerLogEvent) => callback(data);
       ipcRenderer.on(ServerChannels.LOG_ENTRY, handler);
       return () => ipcRenderer.removeListener(ServerChannels.LOG_ENTRY, handler);
+    },
+
+    onReady: (callback: (event: ServerReadyEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: ServerReadyEvent) => callback(data);
+      ipcRenderer.on(ServerChannels.READY, handler);
+      return () => ipcRenderer.removeListener(ServerChannels.READY, handler);
     },
   },
 
@@ -134,6 +151,53 @@ const electronAPI = {
 
     save: (data: SaveSettingsRequest): Promise<IpcResult<SettingsDto>> =>
       ipcRenderer.invoke(SettingsChannels.SAVE, data),
+  },
+
+  // --------------------------------------------------------------------------
+  // Tunnel Management
+  // --------------------------------------------------------------------------
+  tunnel: {
+    create: (data: CreateTunnelRequest): Promise<IpcResult<TunnelInfo>> =>
+      ipcRenderer.invoke(TunnelChannels.CREATE, data),
+
+    start: (serverId: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(TunnelChannels.START, serverId),
+
+    stop: (serverId: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(TunnelChannels.STOP, serverId),
+
+    delete: (serverId: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(TunnelChannels.DELETE, serverId),
+
+    getInfo: (serverId: string): Promise<IpcResult<TunnelInfo | null>> =>
+      ipcRenderer.invoke(TunnelChannels.GET_INFO, serverId),
+
+    getStatus: (serverId: string): Promise<IpcResult<TunnelStatus>> =>
+      ipcRenderer.invoke(TunnelChannels.GET_STATUS, serverId),
+
+    checkAgent: (): Promise<IpcResult<boolean>> =>
+      ipcRenderer.invoke(TunnelChannels.CHECK_AGENT),
+
+    installAgent: (): Promise<IpcResult<string>> =>
+      ipcRenderer.invoke(TunnelChannels.INSTALL_AGENT),
+
+    onStatusChanged: (callback: (event: TunnelStatusEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: TunnelStatusEvent) => callback(data);
+      ipcRenderer.on(TunnelChannels.STATUS_CHANGED, handler);
+      return () => ipcRenderer.removeListener(TunnelChannels.STATUS_CHANGED, handler);
+    },
+
+    onInfoUpdated: (callback: (event: TunnelInfoEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: TunnelInfoEvent) => callback(data);
+      ipcRenderer.on(TunnelChannels.INFO_UPDATED, handler);
+      return () => ipcRenderer.removeListener(TunnelChannels.INFO_UPDATED, handler);
+    },
+
+    onClaimRequired: (callback: (event: TunnelClaimRequiredEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: TunnelClaimRequiredEvent) => callback(data);
+      ipcRenderer.on(TunnelChannels.CLAIM_REQUIRED, handler);
+      return () => ipcRenderer.removeListener(TunnelChannels.CLAIM_REQUIRED, handler);
+    },
   },
 
   // --------------------------------------------------------------------------

@@ -43,6 +43,7 @@ release/
 
 # Kiro - 完全忽略，不提交任何 .kiro 內容
 .kiro/
+.cursor/
 
 # AI Agent 生成的臨時檔案
 tests/auto_generated_tests/
@@ -51,6 +52,7 @@ review_todo.md
 *.auto-generated.*
 .ai-temp/
 .agent-cache/
+.shared
 
 # Vite cache
 .vite/

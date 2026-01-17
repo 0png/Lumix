@@ -47,6 +47,7 @@ export class ServerManager extends EventEmitter {
   private servers: Map<string, ServerInstanceDto> = new Map();
   private defaultJavaPath: string;
   private stopTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private serverReadyFlags: Set<string> = new Set(); // 追蹤已觸發 ready 事件的服務器
 
   constructor(config: ServerManagerConfig) {
     super();
@@ -416,6 +417,17 @@ export class ServerManager extends EventEmitter {
     return this.fileManager.readServerProperties(server.directory);
   }
 
+  async getServerPropertiesRaw(id: string): Promise<Record<string, string>> {
+    const server = this.servers.get(id);
+    if (!server) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+    return this.fileManager.readServerPropertiesRaw(server.directory);
+  }
+
   async updateServerProperties(
     id: string,
     properties: Partial<ServerProperties>
@@ -458,7 +470,38 @@ export class ServerManager extends EventEmitter {
     for (const line of lines) {
       const level = parseLogLevel(line) || defaultLevel;
       this.emitLogEntry(serverId, level, line);
+      
+      // 檢測服務器成功啟動
+      if (!this.serverReadyFlags.has(serverId) && this.isServerReady(line)) {
+        this.onServerReady(serverId);
+      }
     }
+  }
+
+  /**
+   * 檢測服務器是否已成功啟動
+   */
+  private isServerReady(line: string): boolean {
+    const lower = line.toLowerCase();
+    // 檢測常見的成功啟動標誌
+    return (
+      (lower.includes('done') && lower.includes('for help')) ||
+      lower.includes('server started') ||
+      lower.includes('server is running') ||
+      (lower.includes('preparing start') && lower.includes('done')) ||
+      (lower.includes('help') && lower.includes('type'))
+    );
+  }
+
+  /**
+   * 當服務器成功啟動時觸發
+   */
+  private onServerReady(serverId: string): void {
+    // 標記為已觸發，避免重複觸發
+    this.serverReadyFlags.add(serverId);
+    
+    // 發送事件通知前端顯示提示對話框
+    this.emit('server-ready', { serverId });
   }
 
   private handleProcessExit(serverId: string, code: number | null): void {
@@ -471,6 +514,9 @@ export class ServerManager extends EventEmitter {
       clearTimeout(timeout);
       this.stopTimeouts.delete(serverId);
     }
+
+    // 清除 ready 標誌，下次啟動時可以再次觸發
+    this.serverReadyFlags.delete(serverId);
 
     const event: ServerStatusEvent = {
       serverId,

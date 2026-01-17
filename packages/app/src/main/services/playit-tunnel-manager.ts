@@ -33,6 +33,7 @@ export type TunnelStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'er
 export interface TunnelManagerEvents {
   'status-changed': (serverId: string, status: TunnelStatus) => void;
   'info-updated': (serverId: string, info: TunnelInfo) => void;
+  'claim-required': (serverId: string, claimUrl: string, claimCode: string) => void;
 }
 
 interface PlayitAgentInfo {
@@ -453,11 +454,14 @@ special_lan = true
       let stderrBuffer = '';
       
       const processOutput = (data: string, isStderr: boolean) => {
+        // 清理 ANSI 轉義碼以檢查是否有實際內容
+        const cleanData = data.replace(/\x1B\[[0-9;?]*[a-zA-Z]/g, '').trim();
+        
         if (isStderr) {
           stderrBuffer += data;
-          // 只記錄非空內容
-          if (data.trim()) {
-            console.log(`[Tunnel ${serverId}] stderr:`, JSON.stringify(data));
+          // 只記錄有實際內容的 stderr
+          if (cleanData) {
+            console.log(`[Tunnel ${serverId}] stderr:`, cleanData);
           }
           // 檢查是否為錯誤
           if (data.toLowerCase().includes('error')) {
@@ -467,15 +471,14 @@ special_lan = true
           }
         } else {
           outputBuffer += data;
-          // 只記錄非空內容（排除純 ANSI 轉義碼）
-          const cleanData = data.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
+          // 只記錄有實際內容的 stdout（過濾 TUI 控制碼）
           if (cleanData) {
-            console.log(`[Tunnel ${serverId}] stdout:`, JSON.stringify(data));
+            console.log(`[Tunnel ${serverId}] stdout:`, cleanData);
           }
         }
         
-        // 嘗試從兩個緩衝區解析地址（只在有新內容時解析）
-        if (data.trim()) {
+        // 只在有實際內容時才解析（避免處理純 TUI 更新）
+        if (cleanData) {
           this.parseTunnelOutput(serverId, outputBuffer + stderrBuffer);
         }
       };
@@ -628,14 +631,13 @@ special_lan = true
         console.log(`[Tunnel ${serverId}] Claim required, code: ${claimCode}`);
         console.log(`[Tunnel ${serverId}] Claim URL: ${claimUrl}`);
         
-        // 通過事件通知前端顯示 claim 鏈接
-        // 可以將 claim URL 存儲在 tunnel 信息中
-        tunnel.tunnelId = claimCode; // 暫時使用 tunnelId 字段存儲 claim code
+        // 發送事件通知前端顯示 claim 對話框
+        this.emit('claim-required', serverId, claimUrl, claimCode);
+        
+        // 將 claim code 存儲在 tunnel 信息中
+        tunnel.tunnelId = claimCode;
         this.tunnels.set(serverId, tunnel);
         this.emit('info-updated', serverId, tunnel);
-        
-        // 暫時不設置錯誤狀態，因為這是正常流程
-        // 但可以設置一個特殊狀態來表示需要 claim
       }
     }
 

@@ -3,3 +3,4 @@ export { ServerCard } from './ServerCard';
 export { ServerDetail } from './ServerDetail';
 export { ServerConsole, type LogEntry, type LogLevel } from './ServerConsole';
 export { CreateServerDialog, type CreateServerData } from './CreateServerDialog';
+export { EnableTunnelDialog } from './EnableTunnelDialog';

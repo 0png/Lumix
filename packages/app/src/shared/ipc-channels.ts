@@ -20,11 +20,13 @@ export const ServerChannels = {
   
   // Server properties
   GET_PROPERTIES: 'server:get-properties',
+  GET_PROPERTIES_RAW: 'server:get-properties-raw',
   UPDATE_PROPERTIES: 'server:update-properties',
   
   // Events (Main -> Renderer)
   STATUS_CHANGED: 'server:status-changed',
   LOG_ENTRY: 'server:log-entry',
+  READY: 'server:ready', // 服務器成功啟動事件
 } as const;
 
 /**
@@ -42,6 +44,7 @@ export function getAllServerChannels(): string[] {
     ServerChannels.STOP,
     ServerChannels.SEND_COMMAND,
     ServerChannels.GET_PROPERTIES,
+    ServerChannels.GET_PROPERTIES_RAW,
     ServerChannels.UPDATE_PROPERTIES,
   ];
 }
@@ -83,6 +86,45 @@ export const SettingsChannels = {
 } as const;
 
 // ============================================================================
+// Tunnel Channels
+// ============================================================================
+
+export const TunnelChannels = {
+  // 隧道管理
+  CREATE: 'tunnel:create',
+  START: 'tunnel:start',
+  STOP: 'tunnel:stop',
+  DELETE: 'tunnel:delete',
+  GET_INFO: 'tunnel:get-info',
+  GET_STATUS: 'tunnel:get-status',
+  
+  // Agent 管理（自動下載，無需用戶干預）
+  CHECK_AGENT: 'tunnel:check-agent',
+  INSTALL_AGENT: 'tunnel:install-agent', // 後台自動下載
+  
+  // Events
+  STATUS_CHANGED: 'tunnel:status-changed',
+  INFO_UPDATED: 'tunnel:info-updated',
+  CLAIM_REQUIRED: 'tunnel:claim-required', // 新增：需要 claim 時通知前端
+} as const;
+
+/**
+ * 取得所有需要 ipcMain.handle 的 Tunnel channels（不含 event channels）
+ */
+export function getAllTunnelChannels(): string[] {
+  return [
+    TunnelChannels.CREATE,
+    TunnelChannels.START,
+    TunnelChannels.STOP,
+    TunnelChannels.DELETE,
+    TunnelChannels.GET_INFO,
+    TunnelChannels.GET_STATUS,
+    TunnelChannels.CHECK_AGENT,
+    TunnelChannels.INSTALL_AGENT,
+  ];
+}
+
+// ============================================================================
 // App Channels
 // ============================================================================
 
@@ -102,5 +144,6 @@ export const IpcChannels = {
   Java: JavaChannels,
   Download: DownloadChannels,
   Settings: SettingsChannels,
+  Tunnel: TunnelChannels,
   App: AppChannels,
 } as const;

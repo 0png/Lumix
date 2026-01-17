@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Play, Square, Trash2, Settings2, MemoryStick, 
-  ArrowLeft, FolderOpen, Save, AlertTriangle, Loader2 
+  ArrowLeft, FolderOpen, Save, AlertTriangle, Loader2, Globe, Copy
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTunnel } from '@/hooks/use-tunnel';
 import type { ServerInstance, ServerStatus } from './ServerList';
 import type { ServerProperties, Difficulty, Gamemode } from '../../../../shared/ipc-types';
 
@@ -116,6 +117,9 @@ export function ServerDetail({
   const [properties, setProperties] = useState<ServerProperties | null>(null);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
   const [isSavingProperties, setIsSavingProperties] = useState(false);
+
+  // Tunnel state
+  const { tunnelInfo, status: tunnelStatus, startTunnel, stopTunnel, loading: tunnelLoading } = useTunnel(server.id);
 
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
@@ -436,6 +440,113 @@ export function ServerDetail({
               </div>
             </>
           ) : null}
+        </CardContent>
+      </Card>
+
+      {/* 隧道設定卡片 */}
+      <Card className="glass">
+        <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
+          <CardTitle className="text-xs lg:text-sm flex items-center gap-2">
+            <Globe className="h-3.5 w-3.5 lg:h-4 lg:w-4" aria-hidden="true" />
+            {t('tunnel.title')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 lg:p-4 pt-0 space-y-2 lg:space-y-3">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] lg:text-xs text-muted-foreground">{t('tunnel.status')}</Label>
+              <Badge 
+                variant={tunnelStatus === 'running' ? 'success' : tunnelStatus === 'error' ? 'destructive' : 'ghost'}
+                className="text-[10px] lg:text-xs"
+              >
+                {t(`tunnel.${tunnelStatus}`)}
+              </Badge>
+            </div>
+            
+            {tunnelInfo && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] lg:text-xs text-muted-foreground">{t('tunnel.localPort')}</Label>
+                  <p className="text-xs lg:text-sm font-medium">{tunnelInfo.localPort}</p>
+                </div>
+                
+                {tunnelInfo.publicAddress && tunnelInfo.publicPort && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] lg:text-xs text-muted-foreground">{t('tunnel.publicAddress')}</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] lg:text-xs"
+                        onClick={async () => {
+                          const address = `${tunnelInfo.publicAddress}:${tunnelInfo.publicPort}`;
+                          await navigator.clipboard.writeText(address);
+                          toast.success(t('tunnel.addressCopied'));
+                        }}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        {t('tunnel.copyAddress')}
+                      </Button>
+                    </div>
+                    <p className="text-xs lg:text-sm font-medium break-all">
+                      {tunnelInfo.publicAddress}:{tunnelInfo.publicPort}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="flex gap-1.5 lg:gap-2 pt-1">
+              {tunnelStatus === 'running' || tunnelStatus === 'starting' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const success = await stopTunnel();
+                    if (success) {
+                      toast.success(t('tunnel.stopped'));
+                    } else {
+                      toast.error(t('toast.error'));
+                    }
+                  }}
+                  disabled={tunnelLoading || tunnelStatus === 'starting'}
+                  className="h-7 lg:h-8 text-[10px] lg:text-xs flex-1"
+                >
+                  <Square className="mr-1 h-3 w-3" />
+                  {t('tunnel.stop')}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    // 獲取服務器端口
+                    const propsResult = await window.electronAPI.server.getPropertiesRaw(server.id);
+                    const localPort = propsResult.success && propsResult.data
+                      ? parseInt(propsResult.data['server-port'] || '25565', 10)
+                      : 25565;
+
+                    // 創建並啟動隧道
+                    const createResult = await window.electronAPI.tunnel.create({
+                      serverId: server.id,
+                      localPort,
+                      autoStart: true,
+                    });
+
+                    if (createResult.success) {
+                      toast.success(t('tunnel.enabled'));
+                    } else {
+                      toast.error(createResult.error || t('toast.error'));
+                    }
+                  }}
+                  disabled={tunnelLoading || !isRunning}
+                  className="h-7 lg:h-8 text-[10px] lg:text-xs flex-1"
+                >
+                  <Globe className="mr-1 h-3 w-3" />
+                  {t('tunnel.start')}
+                </Button>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
