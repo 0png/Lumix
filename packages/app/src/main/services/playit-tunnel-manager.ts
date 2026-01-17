@@ -431,16 +431,17 @@ export class PlayitTunnelManager extends EventEmitter {
     // 獲取 secret key（如果沒有，playit-agent 會自動處理）
     const secretKey = await this.getOrCreateSecretKey();
     
-    // 將 secret 複製到當前配置目錄，確保每個伺服器都能讀取
-    const localSecretPath = path.join(agentDir, 'secret.txt');
-    if (secretKey) {
-      await fs.writeFile(localSecretPath, secretKey, 'utf-8');
-    }
+    // 使用絕對路徑指向全域 secret.txt（所有 server 共用同一個 secret）
+    const globalSecretPath = path.join(this.getAgentDirectory(), 'secret.txt');
     
-    // 使用相對路徑指向同目錄的 secret.txt
+    // 使用相對路徑指向全域 secret.txt（從配置目錄到 agent 目錄）
+    // 例如：configs/server1/ -> ../../secret.txt
+    const relativeSecretPath = path.relative(agentDir, globalSecretPath).replace(/\\/g, '/');
+    
+    // 如果有 secret，使用 secret_path；否則讓 playit-agent 自動處理 claim
     const configContent = secretKey
       ? `agent_name = "lumix-${serverId}"
-secret_path = "secret.txt"
+secret_path = "${relativeSecretPath}"
 
 [[tunnels]]
 name = "minecraft-${serverId}"
@@ -450,6 +451,7 @@ local = ${localPort}
 special_lan = true
 `
       : `agent_name = "lumix-${serverId}"
+secret_path = "${relativeSecretPath}"
 
 [[tunnels]]
 name = "minecraft-${serverId}"
@@ -707,6 +709,29 @@ special_lan = true
         tunnel.tunnelId = claimCode;
         this.tunnels.set(serverId, tunnel);
         this.emit('info-updated', serverId, tunnel);
+      }
+    }
+
+    // 檢查 claim 是否完成（playit-agent 會自動將 secret 寫入檔案）
+    // 當看到 "Claimed" 或 "authenticated" 等訊息時，檢查 secret 檔案
+    if (tunnel.tunnelId && (
+      cleanOutput.toLowerCase().includes('claimed') ||
+      cleanOutput.toLowerCase().includes('authenticated') ||
+      cleanOutput.toLowerCase().includes('connected')
+    )) {
+      const secretFilePath = path.join(this.getAgentDirectory(), 'secret.txt');
+      try {
+        // 檢查 secret 檔案是否已產生
+        const secret = await fs.readFile(secretFilePath, 'utf-8');
+        if (secret.trim()) {
+          console.log(`[Tunnel ${serverId}] Claim completed, secret saved`);
+          // 清除 claim code（已完成 claim）
+          tunnel.tunnelId = undefined;
+          this.tunnels.set(serverId, tunnel);
+          this.emit('info-updated', serverId, tunnel);
+        }
+      } catch {
+        // Secret 檔案尚未產生，繼續等待
       }
     }
 
