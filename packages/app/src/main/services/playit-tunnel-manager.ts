@@ -368,13 +368,17 @@ export class PlayitTunnelManager extends EventEmitter {
     
     // 獲取 secret key（如果沒有，playit-agent 會自動處理）
     const secretKey = await this.getOrCreateSecretKey();
-    const secretFilePath = path.join(this.getAgentDirectory(), 'secret.txt');
     
-    // 根據 playit-agent 文檔，可以使用 secret_key 或 secret_path
-    // 我們優先使用 secret_path（文件路徑），因為這更可靠
+    // 將 secret 複製到當前配置目錄，確保每個伺服器都能讀取
+    const localSecretPath = path.join(agentDir, 'secret.txt');
+    if (secretKey) {
+      await fs.writeFile(localSecretPath, secretKey, 'utf-8');
+    }
+    
+    // 使用相對路徑指向同目錄的 secret.txt
     const configContent = secretKey
       ? `agent_name = "lumix-${serverId}"
-secret_path = "${secretFilePath.replace(/\\/g, '/')}"
+secret_path = "secret.txt"
 
 [[tunnels]]
 name = "minecraft-${serverId}"
