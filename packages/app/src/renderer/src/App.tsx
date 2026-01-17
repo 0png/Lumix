@@ -288,16 +288,31 @@ function AppContent() {
   const handleSavePlayitIp = async (serverId: string, ip: string) => {
     try {
       // 解析 IP 和 port
-      const [address, portStr] = ip.split(':');
+      // 支援兩種格式：
+      // 1. 付費版：example.playit.gg:25565（有 port）
+      // 2. 免費版：file-european.gl.joinmc.link（沒有 port，使用預設 25565）
       
-      if (!address || !portStr) {
-        throw new Error('Invalid IP format');
-      }
+      let address: string;
+      let port: number;
       
-      const port = parseInt(portStr, 10);
+      if (ip.includes(':')) {
+        // 付費版格式
+        const [addr, portStr] = ip.split(':');
+        
+        if (!addr || !portStr) {
+          throw new Error('Invalid IP format');
+        }
+        
+        address = addr;
+        port = parseInt(portStr, 10);
 
-      if (!port || isNaN(port)) {
-        throw new Error('Invalid port number');
+        if (!port || isNaN(port)) {
+          throw new Error('Invalid port number');
+        }
+      } else {
+        // 免費版格式（沒有 port，使用預設 25565）
+        address = ip;
+        port = 25565;
       }
 
       // 更新 tunnel info（這裡可以呼叫 IPC 來儲存）

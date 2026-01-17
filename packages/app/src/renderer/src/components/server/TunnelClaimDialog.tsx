@@ -76,15 +76,21 @@ export function TunnelClaimDialog({
       return;
     }
 
-    // 驗證 IP 格式（簡單驗證）
-    const ipPattern = /^[a-z0-9-]+\.(?:playit|ply)\.gg:\d{4,5}$/i;
-    if (!ipPattern.test(playitIp.trim())) {
+    // 驗證 IP 格式（支援兩種格式）
+    // 1. 付費版：example.playit.gg:25565 或 example.ply.gg:25565
+    // 2. 免費版：file-european.gl.joinmc.link（沒有 port）
+    const paidPattern = /^[a-z0-9-]+\.(?:playit|ply)\.gg:\d{4,5}$/i;
+    const freePattern = /^[a-z0-9-]+\.gl\.joinmc\.link$/i;
+    
+    const trimmedIp = playitIp.trim();
+    
+    if (!paidPattern.test(trimmedIp) && !freePattern.test(trimmedIp)) {
       toast.error(t('tunnel.invalidIpFormat'));
       return;
     }
 
     if (onSaveIp) {
-      onSaveIp(serverId, playitIp.trim());
+      onSaveIp(serverId, trimmedIp);
     }
     toast.success(t('tunnel.ipSaved'));
     onOpenChange(false);
@@ -147,7 +153,7 @@ export function TunnelClaimDialog({
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('tunnel.playitIp')}</label>
               <Input
-                placeholder="example.playit.gg:25565"
+                placeholder="example.playit.gg:25565 或 file-european.gl.joinmc.link"
                 value={playitIp}
                 onChange={(e) => setPlayitIp(e.target.value)}
                 onKeyDown={(e) => {
