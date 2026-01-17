@@ -65,7 +65,7 @@ function AppContent() {
   const [showTunnelDialog, setShowTunnelDialog] = useState(false);
   const [tunnelDialogServerId, setTunnelDialogServerId] = useState<string | null>(null);
   const [showClaimDialog, setShowClaimDialog] = useState(false);
-  const [claimDialogData, setClaimDialogData] = useState<{ url: string; code: string } | null>(null);
+  const [claimDialogData, setClaimDialogData] = useState<{ url: string; code: string; serverId: string } | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
   const { settings } = useSettings();
@@ -275,7 +275,7 @@ function AppContent() {
   useEffect(() => {
     const unsubscribe = window.electronAPI.tunnel.onClaimRequired((event) => {
       console.log('Claim required event received:', event);
-      setClaimDialogData({ url: event.claimUrl, code: event.claimCode });
+      setClaimDialogData({ url: event.claimUrl, code: event.claimCode, serverId: event.serverId });
       setShowClaimDialog(true);
     });
 
@@ -283,6 +283,34 @@ function AppContent() {
       unsubscribe();
     };
   }, []);
+
+  // 處理儲存 Playit IP
+  const handleSavePlayitIp = async (serverId: string, ip: string) => {
+    try {
+      // 解析 IP 和 port
+      const [address, portStr] = ip.split(':');
+      
+      if (!address || !portStr) {
+        throw new Error('Invalid IP format');
+      }
+      
+      const port = parseInt(portStr, 10);
+
+      if (!port || isNaN(port)) {
+        throw new Error('Invalid port number');
+      }
+
+      // 更新 tunnel info（這裡可以呼叫 IPC 來儲存）
+      // 暫時先在前端更新，實際應該透過 IPC 儲存到後端
+      console.log(`Saving Playit IP for server ${serverId}: ${address}:${port}`);
+      
+      // TODO: 呼叫 IPC 來儲存 IP 到 tunnel info
+      // await window.electronAPI.tunnel.saveCustomIp(serverId, address, port);
+    } catch (error) {
+      console.error('Failed to save Playit IP:', error);
+      throw error;
+    }
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -376,6 +404,8 @@ function AppContent() {
           onOpenChange={setShowClaimDialog}
           claimUrl={claimDialogData.url}
           claimCode={claimDialogData.code}
+          serverId={claimDialogData.serverId}
+          onSaveIp={handleSavePlayitIp}
         />
       )}
 
