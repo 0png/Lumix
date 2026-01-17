@@ -6,6 +6,7 @@
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { app } from 'electron';
 import type { JavaInstallationDto } from '../../shared/ipc-types';
 
 // ============================================================================
@@ -188,14 +189,20 @@ export class JavaDetector {
    * 根據作業系統取得搜尋路徑
    */
   private getSearchPaths(): string[] {
-    switch (process.platform) {
-      case 'win32':
-        return WINDOWS_JAVA_PATHS;
-      case 'darwin':
-        return MAC_JAVA_PATHS;
-      default:
-        return LINUX_JAVA_PATHS;
-    }
+    const systemPaths = (() => {
+      switch (process.platform) {
+        case 'win32':
+          return WINDOWS_JAVA_PATHS;
+        case 'darwin':
+          return MAC_JAVA_PATHS;
+        default:
+          return LINUX_JAVA_PATHS;
+      }
+    })();
+
+    // 加入應用程式自己下載的 Java 目錄
+    const appJavaDir = path.join(app.getPath('userData'), 'java');
+    return [appJavaDir, ...systemPaths];
   }
 
   /**
