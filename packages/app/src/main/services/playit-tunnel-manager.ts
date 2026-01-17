@@ -524,10 +524,14 @@ special_lan = true
         // 清理 ANSI 轉義碼以檢查是否有實際內容
         const cleanData = data.replace(/\x1B\[[0-9;?]*[a-zA-Z]/g, '').trim();
         
+        // 過濾掉 TUI 更新（單個字元或純數字）
+        const isTuiUpdate = cleanData.length === 0 || 
+                           (cleanData.length <= 3 && /^\d+$/.test(cleanData));
+        
         if (isStderr) {
           stderrBuffer += data;
-          // 只記錄有實際內容的 stderr
-          if (cleanData) {
+          // 只記錄有實際內容的 stderr（過濾 TUI 控制碼和單字元更新）
+          if (cleanData && !isTuiUpdate) {
             console.log(`[Tunnel ${serverId}] stderr:`, cleanData);
           }
           // 檢查是否為錯誤
@@ -538,14 +542,14 @@ special_lan = true
           }
         } else {
           outputBuffer += data;
-          // 只記錄有實際內容的 stdout（過濾 TUI 控制碼）
-          if (cleanData) {
+          // 只記錄有實際內容的 stdout（過濾 TUI 控制碼和單字元更新）
+          if (cleanData && !isTuiUpdate) {
             console.log(`[Tunnel ${serverId}] stdout:`, cleanData);
           }
         }
         
         // 只在有實際內容時才解析（避免處理純 TUI 更新）
-        if (cleanData) {
+        if (cleanData && !isTuiUpdate) {
           // 不等待解析完成，讓它在背景執行
           this.parseTunnelOutput(serverId, outputBuffer + stderrBuffer).catch(err => {
             console.error(`[Tunnel ${serverId}] Failed to parse output:`, err);
