@@ -49,10 +49,14 @@ release/
 tests/auto_generated_tests/
 IMPLEMENTATION_PLAN.md
 review_todo.md
+spec.md
 *.auto-generated.*
 .ai-temp/
 .agent-cache/
 .shared
+
+# Workspace 設定（個人開發環境）
+*.code-workspace
 
 # Vite cache
 .vite/
