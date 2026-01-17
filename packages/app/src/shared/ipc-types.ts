@@ -54,13 +54,6 @@ export const IpcErrorCode = {
   PROCESS_SPAWN_FAILED: 'PROCESS_SPAWN_FAILED',
   PROCESS_COMMAND_FAILED: 'PROCESS_COMMAND_FAILED',
 
-  // 隧道相關錯誤
-  TUNNEL_AGENT_NOT_FOUND: 'TUNNEL_AGENT_NOT_FOUND',
-  TUNNEL_CREATE_FAILED: 'TUNNEL_CREATE_FAILED',
-  TUNNEL_START_FAILED: 'TUNNEL_START_FAILED',
-  TUNNEL_STOP_FAILED: 'TUNNEL_STOP_FAILED',
-  TUNNEL_PORT_IN_USE: 'TUNNEL_PORT_IN_USE',
-
   // 通用錯誤
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
@@ -238,10 +231,6 @@ export interface SettingsDto {
   autoCheckUpdate?: boolean;
   autoUpdate?: boolean;
   javaInstallations: JavaInstallationDto[];
-  tunnel?: {
-    dontAskAgain: boolean; // 不再顯示啟用提示
-    autoEnable: boolean; // 自動啟用（不顯示對話框）
-  };
 }
 
 export interface SaveSettingsRequest {
@@ -250,10 +239,6 @@ export interface SaveSettingsRequest {
   defaultRamMin?: number;
   defaultRamMax?: number;
   autoCheckUpdate?: boolean;
-  tunnel?: {
-    dontAskAgain?: boolean;
-    autoEnable?: boolean;
-  };
 }
 
 // ============================================================================
@@ -288,42 +273,4 @@ export interface UpdateServerPropertiesRequest {
 
 export interface ServerReadyEvent {
   serverId: string;
-}
-
-// ============================================================================
-// Tunnel Types
-// ============================================================================
-
-export interface TunnelInfo {
-  serverId: string;
-  tunnelId?: string;
-  localPort: number;
-  publicAddress?: string;
-  publicPort?: number;
-  status: TunnelStatus;
-  createdAt?: string;
-}
-
-export type TunnelStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
-
-export interface CreateTunnelRequest {
-  serverId: string;
-  localPort: number;
-  autoStart?: boolean;
-}
-
-export interface TunnelStatusEvent {
-  serverId: string;
-  status: TunnelStatus;
-}
-
-export interface TunnelInfoEvent {
-  serverId: string;
-  info: TunnelInfo;
-}
-
-export interface TunnelClaimRequiredEvent {
-  serverId: string;
-  claimUrl: string;
-  claimCode: string;
 }

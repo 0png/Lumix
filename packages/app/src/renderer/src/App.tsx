@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from '@/components/ui/sonner';
 import { MainLayout } from '@/components/layout';
@@ -8,18 +8,14 @@ import {
   ServerDetail,
   ServerConsole,
   CreateServerDialog,
-  EnableTunnelDialog,
   type ServerInstance,
   type LogEntry,
   type CreateServerData,
 } from '@/components/server';
-import { TunnelClaimDialog } from '@/components/server/TunnelClaimDialog';
 import { SettingsView, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
-import { useSettings } from '@/hooks/use-settings';
 import { toast } from '@/lib/toast';
 import '@/i18n';
-import type { ServerReadyEvent } from '../../../shared/ipc-types';
 
 type ViewType = 'servers' | 'settings' | 'about';
 
@@ -62,13 +58,8 @@ function AppContent() {
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showTunnelDialog, setShowTunnelDialog] = useState(false);
-  const [tunnelDialogServerId, setTunnelDialogServerId] = useState<string | null>(null);
-  const [showClaimDialog, setShowClaimDialog] = useState(false);
-  const [claimDialogData, setClaimDialogData] = useState<{ url: string; code: string; serverId: string } | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
-  const { settings } = useSettings();
 
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
@@ -161,18 +152,6 @@ function AppContent() {
   }, [startServer, t, serverDtos, updateServer]);
 
   const handleStopServer = useCallback(async (id: string) => {
-    // 先停止隧道（如果正在運行）
-    try {
-      const tunnelStatus = await window.electronAPI.tunnel.getStatus(id);
-      if (tunnelStatus.success && tunnelStatus.data && tunnelStatus.data !== 'stopped') {
-        await window.electronAPI.tunnel.stop(id);
-      }
-    } catch (error) {
-      console.error('Failed to stop tunnel:', error);
-      // 繼續停止伺服器，即使隧道停止失敗
-    }
-
-    // 停止伺服器
     const result = await stopServer(id);
     if (result.success) {
       toast.success(t('toast.serverStopped'));
@@ -211,121 +190,6 @@ function AppContent() {
   const handleOpenFolder = useCallback(async (directory: string) => {
     await window.electronAPI.app.openFolder(directory);
   }, []);
-
-  // 處理啟用隧道
-  const handleEnableTunnel = useCallback(async (serverId: string, dontAskAgain: boolean) => {
-    try {
-      // 讀取 server.properties 獲取端口
-      const propsResult = await window.electronAPI.server.getPropertiesRaw(serverId);
-      const localPort = propsResult.success && propsResult.data
-        ? parseInt(propsResult.data['server-port'] || '25565', 10)
-        : 25565;
-
-      // 創建並啟動隧道
-      const tunnelResult = await window.electronAPI.tunnel.create({
-        serverId,
-        localPort,
-        autoStart: true,
-      });
-
-      if (tunnelResult.success && tunnelResult.data) {
-        toast.success(t('tunnel.enabled'));
-        
-        // 如果用戶選擇"不再詢問"，保存設置
-        if (dontAskAgain) {
-          await window.electronAPI.settings.save({
-            tunnel: {
-              dontAskAgain: true,
-              autoEnable: false,
-            },
-          });
-        }
-      } else {
-        toast.error(tunnelResult.error || t('toast.error'));
-      }
-    } catch (error) {
-      console.error('Failed to enable tunnel:', error);
-      toast.error(t('toast.error'));
-    }
-  }, [t]);
-
-  // 監聽服務器就緒事件
-  useEffect(() => {
-    const unsubscribe = window.electronAPI.server.onReady(async (event: ServerReadyEvent) => {
-      // 檢查用戶設置，如果選擇了"不再詢問"或"自動啟用"，則不顯示對話框
-      if (settings?.tunnel?.dontAskAgain || settings?.tunnel?.autoEnable) {
-        if (settings.tunnel.autoEnable) {
-          // 自動啟用隧道
-          await handleEnableTunnel(event.serverId, false);
-        }
-        return;
-      }
-
-      // 顯示對話框
-      setTunnelDialogServerId(event.serverId);
-      setShowTunnelDialog(true);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [settings, handleEnableTunnel]);
-
-  // 監聽隧道 claim 需求事件
-  useEffect(() => {
-    const unsubscribe = window.electronAPI.tunnel.onClaimRequired((event) => {
-      console.log('Claim required event received:', event);
-      setClaimDialogData({ url: event.claimUrl, code: event.claimCode, serverId: event.serverId });
-      setShowClaimDialog(true);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  // 處理儲存 Playit IP
-  const handleSavePlayitIp = async (serverId: string, ip: string) => {
-    try {
-      // 解析 IP 和 port
-      // 支援兩種格式：
-      // 1. 付費版：example.playit.gg:25565（有 port）
-      // 2. 免費版：file-european.gl.joinmc.link（沒有 port，使用預設 25565）
-      
-      let address: string;
-      let port: number;
-      
-      if (ip.includes(':')) {
-        // 付費版格式
-        const [addr, portStr] = ip.split(':');
-        
-        if (!addr || !portStr) {
-          throw new Error('Invalid IP format');
-        }
-        
-        address = addr;
-        port = parseInt(portStr, 10);
-
-        if (!port || isNaN(port)) {
-          throw new Error('Invalid port number');
-        }
-      } else {
-        // 免費版格式（沒有 port，使用預設 25565）
-        address = ip;
-        port = 25565;
-      }
-
-      // 更新 tunnel info（這裡可以呼叫 IPC 來儲存）
-      // 暫時先在前端更新，實際應該透過 IPC 儲存到後端
-      console.log(`Saving Playit IP for server ${serverId}: ${address}:${port}`);
-      
-      // TODO: 呼叫 IPC 來儲存 IP 到 tunnel info
-      // await window.electronAPI.tunnel.saveCustomIp(serverId, address, port);
-    } catch (error) {
-      console.error('Failed to save Playit IP:', error);
-      throw error;
-    }
-  };
 
   const renderContent = () => {
     if (loading) {
@@ -403,26 +267,6 @@ function AppContent() {
         disabled={isCreating}
         existingNames={servers.map((s) => s.name)}
       />
-
-      {tunnelDialogServerId && (
-        <EnableTunnelDialog
-          open={showTunnelDialog}
-          onOpenChange={setShowTunnelDialog}
-          serverId={tunnelDialogServerId}
-          onEnable={handleEnableTunnel}
-        />
-      )}
-
-      {claimDialogData && (
-        <TunnelClaimDialog
-          open={showClaimDialog}
-          onOpenChange={setShowClaimDialog}
-          claimUrl={claimDialogData.url}
-          claimCode={claimDialogData.code}
-          serverId={claimDialogData.serverId}
-          onSaveIp={handleSavePlayitIp}
-        />
-      )}
 
       <Toaster position="bottom-right" richColors />
     </MainLayout>

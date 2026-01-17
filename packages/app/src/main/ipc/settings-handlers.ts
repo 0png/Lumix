@@ -32,8 +32,6 @@ function registerHandlers(): void {
     mockSettings = { 
       ...mockSettings, 
       ...data,
-      // 合併隧道設置
-      tunnel: data.tunnel ? { ...mockSettings.tunnel, ...data.tunnel } : mockSettings.tunnel,
     };
     return { success: true, data: mockSettings };
   });

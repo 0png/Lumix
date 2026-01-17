@@ -22,14 +22,6 @@ export interface ServerMetadata {
   javaPath?: string;
   createdAt: string;
   lastStartedAt?: string;
-  tunnel?: {
-    enabled: boolean;
-    localPort: number;
-    autoStart: boolean;
-    tunnelId?: string;
-    publicAddress?: string;
-    publicPort?: number;
-  };
 }
 
 export interface RunBatConfig {
