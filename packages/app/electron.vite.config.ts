@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['uuid', 'fs-extra'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['uuid'] })],
     build: {
       rollupOptions: {
         input: {
