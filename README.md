@@ -1,10 +1,6 @@
 # Lumix
 
 <p align="center">
-  <img src="icon.png" alt="Lumix Logo" width="128" height="128">
-</p>
-
-<p align="center">
   <strong>Minecraft Server Launcher for Windows</strong>
 </p>
 
