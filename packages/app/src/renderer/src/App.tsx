@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from '@/components/ui/sonner';
+import { useTheme } from '@/contexts/theme-context';
 import { MainLayout } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
 import {
@@ -44,6 +45,7 @@ function toServerInstance(dto: {
 
 function AppContent() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const {
     servers: serverDtos,
     loading,
@@ -269,7 +271,7 @@ function AppContent() {
         existingNames={servers.map((s) => s.name)}
       />
 
-      <Toaster position="bottom-right" richColors />
+      <Toaster position="bottom-right" theme={theme} richColors />
     </MainLayout>
   );
 }
