@@ -545,7 +545,10 @@ special_lan = true
         
         // 只在有實際內容時才解析（避免處理純 TUI 更新）
         if (cleanData) {
-          this.parseTunnelOutput(serverId, outputBuffer + stderrBuffer);
+          // 不等待解析完成，讓它在背景執行
+          this.parseTunnelOutput(serverId, outputBuffer + stderrBuffer).catch(err => {
+            console.error(`[Tunnel ${serverId}] Failed to parse output:`, err);
+          });
         }
       };
 
@@ -650,7 +653,7 @@ special_lan = true
           const output = stdout || stderr;
           if (output) {
             console.log(`[Tunnel ${serverId}] 查詢命令輸出:`, output);
-            this.parseTunnelOutput(serverId, output);
+            await this.parseTunnelOutput(serverId, output);
             
             // 如果成功解析到地址，返回
             const currentTunnel = this.tunnels.get(serverId);
@@ -672,7 +675,7 @@ special_lan = true
   /**
    * 解析隧道輸出以獲取公網地址
    */
-  private parseTunnelOutput(serverId: string, output: string): void {
+  private async parseTunnelOutput(serverId: string, output: string): Promise<void> {
     const tunnel = this.tunnels.get(serverId);
     if (!tunnel) return;
 
