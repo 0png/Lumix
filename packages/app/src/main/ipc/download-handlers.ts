@@ -54,14 +54,12 @@ function registerHandlers(): void {
     DownloadChannels.DOWNLOAD_SERVER,
     async (_, data: DownloadServerRequest): Promise<IpcResult<string>> => {
       try {
-        console.log('[DownloadHandlers] Download request:', data);
         const jarPath = await downloadService!.downloadServer(
           data.coreType,
           data.mcVersion,
           data.targetDir,
           data.targetDir // 使用 targetDir 作為 serverId 來追蹤進度
         );
-        console.log('[DownloadHandlers] Download complete:', jarPath);
         return { success: true, data: jarPath };
       } catch (error) {
         console.error('[DownloadHandlers] Download failed:', error);

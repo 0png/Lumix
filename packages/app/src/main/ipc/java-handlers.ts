@@ -75,10 +75,8 @@ function registerHandlers(): void {
     JavaChannels.DETECT,
     async (): Promise<IpcResult<JavaInstallationDto[]>> => {
       try {
-        console.log('[JavaHandlers] Detecting Java installations...');
         const installations = await javaDetector!.detectAll();
         cachedInstallations = installations;
-        console.log('[JavaHandlers] Found installations:', installations);
         return { success: true, data: installations };
       } catch (error) {
         console.error('[JavaHandlers] Detection failed:', error);
@@ -107,7 +105,6 @@ function registerHandlers(): void {
     JavaChannels.INSTALL,
     async (_: unknown, data: JavaInstallRequest): Promise<IpcResult<JavaInstallationDto>> => {
       try {
-        console.log('[JavaHandlers] Installing Java', data.majorVersion);
         const installation = await installJavaFromAdoptium(data.majorVersion);
         
         // 更新快取
@@ -146,12 +143,10 @@ function registerHandlers(): void {
     JavaChannels.SELECT_FOR_MC,
     async (_, mcVersion: string): Promise<IpcResult<JavaInstallationDto | null>> => {
       try {
-        console.log('[JavaHandlers] Selecting Java for MC version:', mcVersion);
         if (!cachedInstallations) {
           cachedInstallations = await javaDetector!.detectAll();
         }
         const selected = javaDetector!.selectForMinecraft(cachedInstallations, mcVersion);
-        console.log('[JavaHandlers] Selected Java:', selected);
         return { success: true, data: selected };
       } catch (error) {
         return { success: false, error: formatError(error) };
@@ -198,7 +193,6 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   
   // 取得最新版本資訊
   const apiUrl = `https://api.adoptium.net/v3/assets/latest/${majorVersion}/hotspot?architecture=${arch}&image_type=${imageType}&os=${os}&vendor=eclipse`;
-  console.log('[JavaHandlers] Fetching Adoptium API:', apiUrl);
   
   const response = await fetchJson<AdoptiumApiResponse | AdoptiumAsset[]>(apiUrl);
   
@@ -234,11 +228,9 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   };
   
   // 下載
-  console.log('[JavaHandlers] Downloading Java from:', downloadUrl);
   await downloadFile(downloadUrl, downloadPath, fileSize, sendProgress);
   
   // 解壓縮
-  console.log('[JavaHandlers] Extracting to:', extractDir);
   try {
     await extractArchive(downloadPath, extractDir);
   } catch (error) {
@@ -258,13 +250,10 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   }
   
   // 驗證 Java 是否可以正常執行
-  console.log('[JavaHandlers] Verifying Java installation:', javaPath);
   const isValid = await verifyJavaInstallation(javaPath);
   if (!isValid) {
     throw new Error('JAVA_INSTALL_FAILED: Java 安裝驗證失敗，無法執行 java -version');
   }
-  
-  console.log('[JavaHandlers] Java installation verified successfully');
   
   return {
     path: javaPath,

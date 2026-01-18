@@ -84,7 +84,6 @@ export function CreateServerDialog({
       const result = await window.electronAPI.download.fetchVersions(type);
       
       if (result.success && result.data) {
-        console.log(`Fetched ${result.data.versions.length} versions for ${type}`);
         setVersions(result.data.versions);
         if (result.data.versions.length > 0) {
           setMcVersion(result.data.versions[0]!);
@@ -103,7 +102,6 @@ export function CreateServerDialog({
   // Fetch versions when dialog opens or core type changes
   useEffect(() => {
     if (open) {
-      console.log('Dialog opened, fetching versions for:', coreType);
       fetchVersions(coreType);
     }
   }, [open, coreType, fetchVersions]);

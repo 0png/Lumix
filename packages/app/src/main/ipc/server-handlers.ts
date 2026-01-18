@@ -88,7 +88,6 @@ function registerHandlers(): void {
           
           if (selectedJava) {
             effectiveData = { ...data, javaPath: selectedJava.path };
-            console.log(`[ServerHandlers] Auto-selected Java ${selectedJava.majorVersion} for MC ${data.mcVersion}: ${selectedJava.path}`);
           } else {
             console.warn(`[ServerHandlers] No suitable Java found for MC ${data.mcVersion}, will use system default`);
           }

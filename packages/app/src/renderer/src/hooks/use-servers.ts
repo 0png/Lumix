@@ -79,7 +79,6 @@ export function useServers(): UseServersReturn {
       setServers((prev) => [...prev, serverWithStatus]);
 
       // 2. 下載 server.jar
-      console.log('[useServers] Downloading server.jar for:', server.name);
       const downloadResult = await window.electronAPI.download.downloadServer({
         coreType: data.coreType,
         mcVersion: data.mcVersion,
@@ -101,7 +100,6 @@ export function useServers(): UseServersReturn {
         return { server: null, error: { code: IpcErrorCode.DOWNLOAD_FAILED, message: errorStr } };
       }
 
-      console.log('[useServers] Server created and downloaded successfully');
       // 標記為已就緒
       const readyServer = { ...server, isReady: true };
       setServers((prev) => prev.map((s) => (s.id === server.id ? readyServer : s)));

@@ -171,30 +171,23 @@ export class JavaDetector {
     const installations: JavaInstallationDto[] = [];
     const searchPaths = this.getSearchPaths();
 
-    console.log('[JavaDetector] Scanning paths:', searchPaths);
-
     for (const basePath of searchPaths) {
       try {
         const entries = await fs.readdir(basePath, { withFileTypes: true });
-        console.log(`[JavaDetector] Found entries in ${basePath}:`, entries.map(e => e.name));
         
         for (const entry of entries) {
           if (entry.isDirectory()) {
             const jdkPath = path.join(basePath, entry.name);
             const javaPath = this.getJavaExecutable(jdkPath);
-            console.log(`[JavaDetector] Checking ${javaPath}...`);
             
             const info = await this.getJavaInfo(javaPath);
             if (info) {
-              console.log(`[JavaDetector] Found Java:`, info);
               installations.push(info);
-            } else {
-              console.log(`[JavaDetector] Not a valid Java installation: ${javaPath}`);
             }
           }
         }
       } catch (error) {
-        console.log(`[JavaDetector] Path not accessible: ${basePath}`, error);
+        // Path not accessible, skip
       }
     }
 
@@ -221,8 +214,7 @@ export class JavaDetector {
         output += data.toString();
       });
 
-      proc.on('error', (err) => {
-        console.log(`[JavaDetector] Spawn error for ${javaPath}:`, err.message);
+      proc.on('error', () => {
         errorOccurred = true;
         resolve(null);
       });
@@ -231,21 +223,16 @@ export class JavaDetector {
         if (errorOccurred) return;
         
         if (code !== 0) {
-          console.log(`[JavaDetector] Exit code ${code} for ${javaPath}`);
           resolve(null);
           return;
         }
 
         const info = this.parseJavaVersion(output, javaPath);
-        if (!info) {
-          console.log(`[JavaDetector] Failed to parse version from output:`, output.substring(0, 100));
-        }
         resolve(info);
       });
 
       setTimeout(() => {
         if (!errorOccurred) {
-          console.log(`[JavaDetector] Timeout for ${javaPath}`);
           proc.kill();
           resolve(null);
         }

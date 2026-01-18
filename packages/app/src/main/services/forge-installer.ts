@@ -15,8 +15,6 @@ export function runForgeInstaller(installerPath: string, targetDir: string): Pro
     // Forge installer 使用 --installServer 參數進行無頭安裝
     // Windows 上路徑包含空格時，spawn 會自動處理引號
     const args = ['-jar', installerPath, '--installServer'];
-    console.log('[ForgeInstaller] Args:', args);
-    console.log('[ForgeInstaller] Working directory:', targetDir);
 
     const proc = spawn('java', args, {
       cwd: targetDir,
@@ -24,8 +22,8 @@ export function runForgeInstaller(installerPath: string, targetDir: string): Pro
       // 移除 windowsVerbatimArguments，讓 Node.js 自動處理路徑引號
     });
 
-    proc.stdout?.on('data', (data: Buffer) => {
-      console.log('[ForgeInstaller]', data.toString().trim());
+    proc.stdout?.on('data', () => {
+      // Forge installer output
     });
 
     proc.stderr?.on('data', (data: Buffer) => {
@@ -33,8 +31,6 @@ export function runForgeInstaller(installerPath: string, targetDir: string): Pro
     });
 
     proc.on('close', async (code: number) => {
-      console.log('[ForgeInstaller] Exited with code:', code);
-
       if (code !== 0) {
         reject(new Error(`FORGE_INSTALL_FAILED: Installer 退出碼 ${code}`));
         return;
@@ -60,7 +56,6 @@ export function runForgeInstaller(installerPath: string, targetDir: string): Pro
  */
 async function setupForgeServerJar(targetDir: string, installerPath: string): Promise<void> {
   const files = await fs.readdir(targetDir);
-  console.log('[ForgeInstaller] Files after install:', files);
 
   const serverJarPath = path.join(targetDir, 'server.jar');
 
@@ -75,7 +70,6 @@ async function setupForgeServerJar(targetDir: string, installerPath: string): Pr
 
   if (forgeJar) {
     // 舊版 Forge：直接重命名
-    console.log('[ForgeInstaller] Found Forge jar:', forgeJar);
     await fs.rename(path.join(targetDir, forgeJar), serverJarPath);
   } else {
     // 新版 Forge (1.17+)：檢查是否有 run.bat/run.sh
@@ -113,7 +107,6 @@ async function setupNewForgeServer(
   }
 
   const runBatContent = await fs.readFile(runBatPath, 'utf-8');
-  console.log('[ForgeInstaller] run.bat content:', runBatContent);
 
   // 從 run.bat 中提取完整的 java 參數
   // 新版 Forge run.bat 格式類似：
@@ -131,7 +124,6 @@ async function setupNewForgeServer(
     if (argsFileExists) {
       // 讀取 args.txt 找到實際的啟動 jar
       const argsContent = await fs.readFile(argsFilePath, 'utf-8');
-      console.log('[ForgeInstaller] args.txt content:', argsContent);
 
       // 找到 -jar 後面的 jar 路徑，或者找到 main class
       // 新版 Forge 可能使用 cpw.mods.bootstraplauncher.BootstrapLauncher
@@ -150,7 +142,6 @@ async function setupNewForgeServer(
       // 建立一個空的 server.jar 作為標記（實際啟動時會讀取 forge-config.json）
       // 或者我們可以建立一個 dummy jar
       // 暫時先複製 run.bat 的內容到一個可執行的腳本
-      console.log('[ForgeInstaller] New Forge detected, saving config');
       
       // 建立 user_jvm_args.txt 如果不存在
       const userJvmArgsPath = path.join(targetDir, 'user_jvm_args.txt');
@@ -187,5 +178,4 @@ async function setupNewForgeServer(
 
   // 複製 library jar 到 server.jar
   await fs.copyFile(libJarPath, serverJarPath);
-  console.log('[ForgeInstaller] Copied library jar to server.jar');
 }

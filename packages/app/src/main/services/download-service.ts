@@ -224,8 +224,6 @@ export class DownloadService extends EventEmitter {
     jarPath: string,
     serverId?: string
   ): Promise<void> {
-    console.log('[DownloadService] Downloading Paper server for MC', mcVersion);
-
     const buildsUrl = `${API_ENDPOINTS.PAPER_PROJECT}/versions/${mcVersion}/builds`;
     const buildsData = await fetchJson<PaperBuildsResponse>(buildsUrl);
 
@@ -297,13 +295,9 @@ export class DownloadService extends EventEmitter {
     const targetDir = path.dirname(jarPath);
     const installerPath = path.join(targetDir, 'forge-installer.jar');
 
-    console.log('[DownloadService] Forge version:', forgeFullVersion);
-    console.log('[DownloadService] Downloading Forge installer:', installerUrl);
     await this.downloadWithProgress(installerUrl, installerPath, 0, serverId);
 
-    console.log('[DownloadService] Running Forge installer...');
     await runForgeInstaller(installerPath, targetDir);
-    console.log('[DownloadService] Forge installation complete');
   }
 
   // ==========================================================================
