@@ -235,7 +235,14 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   
   // 解壓縮
   console.log('[JavaHandlers] Extracting to:', extractDir);
-  await extractArchive(downloadPath, extractDir);
+  try {
+    await extractArchive(downloadPath, extractDir);
+  } catch (error) {
+    // 解壓縮失敗，清理下載檔案和目標目錄
+    await fs.unlink(downloadPath).catch(() => {});
+    await fs.rm(extractDir, { recursive: true, force: true }).catch(() => {});
+    throw new Error(`JAVA_INSTALL_FAILED: 解壓縮失敗 - ${error instanceof Error ? error.message : String(error)}`);
+  }
   
   // 清理下載檔案
   await fs.unlink(downloadPath).catch(() => {});
@@ -272,30 +279,58 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
   if (process.platform === 'win32') {
     // Windows: 使用 PowerShell 解壓縮 zip
     await new Promise<void>((resolve, reject) => {
+      const EXTRACT_TIMEOUT = 60000; // 60 秒超時
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       const proc = spawn('powershell', [
         '-NoProfile',
         '-Command',
         `Expand-Archive -Path "${archivePath}" -DestinationPath "${destDir}" -Force`,
       ], { stdio: 'pipe' });
       
+      // 設置超時
+      timeoutId = setTimeout(() => {
+        proc.kill();
+        reject(new Error('解壓縮超時（60 秒）'));
+      }, EXTRACT_TIMEOUT);
+      
       proc.on('close', (code) => {
+        if (timeoutId) clearTimeout(timeoutId);
         if (code === 0) resolve();
         else reject(new Error(`解壓縮失敗，exit code: ${code}`));
       });
-      proc.on('error', reject);
+      
+      proc.on('error', (err) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        reject(err);
+      });
     });
   } else {
     // Linux/Mac: 使用 tar 解壓縮
     await new Promise<void>((resolve, reject) => {
+      const EXTRACT_TIMEOUT = 60000; // 60 秒超時
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       const proc = spawn('tar', ['-xzf', archivePath, '-C', destDir, '--strip-components=1'], {
         stdio: 'pipe',
       });
       
+      // 設置超時
+      timeoutId = setTimeout(() => {
+        proc.kill();
+        reject(new Error('解壓縮超時（60 秒）'));
+      }, EXTRACT_TIMEOUT);
+      
       proc.on('close', (code) => {
+        if (timeoutId) clearTimeout(timeoutId);
         if (code === 0) resolve();
         else reject(new Error(`解壓縮失敗，exit code: ${code}`));
       });
-      proc.on('error', reject);
+      
+      proc.on('error', (err) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        reject(err);
+      });
     });
   }
 }

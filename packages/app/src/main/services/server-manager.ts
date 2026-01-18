@@ -322,6 +322,13 @@ export class ServerManager extends EventEmitter {
       )));
     }
 
+    // 清除舊的 timeout（避免多個 timeout 同時存在）
+    const existingTimeout = this.stopTimeouts.get(id);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      this.stopTimeouts.delete(id);
+    }
+
     this.updateServerStatus(id, 'stopping');
 
     const sent = this.processManager.writeStdin(id, 'stop');
@@ -329,7 +336,7 @@ export class ServerManager extends EventEmitter {
       this.processManager.kill(id);
     }
 
-    // 追蹤 timeout，以便在 startServer 時可以清除
+    // 設置新的 timeout
     const timeout = setTimeout(() => {
       this.stopTimeouts.delete(id);
       if (this.processManager.isRunning(id)) {

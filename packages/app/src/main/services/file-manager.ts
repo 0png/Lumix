@@ -53,7 +53,16 @@ export class FileManager {
    * 取得特定伺服器的目錄路徑
    */
   getServerPath(serverName: string): string {
-    return path.join(this.getServersPath(), serverName);
+    // 使用 path.basename 防止路徑遍歷攻擊
+    // 這會移除任何路徑分隔符，只保留最後的檔名部分
+    const sanitized = path.basename(serverName);
+    
+    // 防止特殊名稱（. 和 .. 可能造成問題）
+    if (sanitized === '.' || sanitized === '..' || sanitized === '') {
+      throw new Error(`Invalid server name: ${serverName}`);
+    }
+    
+    return path.join(this.getServersPath(), sanitized);
   }
 
   /**

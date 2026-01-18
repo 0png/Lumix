@@ -213,16 +213,25 @@ export function useServers(): UseServersReturn {
     const MAX_LOG_ENTRIES = 1000;
     const unsubscribe = window.electronAPI.server.onLogEntry((event: ServerLogEvent) => {
       setLogs((prev) => {
-        const next = new Map(prev);
-        const serverLogs = next.get(event.serverId) || [];
+        const serverLogs = prev.get(event.serverId) || [];
         const newLogs = [...serverLogs, event.entry];
+        
         // 超過上限時移除最舊的
         if (newLogs.length > MAX_LOG_ENTRIES) {
-          next.set(event.serverId, newLogs.slice(-MAX_LOG_ENTRIES));
+          const trimmedLogs = newLogs.slice(-MAX_LOG_ENTRIES);
+          // 只在需要更新時創建新 Map
+          if (prev.get(event.serverId) !== trimmedLogs) {
+            const next = new Map(prev);
+            next.set(event.serverId, trimmedLogs);
+            return next;
+          }
+          return prev;
         } else {
+          // 只在需要更新時創建新 Map
+          const next = new Map(prev);
           next.set(event.serverId, newLogs);
+          return next;
         }
-        return next;
       });
     });
     return () => {
