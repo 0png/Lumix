@@ -272,6 +272,7 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
   if (process.platform === 'win32') {
     // Windows: 使用 PowerShell 解壓縮 zip
     await new Promise<void>((resolve, reject) => {
+      let resolved = false;
       let timeoutId: NodeJS.Timeout | null = null;
       
       const proc = spawn('powershell', [
@@ -282,24 +283,34 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
       
       // 設置超時
       timeoutId = setTimeout(() => {
-        proc.kill();
-        reject(new Error('解壓縮超時（60 秒）'));
+        if (!resolved) {
+          resolved = true;
+          proc.kill('SIGKILL');
+          reject(new Error('解壓縮超時（60 秒）'));
+        }
       }, EXTRACT_TIMEOUT);
       
       proc.on('close', (code) => {
         if (timeoutId) clearTimeout(timeoutId);
-        if (code === 0) resolve();
-        else reject(new Error(`解壓縮失敗，exit code: ${code}`));
+        if (!resolved) {
+          resolved = true;
+          if (code === 0) resolve();
+          else reject(new Error(`解壓縮失敗，exit code: ${code}`));
+        }
       });
       
       proc.on('error', (err) => {
         if (timeoutId) clearTimeout(timeoutId);
-        reject(err);
+        if (!resolved) {
+          resolved = true;
+          reject(err);
+        }
       });
     });
   } else {
     // Linux/Mac: 使用 tar 解壓縮
     await new Promise<void>((resolve, reject) => {
+      let resolved = false;
       let timeoutId: NodeJS.Timeout | null = null;
       
       const proc = spawn('tar', ['-xzf', archivePath, '-C', destDir, '--strip-components=1'], {
@@ -308,19 +319,28 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
       
       // 設置超時
       timeoutId = setTimeout(() => {
-        proc.kill();
-        reject(new Error('解壓縮超時（60 秒）'));
+        if (!resolved) {
+          resolved = true;
+          proc.kill('SIGKILL');
+          reject(new Error('解壓縮超時（60 秒）'));
+        }
       }, EXTRACT_TIMEOUT);
       
       proc.on('close', (code) => {
         if (timeoutId) clearTimeout(timeoutId);
-        if (code === 0) resolve();
-        else reject(new Error(`解壓縮失敗，exit code: ${code}`));
+        if (!resolved) {
+          resolved = true;
+          if (code === 0) resolve();
+          else reject(new Error(`解壓縮失敗，exit code: ${code}`));
+        }
       });
       
       proc.on('error', (err) => {
         if (timeoutId) clearTimeout(timeoutId);
-        reject(err);
+        if (!resolved) {
+          resolved = true;
+          reject(err);
+        }
       });
     });
   }
@@ -365,6 +385,8 @@ async function findJavaExecutable(baseDir: string): Promise<string | null> {
  */
 async function verifyJavaInstallation(javaPath: string): Promise<boolean> {
   return new Promise((resolve) => {
+    let resolved = false;
+    
     const proc = spawn(javaPath, ['-version'], {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsVerbatimArguments: true,
@@ -381,18 +403,26 @@ async function verifyJavaInstallation(javaPath: string): Promise<boolean> {
     });
 
     proc.on('error', () => {
-      resolve(false);
+      if (!resolved) {
+        resolved = true;
+        resolve(false);
+      }
     });
 
     proc.on('close', (code) => {
-      // Java -version 成功執行且有輸出
-      resolve(code === 0 && hasOutput);
+      if (!resolved) {
+        resolved = true;
+        resolve(code === 0 && hasOutput);
+      }
     });
 
     // 5 秒超時，使用 SIGKILL 確保終止
     setTimeout(() => {
-      proc.kill('SIGKILL');
-      // 不在這裡 resolve，等待 close 事件處理
+      if (!resolved) {
+        resolved = true;
+        proc.kill('SIGKILL');
+        resolve(false);
+      }
     }, JAVA_VERIFY_TIMEOUT);
   });
 }
