@@ -319,6 +319,12 @@ export class ServerManager extends EventEmitter {
         forgeArgsFile,
       };
 
+      // Debug log
+      this.emitLogEntry(id, 'info', `[DEBUG] Starting server with:`);
+      this.emitLogEntry(id, 'info', `[DEBUG] Java: ${effectiveJavaPath}`);
+      this.emitLogEntry(id, 'info', `[DEBUG] Working Dir: ${server.directory}`);
+      this.emitLogEntry(id, 'info', `[DEBUG] JAR: ${jarPath}`);
+
       this.processManager.spawn(processConfig);
       await this.updateLastStartedAt(id);
       this.updateServerStatus(id, 'running');
