@@ -215,12 +215,18 @@ export class JavaDetector {
     // 範例輸出:
     // openjdk version "21.0.7" 2025-04-15 LTS
     // OpenJDK Runtime Environment Temurin-21.0.7+6 (build 21.0.7+6-LTS)
+    // java version "1.8.0_421" (Java 8 格式)
     const versionMatch = output.match(/version "(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
     if (!versionMatch) return null;
 
-    const major = parseInt(versionMatch[1]!, 10);
+    let major = parseInt(versionMatch[1]!, 10);
     const minor = versionMatch[2] ? parseInt(versionMatch[2], 10) : 0;
     const patch = versionMatch[3] ? parseInt(versionMatch[3], 10) : 0;
+
+    // Java 8 特殊處理：版本號為 1.8.x，但 major version 應該是 8
+    if (major === 1 && minor === 8) {
+      major = 8;
+    }
 
     // 偵測 vendor
     let vendor = 'Unknown';
