@@ -70,11 +70,17 @@ export class JavaDetector {
    * 從 PATH 環境變數偵測 Java
    */
   private async detectFromPath(): Promise<JavaInstallationDto | null> {
-    // 對於 PATH 中的 'java' 命令，需要使用 shell
+    // 先取得 java 的完整路徑
+    const javaPath = await this.findJavaInPath();
+    if (!javaPath) {
+      return null;
+    }
+
+    // 使用完整路徑驗證 Java（不使用 shell，與 process-manager 一致）
     return new Promise((resolve) => {
-      const proc = spawn('java', ['-version'], {
+      const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: true,
+        windowsVerbatimArguments: true,
       });
 
       let output = '';
@@ -97,8 +103,47 @@ export class JavaDetector {
           return;
         }
 
-        const info = this.parseJavaVersion(output, 'java');
+        const info = this.parseJavaVersion(output, javaPath);
         resolve(info);
+      });
+
+      setTimeout(() => {
+        proc.kill();
+        resolve(null);
+      }, 5000);
+    });
+  }
+
+  /**
+   * 在 PATH 中尋找 java 執行檔的完整路徑
+   */
+  private async findJavaInPath(): Promise<string | null> {
+    return new Promise((resolve) => {
+      const command = process.platform === 'win32' ? 'where' : 'which';
+      const proc = spawn(command, ['java'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsVerbatimArguments: true,
+      });
+
+      let output = '';
+
+      proc.stdout?.on('data', (data: Buffer) => {
+        output += data.toString();
+      });
+
+      proc.on('error', () => {
+        resolve(null);
+      });
+
+      proc.on('close', (code) => {
+        if (code !== 0 || !output.trim()) {
+          resolve(null);
+          return;
+        }
+
+        // where/which 可能回傳多個路徑，取第一個
+        const firstPath = output.trim().split('\n')[0]?.trim();
+        resolve(firstPath || null);
       });
 
       setTimeout(() => {
