@@ -44,8 +44,12 @@ interface AdoptiumAsset {
   version: {
     major: number;
     minor: number;
-    patch: number;
+    security: number;
   };
+}
+
+interface AdoptiumApiResponse {
+  value: AdoptiumAsset[];
 }
 
 // ============================================================================
@@ -192,12 +196,12 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   const apiUrl = `https://api.adoptium.net/v3/assets/latest/${majorVersion}/hotspot?architecture=${arch}&image_type=${imageType}&os=${os}&vendor=eclipse`;
   console.log('[JavaHandlers] Fetching Adoptium API:', apiUrl);
   
-  const assets = await fetchJson<AdoptiumAsset[]>(apiUrl);
-  if (!assets || assets.length === 0) {
+  const response = await fetchJson<AdoptiumApiResponse>(apiUrl);
+  if (!response?.value || response.value.length === 0) {
     throw new Error(`JAVA_INSTALL_FAILED: 找不到 Java ${majorVersion} 的下載資源`);
   }
   
-  const asset = assets[0]!;
+  const asset = response.value[0]!;
   const downloadUrl = asset.binary.package.link;
   const fileName = asset.binary.package.name;
   const fileSize = asset.binary.package.size;
@@ -240,7 +244,7 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   
   return {
     path: javaPath,
-    version: `${asset.version.major}.${asset.version.minor}.${asset.version.patch}`,
+    version: `${asset.version.major}.${asset.version.minor}.${asset.version.security}`,
     majorVersion: asset.version.major,
     vendor: 'Eclipse Temurin',
     isValid: true,
