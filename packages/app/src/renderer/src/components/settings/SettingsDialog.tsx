@@ -179,7 +179,7 @@ export function SettingsDialog({
               <h3 className="text-xs font-medium text-muted-foreground">{t('settings.java')}</h3>
               <Button variant="outline" size="sm" onClick={onAddJavaPath} className="h-7 text-xs">
                 <Plus className="mr-1 h-3 w-3" />
-                {t('common.create')}
+                {t('common.detect')}
               </Button>
             </div>
 

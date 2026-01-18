@@ -183,7 +183,7 @@ export function SettingsView({
               <CardTitle className="text-base">{t('settings.java')}</CardTitle>
               <Button variant="outline" size="sm" onClick={onAddJavaPath} className="hover:bg-primary/10 hover:border-primary/50 transition-colors">
                 <Plus className="mr-1.5 h-4 w-4" />
-                {t('common.create')}
+                {t('common.detect')}
               </Button>
             </div>
           </CardHeader>
