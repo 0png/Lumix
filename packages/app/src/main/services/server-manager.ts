@@ -26,6 +26,11 @@ import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-t
 // Types
 // ============================================================================
 
+// 超時設定常數
+const SERVER_STOP_TIMEOUT = 30000; // 30 秒
+const SERVER_START_TIMEOUT = 300000; // 5 分鐘
+const JAVA_VERIFY_TIMEOUT = 5000; // 5 秒
+
 export interface ServerManagerEvents {
   'status-changed': (event: ServerStatusEvent) => void;
   'log-entry': (event: ServerLogEvent) => void;
@@ -174,8 +179,10 @@ export class ServerManager extends EventEmitter {
   /**
    * 停止伺服器並等待程序真正結束
    */
-  private async stopServerAndWait(id: string, timeoutMs: number = 30000): Promise<void> {
+  private async stopServerAndWait(id: string, timeoutMs: number = SERVER_STOP_TIMEOUT): Promise<void> {
     return new Promise<void>((resolve) => {
+      let cleanupCalled = false;
+
       const onExit = (serverId: string): void => {
         if (serverId === id) {
           cleanup();
@@ -187,11 +194,19 @@ export class ServerManager extends EventEmitter {
         cleanup();
         // 超時後強制終止
         this.processManager.forceKill(id);
-        // 給一點時間讓 forceKill 生效
-        setTimeout(resolve, 500);
+        // 給足夠時間讓 forceKill 生效（增加到 2 秒）
+        setTimeout(() => {
+          if (this.processManager.isRunning(id)) {
+            // forceKill 失敗，記錄錯誤
+            this.emitLogEntry(id, 'error', '無法強制終止伺服器程序');
+          }
+          resolve();
+        }, 2000);
       }, timeoutMs);
 
       const cleanup = (): void => {
+        if (cleanupCalled) return;
+        cleanupCalled = true;
         clearTimeout(timeout);
         this.processManager.off('exit', onExit);
       };
@@ -290,7 +305,7 @@ export class ServerManager extends EventEmitter {
       if (server.status === 'starting') {
         this.emitLogEntry(id, 'warn', '伺服器啟動超時（5 分鐘），可能啟動失敗');
       }
-    }, 300000);
+    }, SERVER_START_TIMEOUT);
 
     try {
       const processConfig: ProcessConfig = {
@@ -350,7 +365,7 @@ export class ServerManager extends EventEmitter {
       if (this.processManager.isRunning(id)) {
         this.processManager.forceKill(id);
       }
-    }, 30000);
+    }, SERVER_STOP_TIMEOUT);
     this.stopTimeouts.set(id, timeout);
   }
 
@@ -594,7 +609,7 @@ export class ServerManager extends EventEmitter {
           proc.kill();
           // close 事件會在 kill 後觸發，届時 code 會是 null，resolve(false)
         }
-      }, 5000);
+      }, JAVA_VERIFY_TIMEOUT);
     });
   }
 

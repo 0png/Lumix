@@ -89,7 +89,8 @@
     "javaNotFound": "Java {{version}}+ not found",
     "installJava": "Install Java {{version}}",
     "installingJava": "Installing Java...",
-    "javaInstallFailed": "Failed to install Java, please try again later"
+    "javaInstallFailed": "Failed to install Java, please try again later",
+    "javaInstallMaxRetries": "Maximum retry limit reached ({{max}} attempts). Please try again later or install Java manually"
   },
   "coreType": {
     "vanilla": "Vanilla",

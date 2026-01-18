@@ -89,7 +89,8 @@
     "javaNotFound": "找不到 Java {{version}}+",
     "installJava": "安裝 Java {{version}}",
     "installingJava": "正在安裝 Java...",
-    "javaInstallFailed": "Java 安裝失敗，請稍後再試"
+    "javaInstallFailed": "Java 安裝失敗，請稍後再試",
+    "javaInstallMaxRetries": "已達到最大重試次數（{{max}} 次），請稍後再試或手動安裝 Java"
   },
   "coreType": {
     "vanilla": "原版",

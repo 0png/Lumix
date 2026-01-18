@@ -22,6 +22,10 @@ import type {
 // Module State
 // ============================================================================
 
+// 超時設定常數
+const EXTRACT_TIMEOUT = 60000; // 60 秒
+const JAVA_VERIFY_TIMEOUT = 5000; // 5 秒
+
 let javaDetector: JavaDetector | null = null;
 let cachedInstallations: JavaInstallationDto[] | null = null;
 
@@ -279,7 +283,6 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
   if (process.platform === 'win32') {
     // Windows: 使用 PowerShell 解壓縮 zip
     await new Promise<void>((resolve, reject) => {
-      const EXTRACT_TIMEOUT = 60000; // 60 秒超時
       let timeoutId: NodeJS.Timeout | null = null;
       
       const proc = spawn('powershell', [
@@ -308,7 +311,6 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
   } else {
     // Linux/Mac: 使用 tar 解壓縮
     await new Promise<void>((resolve, reject) => {
-      const EXTRACT_TIMEOUT = 60000; // 60 秒超時
       let timeoutId: NodeJS.Timeout | null = null;
       
       const proc = spawn('tar', ['-xzf', archivePath, '-C', destDir, '--strip-components=1'], {
@@ -402,6 +404,6 @@ async function verifyJavaInstallation(javaPath: string): Promise<boolean> {
     setTimeout(() => {
       proc.kill();
       resolve(false);
-    }, 5000);
+    }, JAVA_VERIFY_TIMEOUT);
   });
 }

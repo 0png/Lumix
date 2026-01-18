@@ -13,6 +13,8 @@ import type {
 } from '../../../shared/ipc-types';
 import { parseIpcError, IpcErrorCode } from '../../../shared/ipc-types';
 
+const MAX_LOG_ENTRIES = 1000;
+
 export interface CreateServerError {
   code: IpcErrorCodeType;
   message: string;
@@ -210,7 +212,6 @@ export function useServers(): UseServersReturn {
 
   // 訂閱日誌事件（限制最多 1000 條，避免記憶體洩漏）
   useEffect(() => {
-    const MAX_LOG_ENTRIES = 1000;
     const unsubscribe = window.electronAPI.server.onLogEntry((event: ServerLogEvent) => {
       setLogs((prev) => {
         const serverLogs = prev.get(event.serverId) || [];

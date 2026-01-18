@@ -70,6 +70,8 @@ export function CreateServerDialog({
   const [requiredJava, setRequiredJava] = useState<number | null>(null);
   const [javaCompatible, setJavaCompatible] = useState<boolean>(true);
   const [isInstallingJava, setIsInstallingJava] = useState(false);
+  const [javaInstallRetries, setJavaInstallRetries] = useState(0);
+  const MAX_JAVA_INSTALL_RETRIES = 3;
 
   const fetchVersions = useCallback(async (type: CoreType) => {
     setLoading(true);
@@ -134,14 +136,26 @@ export function CreateServerDialog({
   // 安裝 Java（加入錯誤處理和重試限制）
   const handleInstallJava = async () => {
     if (!requiredJava || isInstallingJava) return;
+    
+    // 檢查重試次數
+    if (javaInstallRetries >= MAX_JAVA_INSTALL_RETRIES) {
+      setError(t('createServer.javaInstallMaxRetries', { max: MAX_JAVA_INSTALL_RETRIES }));
+      return;
+    }
+    
     setIsInstallingJava(true);
     try {
       const version = requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8;
       const success = await install(version as 8 | 17 | 21);
       if (!success) {
+        setJavaInstallRetries(prev => prev + 1);
         setError(t('createServer.javaInstallFailed'));
+      } else {
+        // 成功後重置重試次數
+        setJavaInstallRetries(0);
       }
     } catch (err) {
+      setJavaInstallRetries(prev => prev + 1);
       setError(err instanceof Error ? err.message : t('createServer.javaInstallFailed'));
     } finally {
       setIsInstallingJava(false);
