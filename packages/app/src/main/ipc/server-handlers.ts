@@ -73,7 +73,28 @@ function registerHandlers(): void {
     ServerChannels.CREATE,
     async (_, data: CreateServerRequest): Promise<IpcResult<ServerInstanceDto>> => {
       try {
-        const server = await serverManager!.createServer(data);
+        // 如果沒有指定 javaPath，自動選擇合適的 Java 版本
+        let effectiveData = data;
+        if (!data.javaPath) {
+          // 動態 import JavaDetector 以避免循環依賴
+          const { JavaDetector } = await import('../services/java-detector');
+          const javaDetector = new JavaDetector();
+          
+          // 偵測所有 Java 安裝
+          const installations = await javaDetector.detectAll();
+          
+          // 根據 MC 版本選擇合適的 Java
+          const selectedJava = javaDetector.selectForMinecraft(installations, data.mcVersion);
+          
+          if (selectedJava) {
+            effectiveData = { ...data, javaPath: selectedJava.path };
+            console.log(`[ServerHandlers] Auto-selected Java ${selectedJava.majorVersion} for MC ${data.mcVersion}: ${selectedJava.path}`);
+          } else {
+            console.warn(`[ServerHandlers] No suitable Java found for MC ${data.mcVersion}, will use system default`);
+          }
+        }
+        
+        const server = await serverManager!.createServer(effectiveData);
         return { success: true, data: server };
       } catch (error) {
         return { success: false, error: formatError(error) };
