@@ -400,10 +400,10 @@ async function verifyJavaInstallation(javaPath: string): Promise<boolean> {
       resolve(code === 0 && hasOutput);
     });
 
-    // 5 秒超時
+    // 5 秒超時，使用 SIGKILL 確保終止
     setTimeout(() => {
-      proc.kill();
-      resolve(false);
+      proc.kill('SIGKILL');
+      // 不在這裡 resolve，等待 close 事件處理
     }, JAVA_VERIFY_TIMEOUT);
   });
 }

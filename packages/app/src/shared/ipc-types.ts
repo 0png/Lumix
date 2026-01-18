@@ -212,6 +212,7 @@ export interface DownloadServerRequest {
   coreType: CoreType;
   mcVersion: string;
   targetDir: string;
+  serverId?: string;
 }
 
 export interface DownloadProgressEvent {

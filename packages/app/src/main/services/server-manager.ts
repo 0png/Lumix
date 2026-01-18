@@ -603,11 +603,11 @@ export class ServerManager extends EventEmitter {
         }
       });
 
-      // 設定超時，避免卡住；超時後 kill 並等待 close 事件處理
+      // 設定超時，使用 SIGKILL 確保終止
       setTimeout(() => {
         if (!resolved) {
-          proc.kill();
-          // close 事件會在 kill 後觸發，届時 code 會是 null，resolve(false)
+          proc.kill('SIGKILL');
+          // 不在這裡 resolve，等待 close 事件處理
         }
       }, JAVA_VERIFY_TIMEOUT);
     });

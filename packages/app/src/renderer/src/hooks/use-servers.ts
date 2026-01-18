@@ -84,6 +84,7 @@ export function useServers(): UseServersReturn {
         coreType: data.coreType,
         mcVersion: data.mcVersion,
         targetDir: server.directory,
+        serverId: server.id,
       });
 
       if (!downloadResult.success) {
