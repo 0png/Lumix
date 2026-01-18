@@ -90,7 +90,8 @@
     "installJava": "安裝 Java {{version}}",
     "installingJava": "正在安裝 Java...",
     "javaInstallFailed": "Java 安裝失敗，請稍後再試",
-    "javaInstallMaxRetries": "已達到最大重試次數（{{max}} 次），請稍後再試或手動安裝 Java"
+    "javaInstallMaxRetries": "已達到最大重試次數（{{max}} 次），請稍後再試或手動安裝 Java",
+    "java8Required": "此版本需要 Java 8，但系統中找不到 Java 8。請先安裝 Java 8 後再建立伺服器。"
   },
   "coreType": {
     "vanilla": "原版",

@@ -193,6 +193,15 @@ export function CreateServerDialog({
     // 自動選擇適合的 Java
     const selectedJava = await selectForMc(mcVersion);
     
+    // 檢查是否需要 Java 8（針對 Forge 1.12.2 等舊版）
+    const requiredVersion = await getRequiredVersion(mcVersion);
+    if (requiredVersion?.requiredMajor === 8 && !selectedJava) {
+      // 需要 Java 8 但找不到，阻止建立
+      setError(t('createServer.java8Required'));
+      setIsSubmitting(false);
+      return;
+    }
+    
     const submitError = await onSubmit({
       name: name.trim(),
       coreType,

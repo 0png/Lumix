@@ -90,7 +90,8 @@
     "installJava": "Install Java {{version}}",
     "installingJava": "Installing Java...",
     "javaInstallFailed": "Failed to install Java, please try again later",
-    "javaInstallMaxRetries": "Maximum retry limit reached ({{max}} attempts). Please try again later or install Java manually"
+    "javaInstallMaxRetries": "Maximum retry limit reached ({{max}} attempts). Please try again later or install Java manually",
+    "java8Required": "This version requires Java 8, but Java 8 is not found on your system. Please install Java 8 before creating the server."
   },
   "coreType": {
     "vanilla": "Vanilla",
