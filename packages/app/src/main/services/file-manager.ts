@@ -240,6 +240,9 @@ pause
     serverPath: string,
     updates: Partial<ServerProperties>
   ): Promise<ServerProperties> {
+    // 驗證輸入值
+    this.validateServerProperties(updates);
+    
     const propsPath = path.join(serverPath, 'server.properties');
     let existingContent = '';
     
@@ -262,6 +265,32 @@ pause
     await fs.writeFile(propsPath, newContent, 'utf-8');
 
     return this.readServerProperties(serverPath);
+  }
+
+  /**
+   * 驗證 server.properties 的值是否合法
+   */
+  private validateServerProperties(updates: Partial<ServerProperties>): void {
+    if (updates['max-players'] !== undefined) {
+      const maxPlayers = updates['max-players'];
+      if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 1000) {
+        throw new Error('max-players must be between 1 and 1000');
+      }
+    }
+
+    if (updates.difficulty !== undefined) {
+      const validDifficulties = ['peaceful', 'easy', 'normal', 'hard'];
+      if (!validDifficulties.includes(updates.difficulty)) {
+        throw new Error(`difficulty must be one of: ${validDifficulties.join(', ')}`);
+      }
+    }
+
+    if (updates.gamemode !== undefined) {
+      const validGamemodes = ['survival', 'creative', 'adventure', 'spectator'];
+      if (!validGamemodes.includes(updates.gamemode)) {
+        throw new Error(`gamemode must be one of: ${validGamemodes.join(', ')}`);
+      }
+    }
   }
 
   /**

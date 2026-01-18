@@ -131,13 +131,21 @@ export function CreateServerDialog({
     });
   }, [mcVersion, installations, getRequiredVersion]);
 
-  // 安裝 Java
+  // 安裝 Java（加入錯誤處理和重試限制）
   const handleInstallJava = async () => {
-    if (!requiredJava) return;
+    if (!requiredJava || isInstallingJava) return;
     setIsInstallingJava(true);
-    const version = requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8;
-    await install(version as 8 | 17 | 21);
-    setIsInstallingJava(false);
+    try {
+      const version = requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8;
+      const success = await install(version as 8 | 17 | 21);
+      if (!success) {
+        setError(t('createServer.javaInstallFailed'));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('createServer.javaInstallFailed'));
+    } finally {
+      setIsInstallingJava(false);
+    }
   };
 
   const handleCoreTypeChange = (value: string) => {

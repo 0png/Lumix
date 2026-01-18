@@ -285,6 +285,13 @@ export class ServerManager extends EventEmitter {
       this.stopTimeouts.delete(id);
     }
 
+    // 設置啟動超時（5 分鐘）
+    const startTimeout = setTimeout(() => {
+      if (server.status === 'starting') {
+        this.emitLogEntry(id, 'warn', '伺服器啟動超時（5 分鐘），可能啟動失敗');
+      }
+    }, 300000);
+
     try {
       const processConfig: ProcessConfig = {
         serverId: id,
@@ -301,6 +308,7 @@ export class ServerManager extends EventEmitter {
       await this.updateLastStartedAt(id);
       this.updateServerStatus(id, 'running');
     } catch (error) {
+      clearTimeout(startTimeout);
       this.updateServerStatus(id, 'stopped');
       throw error;
     }

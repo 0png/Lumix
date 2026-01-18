@@ -88,7 +88,8 @@
     "javaRequired": "需要 Java {{version}}+",
     "javaNotFound": "找不到 Java {{version}}+",
     "installJava": "安裝 Java {{version}}",
-    "installingJava": "正在安裝 Java..."
+    "installingJava": "正在安裝 Java...",
+    "javaInstallFailed": "Java 安裝失敗，請稍後再試"
   },
   "coreType": {
     "vanilla": "原版",

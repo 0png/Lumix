@@ -88,7 +88,8 @@
     "javaRequired": "Requires Java {{version}}+",
     "javaNotFound": "Java {{version}}+ not found",
     "installJava": "Install Java {{version}}",
-    "installingJava": "Installing Java..."
+    "installingJava": "Installing Java...",
+    "javaInstallFailed": "Failed to install Java, please try again later"
   },
   "coreType": {
     "vanilla": "Vanilla",
