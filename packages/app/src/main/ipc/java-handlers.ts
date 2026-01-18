@@ -196,12 +196,16 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
   const apiUrl = `https://api.adoptium.net/v3/assets/latest/${majorVersion}/hotspot?architecture=${arch}&image_type=${imageType}&os=${os}&vendor=eclipse`;
   console.log('[JavaHandlers] Fetching Adoptium API:', apiUrl);
   
-  const response = await fetchJson<AdoptiumApiResponse>(apiUrl);
-  if (!response?.value || response.value.length === 0) {
+  const response = await fetchJson<AdoptiumApiResponse | AdoptiumAsset[]>(apiUrl);
+  
+  // API 可能回傳 { value: [...] } 或直接回傳 [...]
+  const assets = Array.isArray(response) ? response : response.value;
+  
+  if (!assets || assets.length === 0) {
     throw new Error(`JAVA_INSTALL_FAILED: 找不到 Java ${majorVersion} 的下載資源`);
   }
   
-  const asset = response.value[0]!;
+  const asset = assets[0]!;
   const downloadUrl = asset.binary.package.link;
   const fileName = asset.binary.package.name;
   const fileSize = asset.binary.package.size;
