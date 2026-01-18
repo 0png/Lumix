@@ -246,6 +246,15 @@ async function installJavaFromAdoptium(majorVersion: number): Promise<JavaInstal
     throw new Error('JAVA_INSTALL_FAILED: 解壓縮後找不到 java 執行檔');
   }
   
+  // 驗證 Java 是否可以正常執行
+  console.log('[JavaHandlers] Verifying Java installation:', javaPath);
+  const isValid = await verifyJavaInstallation(javaPath);
+  if (!isValid) {
+    throw new Error('JAVA_INSTALL_FAILED: Java 安裝驗證失敗，無法執行 java -version');
+  }
+  
+  console.log('[JavaHandlers] Java installation verified successfully');
+  
   return {
     path: javaPath,
     version: `${asset.version.major}.${asset.version.minor}.${asset.version.security}`,
@@ -323,4 +332,41 @@ async function findJavaExecutable(baseDir: string): Promise<string | null> {
   }
   
   return null;
+}
+
+/**
+ * 驗證 Java 安裝是否可以正常執行
+ */
+async function verifyJavaInstallation(javaPath: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn(javaPath, ['-version'], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsVerbatimArguments: true,
+    });
+
+    let hasOutput = false;
+
+    proc.stderr?.on('data', () => {
+      hasOutput = true;
+    });
+
+    proc.stdout?.on('data', () => {
+      hasOutput = true;
+    });
+
+    proc.on('error', () => {
+      resolve(false);
+    });
+
+    proc.on('close', (code) => {
+      // Java -version 成功執行且有輸出
+      resolve(code === 0 && hasOutput);
+    });
+
+    // 5 秒超時
+    setTimeout(() => {
+      proc.kill();
+      resolve(false);
+    }, 5000);
+  });
 }
