@@ -34,8 +34,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "your-github-username",
-      "repo": "lumix"
+      "owner": "0png",
+      "repo": "Lumix"
     },
     "win": {
       "icon": "resources/icon.png",
