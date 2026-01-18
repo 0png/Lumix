@@ -33,6 +33,7 @@ export interface CreateServerData {
   mcVersion: string;
   ramMin: number;
   ramMax: number;
+  javaPath?: string;
 }
 
 interface CreateServerDialogProps {
@@ -53,7 +54,7 @@ export function CreateServerDialog({
   existingNames = [],
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
-  const { installations, getRequiredVersion, install, installProgress } = useJava();
+  const { installations, getRequiredVersion, install, installProgress, selectForMc } = useJava();
   const [name, setName] = useState('');
   const [coreType, setCoreType] = useState<CoreType>('paper');
   const [mcVersion, setMcVersion] = useState('');
@@ -168,12 +169,17 @@ export function CreateServerDialog({
     if (!name.trim() || !mcVersion || nameError) return;
     
     setIsSubmitting(true);
+    
+    // 自動選擇適合的 Java
+    const selectedJava = await selectForMc(mcVersion);
+    
     const submitError = await onSubmit({
       name: name.trim(),
       coreType,
       mcVersion,
       ramMin: Math.floor(ramMax / 2),
       ramMax,
+      javaPath: selectedJava?.path, // 使用選擇的 Java 路徑
     });
 
     if (submitError) {
