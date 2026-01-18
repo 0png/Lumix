@@ -77,10 +77,10 @@ export class JavaDetector {
     }
 
     // 使用完整路徑驗證 Java（不使用 shell，與 process-manager 一致）
+    // 移除 windowsVerbatimArguments 以正確處理帶空格的路徑
     return new Promise((resolve) => {
       const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        windowsVerbatimArguments: true,
       });
 
       let output = '';

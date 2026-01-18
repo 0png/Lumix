@@ -58,13 +58,13 @@ export class ProcessManager extends EventEmitter {
     const args = this.buildJvmArgs(config);
 
     // 啟動程序（spawn 可能同步拋出 ENOENT 等錯誤）
-    // 不使用 shell: true 以避免命令注入風險，spawn 原生支援空格路徑
+    // 不使用 shell: true 以避免命令注入風險
+    // 移除 windowsVerbatimArguments 以正確處理帶空格的路徑
     let proc: ChildProcess;
     try {
       proc = spawn(config.javaPath, args, {
         cwd: config.workingDir,
         stdio: ['pipe', 'pipe', 'pipe'],
-        windowsVerbatimArguments: true, // Windows 上保留參數原樣
       });
     } catch (error) {
       // 同步錯誤（如 ENOENT），emit error 事件讓上層處理

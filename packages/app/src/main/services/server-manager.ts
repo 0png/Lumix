@@ -325,6 +325,12 @@ export class ServerManager extends EventEmitter {
       this.emitLogEntry(id, 'info', `[DEBUG] Working Dir: ${server.directory}`);
       this.emitLogEntry(id, 'info', `[DEBUG] JAR: ${jarPath}`);
 
+      // Debug log
+      this.emitLogEntry(id, 'info', `[DEBUG] Starting server with:`);
+      this.emitLogEntry(id, 'info', `[DEBUG] Java: ${effectiveJavaPath}`);
+      this.emitLogEntry(id, 'info', `[DEBUG] Working Dir: ${server.directory}`);
+      this.emitLogEntry(id, 'info', `[DEBUG] JAR: ${jarPath}`);
+
       this.processManager.spawn(processConfig);
       await this.updateLastStartedAt(id);
       this.updateServerStatus(id, 'running');
@@ -589,7 +595,7 @@ export class ServerManager extends EventEmitter {
 
       const proc = spawn(javaPath, ['-version'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        windowsVerbatimArguments: true,
+        // 移除 windowsVerbatimArguments，讓 Node.js 正確處理帶空格的路徑
       });
 
       proc.stdout?.on('data', () => {});
