@@ -252,6 +252,40 @@ export interface AppInfo {
 }
 
 // ============================================================================
+// Update Types
+// ============================================================================
+
+export interface UpdateCheckResult {
+  hasUpdate: boolean;
+  version?: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+  message?: string;
+}
+
+export interface UpdateInfo {
+  version: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+}
+
+export interface UpdateDownloadProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+  bytesPerSecond: number;
+}
+
+export interface UpdateErrorEvent {
+  message: string;
+  code: string;
+}
+
+export interface UpdateDownloadedEvent {
+  version: string;
+}
+
+// ============================================================================
 // Server Properties Types
 // ============================================================================
 

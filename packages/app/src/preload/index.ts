@@ -8,6 +8,7 @@ import {
   DownloadChannels,
   SettingsChannels,
   AppChannels,
+  UpdateChannels,
 } from '../shared/ipc-channels';
 import type {
   IpcResult,
@@ -29,6 +30,11 @@ import type {
   SettingsDto,
   SaveSettingsRequest,
   CoreType,
+  UpdateCheckResult,
+  UpdateInfo,
+  UpdateDownloadProgress,
+  UpdateErrorEvent,
+  UpdateDownloadedEvent,
 } from '../shared/ipc-types';
 
 // ============================================================================
@@ -161,6 +167,53 @@ const electronAPI = {
 
     openExternal: (url: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_EXTERNAL, url),
+  },
+
+  // --------------------------------------------------------------------------
+  // Update
+  // --------------------------------------------------------------------------
+  update: {
+    checkForUpdates: (): Promise<IpcResult<UpdateCheckResult>> =>
+      ipcRenderer.invoke(UpdateChannels.CHECK_FOR_UPDATES),
+
+    downloadUpdate: (): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(UpdateChannels.DOWNLOAD_UPDATE),
+
+    quitAndInstall: (): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(UpdateChannels.QUIT_AND_INSTALL),
+
+    getCurrentVersion: (): Promise<IpcResult<string>> =>
+      ipcRenderer.invoke(UpdateChannels.GET_CURRENT_VERSION),
+
+    onError: (callback: (event: UpdateErrorEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: UpdateErrorEvent) => callback(data);
+      ipcRenderer.on(UpdateChannels.ERROR, handler);
+      return () => ipcRenderer.removeListener(UpdateChannels.ERROR, handler);
+    },
+
+    onAvailable: (callback: (event: UpdateInfo) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: UpdateInfo) => callback(data);
+      ipcRenderer.on(UpdateChannels.AVAILABLE, handler);
+      return () => ipcRenderer.removeListener(UpdateChannels.AVAILABLE, handler);
+    },
+
+    onNotAvailable: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on(UpdateChannels.NOT_AVAILABLE, handler);
+      return () => ipcRenderer.removeListener(UpdateChannels.NOT_AVAILABLE, handler);
+    },
+
+    onDownloadProgress: (callback: (event: UpdateDownloadProgress) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: UpdateDownloadProgress) => callback(data);
+      ipcRenderer.on(UpdateChannels.DOWNLOAD_PROGRESS, handler);
+      return () => ipcRenderer.removeListener(UpdateChannels.DOWNLOAD_PROGRESS, handler);
+    },
+
+    onDownloaded: (callback: (event: UpdateDownloadedEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: UpdateDownloadedEvent) => callback(data);
+      ipcRenderer.on(UpdateChannels.DOWNLOADED, handler);
+      return () => ipcRenderer.removeListener(UpdateChannels.DOWNLOADED, handler);
+    },
   },
 };
 

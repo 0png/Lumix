@@ -2,12 +2,13 @@ import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { initAllIpcHandlers, cleanupAllIpcHandlers } from './ipc';
+import { getUpdateService } from './services/update-service';
 
 // ============================================================================
 // Window Management
 // ============================================================================
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 1000,
     height: 650,
@@ -36,6 +37,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
+
+  return mainWindow;
 }
 
 // ============================================================================
@@ -52,10 +55,17 @@ app.whenReady().then(async () => {
   // 初始化所有 IPC handlers（包含 ServerManager 載入）
   await initAllIpcHandlers();
 
-  createWindow();
+  const mainWindow = createWindow();
+
+  // 設定 UpdateService 的主視窗參考
+  const updateService = getUpdateService();
+  updateService.setMainWindow(mainWindow);
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const newWindow = createWindow();
+      updateService.setMainWindow(newWindow);
+    }
   });
 });
 

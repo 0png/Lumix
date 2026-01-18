@@ -159,5 +159,30 @@
     "openSource": "Open Source",
     "viewOnGitHub": "View on GitHub",
     "submitFeedback": "Submit Feedback"
+  },
+  "update": {
+    "available": {
+      "title": "Update Available",
+      "description": "Version {{version}} is now available"
+    },
+    "download": "Download Update",
+    "downloading": {
+      "title": "Downloading Update"
+    },
+    "downloaded": {
+      "title": "Update Downloaded",
+      "description": "Restart the application to install the update"
+    },
+    "install": "Restart and Install",
+    "error": {
+      "title": "Update Failed"
+    },
+    "checking": "Checking for updates...",
+    "checkForUpdates": "Check for Updates",
+    "noUpdate": {
+      "title": "You're up to date",
+      "description": "No updates available"
+    },
+    "newVersionAvailable": "New version {{version}} available"
   }
 }

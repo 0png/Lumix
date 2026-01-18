@@ -159,5 +159,30 @@
     "openSource": "開源專案",
     "viewOnGitHub": "在 GitHub 上查看",
     "submitFeedback": "提交回饋"
+  },
+  "update": {
+    "available": {
+      "title": "有新版本可用",
+      "description": "版本 {{version}} 已發布"
+    },
+    "download": "下載更新",
+    "downloading": {
+      "title": "正在下載更新"
+    },
+    "downloaded": {
+      "title": "更新已下載完成",
+      "description": "重新啟動應用程式以安裝更新"
+    },
+    "install": "立即重啟並安裝",
+    "error": {
+      "title": "更新失敗"
+    },
+    "checking": "檢查更新中...",
+    "checkForUpdates": "檢查更新",
+    "noUpdate": {
+      "title": "已是最新版本",
+      "description": "目前沒有可用的更新"
+    },
+    "newVersionAvailable": "新版本 {{version}} 可供下載"
   }
 }

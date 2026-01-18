@@ -5,9 +5,11 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, ArrowLeft } from 'lucide-react';
+import { ExternalLink, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useUpdate } from '@/hooks/use-update';
+import { toast } from 'sonner';
 import appIcon from '@/assets/icon.png';
 
 interface AboutViewProps {
@@ -32,6 +34,7 @@ function GitHubIcon({ className }: { className?: string }) {
 export function AboutView({ onBack }: AboutViewProps) {
   const { t } = useTranslation();
   const [version, setVersion] = useState('0.1.0');
+  const { checkForUpdates, checking, available, updateInfo } = useUpdate();
 
   useEffect(() => {
     // 動態讀取版本號
@@ -41,6 +44,17 @@ export function AboutView({ onBack }: AboutViewProps) {
       }
     });
   }, []);
+
+  const handleCheckUpdate = async () => {
+    await checkForUpdates();
+    
+    // 如果沒有更新，顯示提示
+    if (!available && !checking) {
+      toast.success(t('update.noUpdate.title'), {
+        description: t('update.noUpdate.description'),
+      });
+    }
+  };
 
   const techStack = ['Electron', 'React', 'Vite', 'TypeScript', 'Tailwind CSS', 'Radix UI'];
 
@@ -69,7 +83,7 @@ export function AboutView({ onBack }: AboutViewProps) {
             <div className="grid grid-cols-2 gap-4 mt-6">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t('about.version')}</p>
-                <p className="text-sm font-medium">Beta</p>
+                <p className="text-sm font-medium">{version}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t('about.author')}</p>
@@ -83,6 +97,24 @@ export function AboutView({ onBack }: AboutViewProps) {
                 <p className="text-xs text-muted-foreground">{t('about.copyright')}</p>
                 <p className="text-sm font-medium">© 2026 0png</p>
               </div>
+            </div>
+
+            {/* 檢查更新按鈕 */}
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                onClick={handleCheckUpdate}
+                disabled={checking}
+                className="w-full hover:bg-primary/10 hover:border-primary/50 transition-colors"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
+                {checking ? t('update.checking') : t('update.checkForUpdates')}
+              </Button>
+              {available && updateInfo && (
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  {t('update.newVersionAvailable', { version: updateInfo.version })}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

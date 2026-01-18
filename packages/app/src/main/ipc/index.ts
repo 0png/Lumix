@@ -9,6 +9,7 @@ import { initJavaHandlers } from './java-handlers';
 import { initDownloadHandlers } from './download-handlers';
 import { initSettingsHandlers } from './settings-handlers';
 import { initAppHandlers } from './app-handlers';
+import { registerUpdateHandlers, removeUpdateHandlers } from './update-handlers';
 import { ServerManager } from '../services/server-manager';
 import { FileManager } from '../services/file-manager';
 import { ProcessManager } from '../services/process-manager';
@@ -44,6 +45,7 @@ export async function initAllIpcHandlers(): Promise<void> {
   initDownloadHandlers();
   initSettingsHandlers();
   initAppHandlers();
+  registerUpdateHandlers();
 }
 
 // ============================================================================
@@ -52,6 +54,7 @@ export async function initAllIpcHandlers(): Promise<void> {
 
 export function cleanupAllIpcHandlers(): void {
   cleanupServerHandlers();
+  removeUpdateHandlers();
 }
 
 // ============================================================================
@@ -64,4 +67,6 @@ export {
   initDownloadHandlers,
   initSettingsHandlers,
   initAppHandlers,
+  registerUpdateHandlers,
+  removeUpdateHandlers,
 };

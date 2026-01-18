@@ -2,6 +2,7 @@
 // 封裝應用程式相關的 IPC 呼叫
 
 import { useState, useEffect, useCallback } from 'react';
+import { useUpdate } from './use-update';
 
 interface UseAppReturn {
   version: string | null;
@@ -14,6 +15,7 @@ export function useApp(): UseAppReturn {
   const [version, setVersion] = useState<string | null>(null);
   const [dataPath, setDataPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { checkForUpdates } = useUpdate();
 
   // 載入應用程式資訊
   useEffect(() => {
@@ -31,6 +33,11 @@ export function useApp(): UseAppReturn {
         if (pathResult.success && pathResult.data) {
           setDataPath(pathResult.data);
         }
+
+        // 啟動後自動檢查更新（延遲 3 秒避免影響啟動速度）
+        setTimeout(() => {
+          checkForUpdates().catch(console.error);
+        }, 3000);
       } catch (err) {
         console.error('Failed to load app info:', err);
       } finally {
@@ -39,7 +46,7 @@ export function useApp(): UseAppReturn {
     };
 
     loadAppInfo();
-  }, []);
+  }, [checkForUpdates]);
 
   // 開啟資料夾
   const openFolder = useCallback(async (path: string): Promise<boolean> => {

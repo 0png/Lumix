@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { useTheme } from '@/contexts/theme-context';
 import { MainLayout } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
+import { UpdateNotification } from '@/components/update/UpdateNotification';
 import {
   ServerList,
   ServerDetail,
@@ -300,6 +301,7 @@ function AppContent() {
       />
 
       <Toaster position="bottom-right" theme={theme} richColors />
+      <UpdateNotification />
     </MainLayout>
   );
 }

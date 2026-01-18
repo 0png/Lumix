@@ -97,6 +97,24 @@ export const AppChannels = {
 } as const;
 
 // ============================================================================
+// Update Channels
+// ============================================================================
+
+export const UpdateChannels = {
+  CHECK_FOR_UPDATES: 'update:check-for-updates',
+  DOWNLOAD_UPDATE: 'update:download-update',
+  QUIT_AND_INSTALL: 'update:quit-and-install',
+  GET_CURRENT_VERSION: 'update:get-current-version',
+  
+  // Events (Main -> Renderer)
+  ERROR: 'update:error',
+  AVAILABLE: 'update:available',
+  NOT_AVAILABLE: 'update:not-available',
+  DOWNLOAD_PROGRESS: 'update:download-progress',
+  DOWNLOADED: 'update:downloaded',
+} as const;
+
+// ============================================================================
 // All Channels Export
 // ============================================================================
 
@@ -106,4 +124,5 @@ export const IpcChannels = {
   Download: DownloadChannels,
   Settings: SettingsChannels,
   App: AppChannels,
+  Update: UpdateChannels,
 } as const;
