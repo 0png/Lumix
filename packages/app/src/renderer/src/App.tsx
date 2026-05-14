@@ -59,6 +59,7 @@ function AppContent() {
     startServer,
     stopServer,
     sendCommand,
+    clearLogs,
   } = useServers();
   const {
     installations: javaInstallations,
@@ -69,6 +70,7 @@ function AppContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
+  const [isConsoleFullscreen, setIsConsoleFullscreen] = useState(false);
 
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
@@ -190,10 +192,12 @@ function AppContent() {
   const handleSelectServer = useCallback((id: string) => {
     setSelectedServerId(id);
     setCurrentView('servers');
+    setIsConsoleFullscreen(false);
   }, []);
 
   const handleBackToServers = useCallback(() => {
     setCurrentView('servers');
+    setIsConsoleFullscreen(false);
   }, []);
 
   const handleOpenFolder = useCallback(async (directory: string) => {
@@ -252,21 +256,29 @@ function AppContent() {
           <div className="h-full">
             {selectedServer ? (
               <div className="space-y-6">
-                <ServerDetail
-                  server={selectedServer}
-                  onBack={() => setSelectedServerId(undefined)}
-                  onStart={() => handleStartServer(selectedServer.id)}
-                  onStop={() => handleStopServer(selectedServer.id)}
-                  onDelete={() => handleDeleteServer(selectedServer.id)}
-                  onUpdate={handleUpdateServer}
-                  onOpenFolder={() => selectedServerDto && handleOpenFolder(selectedServerDto.directory)}
-                  onOpenSettings={() => setCurrentView('server-settings')}
-                />
+                {!(isConsoleFullscreen && selectedServer.status === 'running') && (
+                  <ServerDetail
+                    server={selectedServer}
+                    onBack={() => {
+                      setSelectedServerId(undefined);
+                      setIsConsoleFullscreen(false);
+                    }}
+                    onStart={() => handleStartServer(selectedServer.id)}
+                    onStop={() => handleStopServer(selectedServer.id)}
+                    onDelete={() => handleDeleteServer(selectedServer.id)}
+                    onUpdate={handleUpdateServer}
+                    directory={selectedServerDto?.directory}
+                    onOpenFolder={() => selectedServerDto && handleOpenFolder(selectedServerDto.directory)}
+                    onOpenSettings={() => setCurrentView('server-settings')}
+                  />
+                )}
                 {selectedServer.status === 'running' && (
                   <ServerConsole
                     logs={currentLogs}
-                    onClear={() => {}}
+                    onClear={() => clearLogs(selectedServer.id)}
                     onSendCommand={(cmd) => sendCommand(selectedServer.id, cmd)}
+                    isFullscreen={isConsoleFullscreen}
+                    onToggleFullscreen={() => setIsConsoleFullscreen((prev) => !prev)}
                   />
                 )}
               </div>

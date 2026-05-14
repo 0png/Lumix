@@ -8,7 +8,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Play, Square, Trash2, Settings2, MemoryStick, 
-  ArrowLeft, FolderOpen, AlertTriangle, SlidersHorizontal
+  ArrowLeft, FolderOpen, AlertTriangle, SlidersHorizontal,
+  Activity, Cpu, Database, Gauge, HardDrive, ShieldCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,7 @@ function StatusBadge({ status }: { status: ServerStatus }) {
  */
 export function ServerDetail({
   server,
+  directory,
   onBack,
   onStart,
   onStop,
@@ -90,6 +92,8 @@ export function ServerDetail({
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
   const isReady = server.isReady !== false;
+  const readinessLabel = isReady ? t('server.ready') : t('server.downloading');
+  const readinessDescription = isReady ? t('server.readyDescription') : t('server.downloadingDescription');
 
   const handleSave = () => {
     onUpdate?.({ name: editName, ramMax: editRamMax });
@@ -202,31 +206,127 @@ export function ServerDetail({
 
       <Separator />
 
-      {/* 設定卡片 */}
-      <Card className="glass">
-        <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
-          <CardTitle className="text-xs lg:text-sm">{t('server.config')}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 lg:p-4 pt-0 space-y-2 lg:space-y-3">
-          <div className="grid grid-cols-2 gap-2 lg:gap-3">
-            <div>
-              <Label className="text-[10px] lg:text-xs text-muted-foreground">{t('server.coreType')}</Label>
-              <p className="text-xs lg:text-sm font-medium">{t(`coreType.${server.coreType}`)}</p>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)] gap-3 lg:gap-4">
+        <Card className="glass overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bg-gradient-subtle p-4 lg:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t('server.overview')}
+                  </p>
+                  <h3 className="text-lg font-semibold">{t('server.launchPanel')}</h3>
+                  <p className="max-w-xl text-sm text-muted-foreground">{readinessDescription}</p>
+                </div>
+                <Badge variant={isReady ? 'success' : 'warning'} className="gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  {readinessLabel}
+                </Badge>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
+                  <Activity className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <Label className="text-[10px] text-muted-foreground">{t('server.status')}</Label>
+                  <p className="mt-0.5 text-sm font-semibold">{t(`server.${server.status}`)}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
+                  <Cpu className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <Label className="text-[10px] text-muted-foreground">{t('server.coreType')}</Label>
+                  <p className="mt-0.5 text-sm font-semibold">{t(`coreType.${server.coreType}`)}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
+                  <Database className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <Label className="text-[10px] text-muted-foreground">{t('server.version')}</Label>
+                  <p className="mt-0.5 text-sm font-semibold">{server.mcVersion}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
+                  <MemoryStick className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <Label className="text-[10px] text-muted-foreground">{t('server.ram')}</Label>
+                  <p className="mt-0.5 text-sm font-semibold tabular-nums">{server.ramMax} MB</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <Label className="text-[10px] lg:text-xs text-muted-foreground">{t('server.version')}</Label>
-              <p className="text-xs lg:text-sm font-medium">{server.mcVersion}</p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-4 lg:p-5">
+              <div className="rounded-lg border border-border/60 p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <Gauge className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-medium">{t('server.runtimeState')}</p>
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {isRunning
+                    ? t('server.runtimeRunningDescription')
+                    : isTransitioning
+                      ? t('server.runtimeTransitionDescription')
+                      : t('server.runtimeStoppedDescription')}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/60 p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-medium">{t('server.storage')}</p>
+                </div>
+                <p className="truncate text-xs text-muted-foreground" title={directory}>
+                  {directory || t('server.storageUnavailable')}
+                </p>
+              </div>
             </div>
-          </div>
-          <div>
-            <Label className="text-[10px] lg:text-xs text-muted-foreground">{t('server.ram')}</Label>
-            <div className="flex items-center gap-1">
-              <MemoryStick className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground" aria-hidden="true" />
-              <p className="text-xs lg:text-sm font-medium">{server.ramMax} MB</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-3 lg:space-y-4">
+          <Card className="glass">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                {t('server.settingsTitle')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 p-4 pt-1">
+              <p className="text-xs leading-5 text-muted-foreground">
+                {t('server.settingsPreviewDescription')}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {['gamemode', 'difficulty', 'max-players', 'online-mode', 'server-port', 'view-distance'].map((key) => (
+                  <Badge key={key} variant="outline" className="text-[10px]">
+                    {key}
+                  </Badge>
+                ))}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onOpenSettings}
+                className="w-full h-8 text-xs"
+              >
+                <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                {t('server.openServerSettings')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="glass">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-sm">{t('server.quickFacts')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 p-4 pt-1">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">{t('server.jarState')}</span>
+                <Badge variant={isReady ? 'success' : 'warning'}>{readinessLabel}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">{t('server.console')}</span>
+                <span className="font-medium">{isRunning ? t('server.consoleLive') : t('server.consoleStandby')}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">{t('server.config')}</span>
+                <span className="font-medium">{isRunning ? t('server.locked') : t('server.editable')}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* 編輯對話框 */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>

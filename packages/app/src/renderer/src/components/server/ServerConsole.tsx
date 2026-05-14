@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Terminal, Send, AlertCircle } from 'lucide-react';
+import { Maximize2, Minimize2, Trash2, Terminal, Send, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,8 @@ interface ServerConsoleProps {
   logs: LogEntry[];
   onClear?: () => void;
   onSendCommand?: (command: string) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
   className?: string;
 }
 
@@ -110,7 +112,7 @@ function LogItem({ log }: { log: LogEntry }) {
   );
 }
 
-export function ServerConsole({ logs, onClear, onSendCommand, className }: ServerConsoleProps) {
+export function ServerConsole({ logs, onClear, onSendCommand, isFullscreen, onToggleFullscreen, className }: ServerConsoleProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -159,21 +161,39 @@ export function ServerConsole({ logs, onClear, onSendCommand, className }: Serve
               </span>
             )}
           </CardTitle>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setShowClearDialog(true)}
-            disabled={logs.length === 0}
-            className="h-7 lg:h-8 w-7 lg:w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
-            aria-label={t('server.clearConsole', '清除控制台')}
-          >
-            <Trash2 className="h-3.5 w-3.5 lg:h-4 lg:w-4" aria-hidden="true" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {onToggleFullscreen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleFullscreen}
+                className="h-7 lg:h-8 px-2 text-xs"
+                aria-label={isFullscreen ? t('server.consoleExitFullscreen') : t('server.consoleFullscreen')}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="mr-1.5 h-3.5 w-3.5 lg:h-4 lg:w-4" aria-hidden="true" />
+                ) : (
+                  <Maximize2 className="mr-1.5 h-3.5 w-3.5 lg:h-4 lg:w-4" aria-hidden="true" />
+                )}
+                {isFullscreen ? t('server.consoleExitFullscreen') : t('server.consoleFullscreen')}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowClearDialog(true)}
+              disabled={logs.length === 0}
+              className="h-7 lg:h-8 w-7 lg:w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              aria-label={t('server.clearConsole', '清除控制台')}
+            >
+              <Trash2 className="h-3.5 w-3.5 lg:h-4 lg:w-4" aria-hidden="true" />
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent className="flex-1 p-0 flex flex-col">
           <ScrollArea 
-            className="h-[200px] lg:h-[350px] rounded-none" 
+            className={cn(isFullscreen ? 'h-[calc(100vh-11rem)]' : 'h-[200px] lg:h-[350px]', 'rounded-none')}
             ref={scrollRef}
           >
             <div 

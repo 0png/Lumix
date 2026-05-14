@@ -272,7 +272,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-20 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-border/50 bg-background/90 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75 lg:-mx-6 lg:-mt-6 lg:px-6">
         <Button variant="ghost" size="sm" onClick={onBack} className="h-8 -ml-2 text-xs focus-ring">
           <ArrowLeft className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
           {t('common.back')}
