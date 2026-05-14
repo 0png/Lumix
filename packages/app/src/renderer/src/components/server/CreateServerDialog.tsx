@@ -46,6 +46,13 @@ interface CreateServerDialogProps {
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
 
+function getInstallableJavaVersion(requiredJava: number): 8 | 17 | 21 | 25 {
+  if (requiredJava >= 25) return 25;
+  if (requiredJava >= 21) return 21;
+  if (requiredJava >= 16) return 17;
+  return 8;
+}
+
 export function CreateServerDialog({
   open,
   onOpenChange,
@@ -143,8 +150,8 @@ export function CreateServerDialog({
     
     setIsInstallingJava(true);
     try {
-      const version = requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8;
-      const success = await install(version as 8 | 17 | 21);
+      const version = getInstallableJavaVersion(requiredJava);
+      const success = await install(version);
       if (!success) {
         setJavaInstallRetries(prev => prev + 1);
         setError(t('createServer.javaInstallFailed'));
@@ -164,6 +171,8 @@ export function CreateServerDialog({
     const newType = value as CoreType;
     setCoreType(newType);
   };
+
+  const installableJava = requiredJava ? getInstallableJavaVersion(requiredJava) : null;
 
   // 驗證名稱是否重複（前端即時驗證）
   const validateName = useCallback((inputName: string) => {
@@ -299,8 +308,8 @@ export function CreateServerDialog({
                         disabled={isInstallingJava}
                       >
                         {isInstallingJava 
-                          ? `${t('createServer.installingJava')} ${installProgress.get(requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8) || 0}%`
-                          : t('createServer.installJava', { version: requiredJava >= 21 ? 21 : requiredJava >= 17 ? 17 : 8 })
+                          ? `${t('createServer.installingJava')} ${installProgress.get(installableJava!) || 0}%`
+                          : t('createServer.installJava', { version: installableJava })
                         }
                       </Button>
                     </div>

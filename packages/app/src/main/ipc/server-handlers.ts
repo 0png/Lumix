@@ -84,7 +84,7 @@ function registerHandlers(): void {
           const installations = await javaDetector.detectAll();
           
           // 根據 MC 版本選擇合適的 Java
-          const selectedJava = javaDetector.selectForMinecraft(installations, data.mcVersion);
+          const selectedJava = await javaDetector.selectForMinecraft(installations, data.mcVersion);
           
           if (selectedJava) {
             effectiveData = { ...data, javaPath: selectedJava.path };

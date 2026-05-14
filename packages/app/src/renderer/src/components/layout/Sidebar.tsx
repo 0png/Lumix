@@ -21,10 +21,11 @@ interface ServerNavItemProps {
   isSelected: boolean;
   onSelect: () => void;
   isCollapsed: boolean;
+  showLabel: boolean;
 }
 
 /** 伺服器導航項目 */
-function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavItemProps) {
+function ServerNavItem({ server, isSelected, onSelect, isCollapsed, showLabel }: ServerNavItemProps) {
   const { t } = useTranslation();
   const isRunning = server.status === 'running';
   const statusLabel = isRunning ? t('server.running') : t('server.stopped');
@@ -58,14 +59,11 @@ function ServerNavItem({ server, isSelected, onSelect, isCollapsed }: ServerNavI
         )}
         aria-hidden="true"
       />
-      <span
-        className={cn(
-          'truncate transition-all duration-200',
-          isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-        )}
-      >
-        {server.name}
-      </span>
+      {showLabel && (
+        <span className="min-w-0 truncate whitespace-nowrap transition-opacity duration-150">
+          {server.name}
+        </span>
+      )}
     </button>
   );
 
@@ -92,6 +90,7 @@ function SidebarButton({
   onClick,
   isCollapsed,
   isActive,
+  showLabel,
   shortcut,
 }: {
   icon: typeof Settings;
@@ -99,6 +98,7 @@ function SidebarButton({
   onClick?: () => void;
   isCollapsed: boolean;
   isActive?: boolean;
+  showLabel: boolean;
   shortcut?: string;
 }) {
   const content = (
@@ -114,7 +114,7 @@ function SidebarButton({
       aria-pressed={isActive}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      {!isCollapsed && <span className="ml-2.5 truncate">{label}</span>}
+      {showLabel && <span className="ml-2.5 truncate whitespace-nowrap">{label}</span>}
     </Button>
   );
 
@@ -140,7 +140,7 @@ interface SidebarProps {
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
-  currentView?: 'servers' | 'settings' | 'about';
+  currentView?: 'servers' | 'server-settings' | 'settings' | 'about';
 }
 
 export function Sidebar({
@@ -154,6 +154,7 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
 
   // 監聽視窗大小變化
   useEffect(() => {
@@ -169,6 +170,16 @@ export function Sidebar({
   }, []);
 
   const toggleCollapse = useCallback(() => setIsCollapsed(prev => !prev), []);
+
+  useEffect(() => {
+    if (isCollapsed) {
+      setShowLabels(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setShowLabels(true), 220);
+    return () => window.clearTimeout(timeoutId);
+  }, [isCollapsed]);
 
   // 鍵盤快捷鍵
   useEffect(() => {
@@ -211,10 +222,10 @@ export function Sidebar({
             // 摺疊時：只顯示展開按鈕
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-9 w-9 focus-ring" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 focus-ring"
                   onClick={toggleCollapse}
                   aria-label={t('sidebar.expand')}
                   aria-expanded={false}
@@ -234,14 +245,16 @@ export function Sidebar({
                 <div className="p-1 rounded-md bg-primary/10">
                   <Server className="h-5 w-5 text-primary shrink-0" aria-hidden="true" />
                 </div>
-                <span className="font-bold text-lg truncate">Lumix</span>
+                {showLabels && (
+                  <span className="font-bold text-lg truncate whitespace-nowrap">Lumix</span>
+                )}
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 shrink-0 focus-ring" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 focus-ring"
                     onClick={toggleCollapse}
                     aria-label={t('sidebar.collapse')}
                     aria-expanded={true}
@@ -271,20 +284,17 @@ export function Sidebar({
               isCollapsed ? 'justify-center' : 'justify-between px-1'
             )}
           >
-            <span
-              className={cn(
-                'text-sm font-medium text-muted-foreground truncate transition-all duration-200',
-                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-              )}
-            >
-              {t('sidebar.servers')}
-            </span>
+            {showLabels && (
+              <span className="truncate whitespace-nowrap text-sm font-medium text-muted-foreground">
+                {t('sidebar.servers')}
+              </span>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7 shrink-0 focus-ring" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 focus-ring"
                   onClick={onCreateServer}
                   aria-label={t('sidebar.addServer')}
                 >
@@ -303,13 +313,14 @@ export function Sidebar({
               <ServerNavItem
                 key={server.id}
                 server={server}
-                isSelected={selectedServerId === server.id && currentView === 'servers'}
+                isSelected={selectedServerId === server.id && (currentView === 'servers' || currentView === 'server-settings')}
                 onSelect={() => onSelectServer?.(server.id)}
                 isCollapsed={isCollapsed}
+                showLabel={showLabels}
               />
             ))}
 
-            {servers.length === 0 && !isCollapsed && (
+            {servers.length === 0 && showLabels && (
               <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                 {t('welcome.description')}
               </div>
@@ -332,6 +343,7 @@ export function Sidebar({
             onClick={onOpenSettings}
             isCollapsed={isCollapsed}
             isActive={currentView === 'settings'}
+            showLabel={showLabels}
             shortcut="Ctrl+,"
           />
           <SidebarButton
@@ -340,6 +352,7 @@ export function Sidebar({
             onClick={onOpenAbout}
             isCollapsed={isCollapsed}
             isActive={currentView === 'about'}
+            showLabel={showLabels}
           />
         </div>
       </aside>

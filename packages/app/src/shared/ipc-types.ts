@@ -183,7 +183,7 @@ export interface JavaInstallationDto {
 }
 
 export interface JavaInstallRequest {
-  majorVersion: 8 | 17 | 21;
+  majorVersion: 8 | 17 | 21 | 25;
 }
 
 export interface JavaRequiredVersionResult {
@@ -291,8 +291,9 @@ export interface UpdateDownloadedEvent {
 
 export type Difficulty = 'peaceful' | 'easy' | 'normal' | 'hard';
 export type Gamemode = 'survival' | 'creative' | 'adventure' | 'spectator';
+export type ServerPropertyValue = string | number | boolean;
 
-export interface ServerProperties {
+export interface ServerProperties extends Record<string, ServerPropertyValue> {
   'allow-flight': boolean;
   difficulty: Difficulty;
   gamemode: Gamemode;

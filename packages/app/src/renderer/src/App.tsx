@@ -8,6 +8,7 @@ import { UpdateNotification } from '@/components/update/UpdateNotification';
 import {
   ServerList,
   ServerDetail,
+  ServerSettingsPage,
   ServerConsole,
   CreateServerDialog,
   type ServerInstance,
@@ -20,7 +21,7 @@ import { useJava } from '@/hooks/use-java';
 import { toast } from '@/lib/toast';
 import '@/i18n';
 
-type ViewType = 'servers' | 'settings' | 'about';
+type ViewType = 'servers' | 'server-settings' | 'settings' | 'about';
 
 /**
  * 轉換 DTO 為前端 ServerInstance 格式
@@ -237,6 +238,16 @@ function AppContent() {
       case 'about':
         return <AboutView onBack={handleBackToServers} />;
       default:
+        if (currentView === 'server-settings' && selectedServer) {
+          return (
+            <ServerSettingsPage
+              server={selectedServer}
+              onBack={() => setCurrentView('servers')}
+              onUpdate={handleUpdateServer}
+            />
+          );
+        }
+
         return (
           <div className="h-full">
             {selectedServer ? (
@@ -249,6 +260,7 @@ function AppContent() {
                   onDelete={() => handleDeleteServer(selectedServer.id)}
                   onUpdate={handleUpdateServer}
                   onOpenFolder={() => selectedServerDto && handleOpenFolder(selectedServerDto.directory)}
+                  onOpenSettings={() => setCurrentView('server-settings')}
                 />
                 {selectedServer.status === 'running' && (
                   <ServerConsole

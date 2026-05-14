@@ -4,11 +4,11 @@
  * 支援響應式設計、無障礙、Loading 狀態
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Play, Square, Trash2, Settings2, MemoryStick, 
-  ArrowLeft, FolderOpen, Save, AlertTriangle, Loader2
+  ArrowLeft, FolderOpen, AlertTriangle, SlidersHorizontal
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,16 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -35,9 +26,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import type { ServerInstance, ServerStatus } from './ServerList';
-import type { ServerProperties, Difficulty, Gamemode } from '../../../../shared/ipc-types';
 
 interface ServerDetailProps {
   server: ServerInstance;
@@ -48,6 +37,7 @@ interface ServerDetailProps {
   onDelete?: () => void;
   onUpdate?: (updates: Partial<ServerInstance>) => void;
   onOpenFolder?: () => void;
+  onOpenSettings?: () => void;
 }
 
 /**
@@ -79,22 +69,6 @@ function StatusBadge({ status }: { status: ServerStatus }) {
 }
 
 /**
- * Properties 載入骨架屏
- */
-function PropertiesSkeleton() {
-  return (
-    <div className="space-y-2.5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center justify-between">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-7 w-28" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
  * 伺服器詳細資訊元件
  */
 export function ServerDetail({
@@ -105,57 +79,17 @@ export function ServerDetail({
   onDelete,
   onUpdate,
   onOpenFolder,
+  onOpenSettings,
 }: ServerDetailProps) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(server.name);
   const [editRamMax, setEditRamMax] = useState(server.ramMax);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
-  // Server properties state
-  const [properties, setProperties] = useState<ServerProperties | null>(null);
-  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
-  const [isSavingProperties, setIsSavingProperties] = useState(false);
 
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
   const isReady = server.isReady !== false;
-
-  // 載入 server properties
-  useEffect(() => {
-    const loadProperties = async () => {
-      setIsLoadingProperties(true);
-      try {
-        const result = await window.electronAPI.server.getProperties(server.id);
-        if (result.success && result.data) {
-          setProperties(result.data);
-        } else {
-          // 設定預設值
-          setProperties({
-            'allow-flight': false,
-            difficulty: 'easy',
-            gamemode: 'survival',
-            'max-players': 20,
-            'online-mode': true,
-            'white-list': false,
-          });
-        }
-      } catch (error) {
-        console.error('Failed to load server properties:', error);
-        setProperties({
-          'allow-flight': false,
-          difficulty: 'easy',
-          gamemode: 'survival',
-          'max-players': 20,
-          'online-mode': true,
-          'white-list': false,
-        });
-      } finally {
-        setIsLoadingProperties(false);
-      }
-    };
-    loadProperties();
-  }, [server.id]);
 
   const handleSave = () => {
     onUpdate?.({ name: editName, ramMax: editRamMax });
@@ -166,26 +100,6 @@ export function ServerDetail({
     setEditName(server.name);
     setEditRamMax(server.ramMax);
     setIsEditing(false);
-  };
-
-  const handleSaveProperties = async () => {
-    if (!properties) return;
-    setIsSavingProperties(true);
-    try {
-      const result = await window.electronAPI.server.updateProperties({
-        id: server.id,
-        properties,
-      });
-      if (result.success) {
-        toast.success(t('toast.propertiesSaved'));
-      } else {
-        toast.error(t('toast.propertiesSaveFailed'));
-      }
-    } catch (error) {
-      toast.error(t('toast.propertiesSaveFailed'));
-    } finally {
-      setIsSavingProperties(false);
-    }
   };
 
   return (
@@ -256,6 +170,16 @@ export function ServerDetail({
         <Button
           variant="outline"
           size="sm"
+          onClick={onOpenSettings}
+          className="h-8 text-xs"
+          aria-label={t('server.settingsTitle')}
+        >
+          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+          {t('server.settingsTitle')}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onOpenFolder}
           className="h-8 text-xs"
           aria-label={t('server.openFolder')}
@@ -301,141 +225,6 @@ export function ServerDetail({
               <p className="text-xs lg:text-sm font-medium">{server.ramMax} MB</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Server Properties 卡片 */}
-      <Card className="glass">
-        <CardHeader className="p-3 lg:p-4 pb-1.5 lg:pb-2">
-          <CardTitle className="text-xs lg:text-sm">{t('server.properties')}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 lg:p-4 pt-0 space-y-2">
-          {isLoadingProperties ? (
-            <PropertiesSkeleton />
-          ) : properties ? (
-            <>
-              <div className="space-y-2.5">
-                {/* 難度 */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.difficulty')}</Label>
-                  <Select
-                    value={properties.difficulty}
-                    onValueChange={(value: Difficulty) =>
-                      setProperties((prev) => prev ? { ...prev, difficulty: value } : prev)
-                    }
-                    disabled={isRunning}
-                  >
-                    <SelectTrigger className="h-7 w-28 text-xs border-0 bg-secondary/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="peaceful">{t('difficulty.peaceful')}</SelectItem>
-                      <SelectItem value="easy">{t('difficulty.easy')}</SelectItem>
-                      <SelectItem value="normal">{t('difficulty.normal')}</SelectItem>
-                      <SelectItem value="hard">{t('difficulty.hard')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 遊戲模式 */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.gamemode')}</Label>
-                  <Select
-                    value={properties.gamemode}
-                    onValueChange={(value: Gamemode) =>
-                      setProperties((prev) => prev ? { ...prev, gamemode: value } : prev)
-                    }
-                    disabled={isRunning}
-                  >
-                    <SelectTrigger className="h-7 w-28 text-xs border-0 bg-secondary/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="survival">{t('gamemode.survival')}</SelectItem>
-                      <SelectItem value="creative">{t('gamemode.creative')}</SelectItem>
-                      <SelectItem value="adventure">{t('gamemode.adventure')}</SelectItem>
-                      <SelectItem value="spectator">{t('gamemode.spectator')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 最大玩家數 */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.maxPlayers')}</Label>
-                  <div className="flex items-center gap-2">
-                    <Slider
-                      value={[properties['max-players']]}
-                      onValueChange={(values) => {
-                        const value = values[0];
-                        if (value !== undefined) {
-                          setProperties((prev) => prev ? { ...prev, 'max-players': value } : prev);
-                        }
-                      }}
-                      min={1}
-                      max={100}
-                      step={1}
-                      disabled={isRunning}
-                      className="w-24"
-                    />
-                    <span className="text-xs w-6 text-right tabular-nums">{properties['max-players']}</span>
-                  </div>
-                </div>
-
-                {/* 正版驗證 */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.onlineMode')}</Label>
-                  <Switch
-                    checked={properties['online-mode']}
-                    onCheckedChange={(checked) =>
-                      setProperties((prev) => prev ? { ...prev, 'online-mode': checked } : prev)
-                    }
-                    disabled={isRunning}
-                  />
-                </div>
-
-                {/* 允許飛行 */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.allowFlight')}</Label>
-                  <Switch
-                    checked={properties['allow-flight']}
-                    onCheckedChange={(checked) =>
-                      setProperties((prev) => prev ? { ...prev, 'allow-flight': checked } : prev)
-                    }
-                    disabled={isRunning}
-                  />
-                </div>
-
-                {/* 白名單 */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs lg:text-sm text-muted-foreground">{t('server.whiteList')}</Label>
-                  <Switch
-                    checked={properties['white-list']}
-                    onCheckedChange={(checked) =>
-                      setProperties((prev) => prev ? { ...prev, 'white-list': checked } : prev)
-                    }
-                    disabled={isRunning}
-                  />
-                </div>
-              </div>
-
-              {/* 儲存按鈕 */}
-              <div className="pt-2">
-                <Button
-                  size="sm"
-                  onClick={handleSaveProperties}
-                  disabled={isSavingProperties || isRunning}
-                  className="w-full h-8 text-xs ripple"
-                >
-                  {isSavingProperties ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Save className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                  )}
-                  {t('common.save')}
-                </Button>
-              </div>
-            </>
-          ) : null}
         </CardContent>
       </Card>
 

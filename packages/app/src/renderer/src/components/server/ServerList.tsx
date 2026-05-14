@@ -44,7 +44,7 @@ function EmptyState({ onCreateServer }: { onCreateServer?: () => void }) {
 
   return (
     <div 
-      className="flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center border-muted-foreground/25 bg-gradient-subtle min-h-[400px] animate-fade-in"
+      className="flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center border-muted-foreground/25 bg-gradient-subtle min-h-[calc(100vh-5rem)] lg:min-h-[calc(100vh-6rem)] animate-fade-in"
       role="region"
       aria-label={t('welcome.title')}
     >

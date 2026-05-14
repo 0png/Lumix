@@ -14,7 +14,7 @@ interface UseJavaReturn {
   error: string | null;
   installProgress: Map<number, number>;
   detect: () => Promise<JavaInstallationDto[]>;
-  install: (majorVersion: 8 | 17 | 21) => Promise<JavaInstallationDto | null>;
+  install: (majorVersion: 8 | 17 | 21 | 25) => Promise<JavaInstallationDto | null>;
   selectForMc: (mcVersion: string) => Promise<JavaInstallationDto | null>;
   getRequiredVersion: (mcVersion: string) => Promise<JavaRequiredVersionResult | null>;
   refresh: () => Promise<void>;
@@ -65,7 +65,7 @@ export function useJava(): UseJavaReturn {
   }, []);
 
   // 安裝 Java
-  const install = useCallback(async (majorVersion: 8 | 17 | 21): Promise<JavaInstallationDto | null> => {
+  const install = useCallback(async (majorVersion: 8 | 17 | 21 | 25): Promise<JavaInstallationDto | null> => {
     setError(null);
     setInstallProgress((prev) => {
       const next = new Map(prev);

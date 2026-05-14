@@ -22,7 +22,7 @@ interface MainLayoutProps {
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
-  currentView?: 'servers' | 'settings' | 'about';
+  currentView?: 'servers' | 'server-settings' | 'settings' | 'about';
 }
 
 export function MainLayout({
@@ -41,6 +41,8 @@ export function MainLayout({
     switch (currentView) {
       case 'servers':
         return t('sidebar.servers');
+      case 'server-settings':
+        return t('server.settingsTitle');
       case 'settings':
         return t('settings.title');
       case 'about':

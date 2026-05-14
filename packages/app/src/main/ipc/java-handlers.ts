@@ -130,7 +130,7 @@ function registerHandlers(): void {
     JavaChannels.GET_REQUIRED_VERSION,
     async (_, mcVersion: string): Promise<IpcResult<JavaRequiredVersionResult>> => {
       try {
-        const result = javaDetector!.getRequiredJavaVersion(mcVersion);
+        const result = await javaDetector!.getRequiredJavaVersion(mcVersion);
         return { success: true, data: result };
       } catch (error) {
         return { success: false, error: formatError(error) };
@@ -146,7 +146,7 @@ function registerHandlers(): void {
         if (!cachedInstallations) {
           cachedInstallations = await javaDetector!.detectAll();
         }
-        const selected = javaDetector!.selectForMinecraft(cachedInstallations, mcVersion);
+        const selected = await javaDetector!.selectForMinecraft(cachedInstallations, mcVersion);
         return { success: true, data: selected };
       } catch (error) {
         return { success: false, error: formatError(error) };

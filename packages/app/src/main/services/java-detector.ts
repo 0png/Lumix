@@ -8,6 +8,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { app } from 'electron';
 import type { JavaInstallationDto } from '../../shared/ipc-types';
+import { fetchJson } from './http-client';
 
 // ============================================================================
 // Constants
@@ -32,11 +33,26 @@ const MAC_JAVA_PATHS = [
   '/System/Library/Java/JavaVirtualMachines',
 ];
 
+const VANILLA_MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
+
+interface VersionManifest {
+  versions: Array<{ id: string; url: string }>;
+}
+
+interface VersionMetadata {
+  javaVersion?: {
+    component?: string;
+    majorVersion?: number;
+  };
+}
+
 // ============================================================================
 // JavaDetector Class
 // ============================================================================
 
 export class JavaDetector {
+  private versionManifest: VersionManifest | null = null;
+
   /**
    * 偵測系統上所有的 Java 安裝
    */
@@ -178,8 +194,10 @@ export class JavaDetector {
         for (const entry of entries) {
           if (entry.isDirectory()) {
             const jdkPath = path.join(basePath, entry.name);
-            const javaPath = this.getJavaExecutable(jdkPath);
+            const javaPath = await this.findJavaExecutable(jdkPath);
             
+            if (!javaPath) continue;
+
             const info = await this.getJavaInfo(javaPath);
             if (info) {
               installations.push(info);
@@ -307,28 +325,103 @@ export class JavaDetector {
   }
 
   /**
+   * 在 JDK 目錄或其常見巢狀目錄中尋找 java 執行檔
+   */
+  private async findJavaExecutable(jdkPath: string): Promise<string | null> {
+    const executable = process.platform === 'win32' ? 'java.exe' : 'java';
+    const possiblePaths = [
+      path.join(jdkPath, 'bin', executable),
+      path.join(jdkPath, 'Contents', 'Home', 'bin', executable),
+    ];
+
+    try {
+      const entries = await fs.readdir(jdkPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+
+        possiblePaths.push(path.join(jdkPath, entry.name, 'bin', executable));
+        possiblePaths.push(path.join(jdkPath, entry.name, 'Contents', 'Home', 'bin', executable));
+      }
+    } catch {
+      // ignore
+    }
+
+    for (const javaPath of possiblePaths) {
+      try {
+        await fs.access(javaPath);
+        return javaPath;
+      } catch {
+        // continue
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * 檢查是否重複
    */
   private isDuplicate(list: JavaInstallationDto[], item: JavaInstallationDto): boolean {
-    return list.some(
-      (existing) =>
-        existing.path === item.path ||
-        (existing.majorVersion === item.majorVersion && existing.vendor === item.vendor)
-    );
+    const normalize = (javaPath: string) => {
+      const normalized = path.normalize(javaPath);
+      return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    };
+
+    return list.some((existing) => normalize(existing.path) === normalize(item.path));
   }
 
   /**
    * 根據 Minecraft 版本取得所需的 Java 版本
    */
-  getRequiredJavaVersion(mcVersion: string): { requiredMajor: number; reason: string } {
+  async getRequiredJavaVersion(mcVersion: string): Promise<{ requiredMajor: number; reason: string }> {
+    const manifestResult = await this.getRequiredJavaVersionFromManifest(mcVersion);
+    if (manifestResult) {
+      return manifestResult;
+    }
+
+    return this.getFallbackRequiredJavaVersion(mcVersion);
+  }
+
+  private async getRequiredJavaVersionFromManifest(
+    mcVersion: string
+  ): Promise<{ requiredMajor: number; reason: string } | null> {
+    try {
+      if (!this.versionManifest) {
+        this.versionManifest = await fetchJson<VersionManifest>(VANILLA_MANIFEST_URL);
+      }
+
+      const versionInfo = this.versionManifest.versions.find((version) => version.id === mcVersion);
+      if (!versionInfo) return null;
+
+      const metadata = await fetchJson<VersionMetadata>(versionInfo.url);
+      const requiredMajor = metadata.javaVersion?.majorVersion;
+      if (!requiredMajor) return null;
+
+      const component = metadata.javaVersion?.component;
+      const suffix = component ? ` (${component})` : '';
+      return {
+        requiredMajor,
+        reason: `MC ${mcVersion} requires Java ${requiredMajor}${suffix}`,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private getFallbackRequiredJavaVersion(mcVersion: string): { requiredMajor: number; reason: string } {
     const parts = mcVersion.split('.');
     const major = parseInt(parts[0] || '1', 10);
     const minor = parseInt(parts[1] || '0', 10);
+    const patch = parseInt(parts[2] || '0', 10);
 
-    if (major >= 1 && minor >= 21) {
+    if (major >= 26) {
+      return { requiredMajor: 25, reason: 'MC 26.x requires Java 25' };
+    } else if (major > 1 || minor >= 21) {
       return { requiredMajor: 21, reason: 'MC 1.21+ requires Java 21' };
+    } else if (major === 1 && minor === 20 && patch >= 5) {
+      return { requiredMajor: 21, reason: 'MC 1.20.5+ requires Java 21' };
     } else if (major >= 1 && minor >= 18) {
-      return { requiredMajor: 17, reason: 'MC 1.18-1.20 requires Java 17' };
+      return { requiredMajor: 17, reason: 'MC 1.18-1.20.4 requires Java 17' };
     } else if (major >= 1 && minor >= 17) {
       return { requiredMajor: 16, reason: 'MC 1.17 requires Java 16+' };
     }
@@ -338,13 +431,13 @@ export class JavaDetector {
   /**
    * 根據 Minecraft 版本選擇適合的 Java
    */
-  selectForMinecraft(
+  async selectForMinecraft(
     installations: JavaInstallationDto[],
     mcVersion: string
-  ): JavaInstallationDto | null {
+  ): Promise<JavaInstallationDto | null> {
     if (installations.length === 0) return null;
 
-    const { requiredMajor } = this.getRequiredJavaVersion(mcVersion);
+    const { requiredMajor } = await this.getRequiredJavaVersion(mcVersion);
 
     // 對於舊版 MC (Java 8)，優先選擇 Java 8，因為新版 Java 可能不相容
     // 對於新版 MC，選擇符合要求的最新版本

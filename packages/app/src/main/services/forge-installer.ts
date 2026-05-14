@@ -122,12 +122,8 @@ async function setupNewForgeServer(
       .catch(() => false);
 
     if (argsFileExists) {
-      // 讀取 args.txt 找到實際的啟動 jar
-      const argsContent = await fs.readFile(argsFilePath, 'utf-8');
-
-      // 找到 -jar 後面的 jar 路徑，或者找到 main class
-      // 新版 Forge 可能使用 cpw.mods.bootstraplauncher.BootstrapLauncher
-      // 我們需要保存啟動配置
+      // 新版 Forge 由 args.txt 與 user_jvm_args.txt 驅動啟動流程。
+      // 這裡只需要保存必要的啟動配置，實際啟動由 ServerManager 處理。
       const forgeConfig = {
         type: 'forge-new',
         argsFile: argsMatch[0].replace('@', ''),
