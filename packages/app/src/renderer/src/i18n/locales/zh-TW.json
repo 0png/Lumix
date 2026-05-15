@@ -120,6 +120,51 @@
     "consoleFullscreen": "全螢幕",
     "consoleExitFullscreen": "關閉全螢幕"
   },
+  "backup": {
+    "title": "伺服器備份",
+    "automatic": "自動備份",
+    "description": "依照選定時間自動建立伺服器快照。備份會保存在伺服器資料夾內，並只保留最近 3 份。",
+    "scheduleType": "備份頻率",
+    "time": "備份時間",
+    "intervalHours": "每幾小時",
+    "intervalMinutes": "每幾分鐘",
+    "weekday": "星期",
+    "includeLogs": "包含 logs",
+    "includeLogsDescription": "關閉可減少備份容量",
+    "notifyOps": "通知 OP 管理員",
+    "notifyOpsDescription": "排程備份開始、完成或失敗時在遊戲內通知 OP",
+    "nextRun": "下次備份",
+    "manual": "手動備份",
+    "manualDescription": "立即建立一份快照。伺服器運行中時會先送出儲存指令再複製檔案。",
+    "createNow": "立即備份",
+    "retention": "Lumix 會自動刪除較舊備份，只保留最近 3 份。",
+    "recent": "最近備份",
+    "empty": "尚無備份",
+    "open": "開啟",
+    "restore": "還原",
+    "restoreLocked": "還原備份前請先停止伺服器。",
+    "restoreConfirm": "確定要還原「{{name}}」嗎？目前伺服器檔案會被此備份覆蓋。",
+    "deleteConfirm": "確定要刪除「{{name}}」嗎？",
+    "schedule": {
+      "whileRunning": "伺服器運行中每幾分鐘",
+      "hourly": "每幾小時",
+      "daily": "每天",
+      "weekly": "每週"
+    },
+    "weekdays": {
+      "0": "星期日",
+      "1": "星期一",
+      "2": "星期二",
+      "3": "星期三",
+      "4": "星期四",
+      "5": "星期五",
+      "6": "星期六"
+    },
+    "trigger": {
+      "manual": "手動",
+      "scheduled": "自動"
+    }
+  },
   "players": {
     "title": "玩家管理",
     "description": "查看已知與在線玩家，並快速執行 OP、封禁、踢出與白名單操作。",
@@ -276,6 +321,14 @@
     "playersLoadFailed": "載入玩家清單失敗",
     "playerActionSent": "玩家管理指令已送出",
     "playerActionFailed": "玩家管理指令失敗",
+    "backupsLoadFailed": "載入備份清單失敗",
+    "backupSettingsSaveFailed": "儲存備份設定失敗",
+    "backupCreated": "備份已建立",
+    "backupCreateFailed": "建立備份失敗",
+    "backupRestored": "備份已還原",
+    "backupRestoreFailed": "還原備份失敗",
+    "backupDeleted": "備份已刪除",
+    "backupDeleteFailed": "刪除備份失敗",
     "detectingJava": "正在偵測系統 Java...",
     "javaDetected": "偵測到 {{count}} 個 Java 安裝",
     "javaCannotRemove": "系統偵測的 Java 無法手動移除"

@@ -18,6 +18,10 @@ import type {
   UpdateServerPropertiesRequest,
   PlayerActionRequest,
   PlayerDto,
+  BackupInfoDto,
+  CreateBackupRequest,
+  RestoreBackupRequest,
+  UpdateBackupSettingsRequest,
 } from '../../shared/ipc-types';
 
 // ============================================================================
@@ -188,6 +192,71 @@ function registerHandlers(): void {
       try {
         await serverManager!.performPlayerAction(data);
         return { success: true };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // LIST_BACKUPS - 取得備份清單
+  ipcMain.handle(
+    ServerChannels.LIST_BACKUPS,
+    async (_, id: string): Promise<IpcResult<BackupInfoDto[]>> => {
+      try {
+        const backups = await serverManager!.listBackups(id);
+        return { success: true, data: backups };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // CREATE_BACKUP - 建立手動或排程備份
+  ipcMain.handle(
+    ServerChannels.CREATE_BACKUP,
+    async (_, data: CreateBackupRequest): Promise<IpcResult<BackupInfoDto>> => {
+      try {
+        const backup = await serverManager!.createBackup(data.serverId, data.trigger);
+        return { success: true, data: backup };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // RESTORE_BACKUP - 還原指定備份
+  ipcMain.handle(
+    ServerChannels.RESTORE_BACKUP,
+    async (_, data: RestoreBackupRequest): Promise<IpcResult<void>> => {
+      try {
+        await serverManager!.restoreBackup(data);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // DELETE_BACKUP - 刪除指定備份
+  ipcMain.handle(
+    ServerChannels.DELETE_BACKUP,
+    async (_, serverId: string, backupId: string): Promise<IpcResult<void>> => {
+      try {
+        await serverManager!.deleteBackup(serverId, backupId);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // UPDATE_BACKUP_SETTINGS - 更新自動備份設定
+  ipcMain.handle(
+    ServerChannels.UPDATE_BACKUP_SETTINGS,
+    async (_, data: UpdateBackupSettingsRequest): Promise<IpcResult<ServerInstanceDto>> => {
+      try {
+        const server = await serverManager!.updateBackupSettings(data);
+        return { success: true, data: server };
       } catch (error) {
         return { success: false, error: formatError(error) };
       }

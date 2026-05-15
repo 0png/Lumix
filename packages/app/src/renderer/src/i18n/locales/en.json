@@ -120,6 +120,51 @@
     "consoleFullscreen": "Fullscreen",
     "consoleExitFullscreen": "Exit Fullscreen"
   },
+  "backup": {
+    "title": "Server Backups",
+    "automatic": "Automatic Backups",
+    "description": "Create server snapshots at the selected time. Backups are stored in the server folder and only the latest 3 are retained.",
+    "scheduleType": "Backup Frequency",
+    "time": "Backup Time",
+    "intervalHours": "Every Hours",
+    "intervalMinutes": "Every Minutes",
+    "weekday": "Weekday",
+    "includeLogs": "Include logs",
+    "includeLogsDescription": "Turn off to reduce backup size",
+    "notifyOps": "Notify OP admins",
+    "notifyOpsDescription": "Notify OPs in-game when scheduled backups start, finish, or fail",
+    "nextRun": "Next backup",
+    "manual": "Manual Backup",
+    "manualDescription": "Create a snapshot immediately. When the server is running, Lumix sends save commands before copying files.",
+    "createNow": "Back Up Now",
+    "retention": "Lumix automatically removes older backups and keeps the latest 3.",
+    "recent": "Recent Backups",
+    "empty": "No backups yet",
+    "open": "Open",
+    "restore": "Restore",
+    "restoreLocked": "Stop the server before restoring a backup.",
+    "restoreConfirm": "Restore \"{{name}}\"? Current server files will be overwritten by this backup.",
+    "deleteConfirm": "Delete \"{{name}}\"?",
+    "schedule": {
+      "whileRunning": "Every few minutes while running",
+      "hourly": "Every few hours",
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "weekdays": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "trigger": {
+      "manual": "Manual",
+      "scheduled": "Scheduled"
+    }
+  },
   "players": {
     "title": "Player Management",
     "description": "Review known and online players, then run OP, ban, kick, and whitelist actions quickly.",
@@ -276,6 +321,14 @@
     "playersLoadFailed": "Failed to load player list",
     "playerActionSent": "Player management command sent",
     "playerActionFailed": "Player management command failed",
+    "backupsLoadFailed": "Failed to load backups",
+    "backupSettingsSaveFailed": "Failed to save backup settings",
+    "backupCreated": "Backup created",
+    "backupCreateFailed": "Failed to create backup",
+    "backupRestored": "Backup restored",
+    "backupRestoreFailed": "Failed to restore backup",
+    "backupDeleted": "Backup deleted",
+    "backupDeleteFailed": "Failed to delete backup",
     "detectingJava": "Detecting system Java...",
     "javaDetected": "Detected {{count}} Java installation(s)",
     "javaCannotRemove": "System-detected Java cannot be manually removed"

@@ -5,7 +5,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { CoreType, ServerProperties } from '../../shared/ipc-types';
+import type { BackupSettings, CoreType, ServerProperties } from '../../shared/ipc-types';
 
 // ============================================================================
 // Types
@@ -22,6 +22,7 @@ export interface ServerMetadata {
   javaPath?: string;
   createdAt: string;
   lastStartedAt?: string;
+  backupSettings?: BackupSettings;
 }
 
 export interface RunBatConfig {

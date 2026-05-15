@@ -22,6 +22,10 @@ import type {
   UpdateServerPropertiesRequest,
   PlayerActionRequest,
   PlayerDto,
+  BackupInfoDto,
+  CreateBackupRequest,
+  RestoreBackupRequest,
+  UpdateBackupSettingsRequest,
   JavaInstallationDto,
   JavaInstallRequest,
   JavaInstallProgressEvent,
@@ -77,6 +81,21 @@ const electronAPI = {
 
     playerAction: (data: PlayerActionRequest): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(ServerChannels.PLAYER_ACTION, data),
+
+    listBackups: (id: string): Promise<IpcResult<BackupInfoDto[]>> =>
+      ipcRenderer.invoke(ServerChannels.LIST_BACKUPS, id),
+
+    createBackup: (data: CreateBackupRequest): Promise<IpcResult<BackupInfoDto>> =>
+      ipcRenderer.invoke(ServerChannels.CREATE_BACKUP, data),
+
+    restoreBackup: (data: RestoreBackupRequest): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(ServerChannels.RESTORE_BACKUP, data),
+
+    deleteBackup: (serverId: string, backupId: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(ServerChannels.DELETE_BACKUP, serverId, backupId),
+
+    updateBackupSettings: (data: UpdateBackupSettingsRequest): Promise<IpcResult<ServerInstanceDto>> =>
+      ipcRenderer.invoke(ServerChannels.UPDATE_BACKUP_SETTINGS, data),
 
     getProperties: (id: string): Promise<IpcResult<ServerProperties>> =>
       ipcRenderer.invoke(ServerChannels.GET_PROPERTIES, id),

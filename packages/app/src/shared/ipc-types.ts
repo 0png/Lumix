@@ -132,6 +132,7 @@ export interface ServerInstanceDto {
   createdAt: string;
   lastStartedAt?: string;
   isReady?: boolean; // server.jar 是否已下載完成
+  backupSettings?: BackupSettings;
 }
 
 export interface CreateServerRequest {
@@ -151,6 +152,7 @@ export interface UpdateServerRequest {
   ramMin?: number;
   ramMax?: number;
   jvmArgs?: string[];
+  backupSettings?: BackupSettings;
 }
 
 export interface ServerStatusEvent {
@@ -193,6 +195,51 @@ export interface PlayerActionRequest {
   serverId: string;
   playerName: string;
   action: PlayerActionType;
+}
+
+// ============================================================================
+// Backup Types
+// ============================================================================
+
+export type BackupScheduleType = 'hourly' | 'daily' | 'weekly' | 'while-running';
+export type BackupTrigger = 'manual' | 'scheduled';
+
+export interface BackupSettings {
+  enabled: boolean;
+  scheduleType: BackupScheduleType;
+  time: string; // HH:mm
+  dayOfWeek?: number; // 0 = Sunday, 6 = Saturday
+  intervalHours?: number;
+  intervalMinutes?: number;
+  includeLogs?: boolean;
+  notifyOps?: boolean;
+  lastRunAt?: string;
+  nextRunAt?: string;
+}
+
+export interface BackupInfoDto {
+  id: string;
+  serverId: string;
+  name: string;
+  path: string;
+  createdAt: string;
+  sizeBytes: number;
+  trigger: BackupTrigger;
+}
+
+export interface CreateBackupRequest {
+  serverId: string;
+  trigger?: BackupTrigger;
+}
+
+export interface RestoreBackupRequest {
+  serverId: string;
+  backupId: string;
+}
+
+export interface UpdateBackupSettingsRequest {
+  serverId: string;
+  settings: BackupSettings;
 }
 
 // ============================================================================

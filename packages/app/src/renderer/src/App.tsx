@@ -35,6 +35,7 @@ function toServerInstance(dto: {
   status: string;
   ramMax: number;
   isReady?: boolean;
+  backupSettings?: ServerInstance['backupSettings'];
 }): ServerInstance {
   return {
     id: dto.id,
@@ -44,6 +45,7 @@ function toServerInstance(dto: {
     status: dto.status as ServerInstance['status'],
     ramMax: dto.ramMax,
     isReady: dto.isReady,
+    backupSettings: dto.backupSettings,
   };
 }
 

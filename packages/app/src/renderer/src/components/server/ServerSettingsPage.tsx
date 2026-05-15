@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Loader2, MemoryStick, Save, ServerCog } from 'lucide-react';
+import { ArrowLeft, Archive, Clock3, FolderOpen, Loader2, MemoryStick, RotateCcw, Save, ServerCog, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import type { ServerPropertyValue } from '../../../../shared/ipc-types';
+import { normalizeBackupSettings } from '../../../../shared/backup-utils';
+import type { BackupInfoDto, BackupSettings, ServerPropertyValue } from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
 
 type PropertyKind = 'boolean' | 'number' | 'text' | 'select';
@@ -78,6 +79,7 @@ const PROPERTY_META: PropertyMeta[] = [
 ];
 
 const SECTION_ORDER: PropertySection[] = ['gameplay', 'world', 'network', 'advanced'];
+const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
 function coerceValue(meta: PropertyMeta, value: string | undefined): ServerPropertyValue {
   if (value === undefined || value === '') return meta.defaultValue;
@@ -94,6 +96,18 @@ function toSaveValue(meta: PropertyMeta, value: ServerPropertyValue): ServerProp
     return meta.key === 'level-type' ? value.replace(':', '\\:') : value;
   }
   return value;
+}
+
+function formatBackupSize(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function formatDateTime(value?: string): string {
+  if (!value) return '-';
+  return new Date(value).toLocaleString();
 }
 
 function SettingsSkeleton() {
@@ -115,15 +129,29 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
   const [ramMax, setRamMax] = useState(server.ramMax);
   const [properties, setProperties] = useState<Record<string, ServerPropertyValue>>({});
   const [initialProperties, setInitialProperties] = useState<Record<string, ServerPropertyValue>>({});
+  const [backupSettings, setBackupSettings] = useState<BackupSettings>(() => normalizeBackupSettings(server.backupSettings));
+  const [initialBackupSettings, setInitialBackupSettings] = useState<BackupSettings>(() => normalizeBackupSettings(server.backupSettings));
+  const [backups, setBackups] = useState<BackupInfoDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isBackupBusy, setIsBackupBusy] = useState(false);
 
   const isRunning = server.status === 'running';
 
   useEffect(() => {
     setServerName(server.name);
     setRamMax(server.ramMax);
-  }, [server.name, server.ramMax]);
+    const nextSettings = normalizeBackupSettings(server.backupSettings);
+    setBackupSettings(nextSettings);
+    setInitialBackupSettings(nextSettings);
+  }, [server.backupSettings, server.name, server.ramMax]);
+
+  const loadBackups = useCallback(async () => {
+    const result = await window.electronAPI.server.listBackups(server.id);
+    if (result.success && result.data) {
+      setBackups(result.data);
+    }
+  }, [server.id]);
 
   useEffect(() => {
     const loadProperties = async () => {
@@ -152,12 +180,19 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
     loadProperties();
   }, [server.id]);
 
+  useEffect(() => {
+    loadBackups().catch(() => {
+      toast.error(t('toast.backupsLoadFailed'));
+    });
+  }, [loadBackups, server.id, t]);
+
   const isDirty = useMemo(
     () =>
       serverName !== server.name ||
       ramMax !== server.ramMax ||
+      JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings) ||
       PROPERTY_META.some((meta) => properties[meta.key] !== initialProperties[meta.key]),
-    [initialProperties, properties, ramMax, server.name, server.ramMax, serverName]
+    [backupSettings, initialBackupSettings, initialProperties, properties, ramMax, server.name, server.ramMax, serverName]
   );
 
   const updateProperty = (key: string, value: ServerPropertyValue) => {
@@ -192,11 +227,78 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
         setInitialProperties(properties);
       }
 
+      if (JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings)) {
+        const result = await window.electronAPI.server.updateBackupSettings({
+          serverId: server.id,
+          settings: backupSettings,
+        });
+
+        if (!result.success || !result.data) {
+          toast.error(t('toast.backupSettingsSaveFailed'));
+          return;
+        }
+
+        const savedSettings = normalizeBackupSettings(result.data.backupSettings);
+        setBackupSettings(savedSettings);
+        setInitialBackupSettings(savedSettings);
+      }
+
       toast.success(t('toast.propertiesSaved'));
     } catch {
       toast.error(t('toast.propertiesSaveFailed'));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const updateBackupSetting = <K extends keyof BackupSettings>(key: K, value: BackupSettings[K]) => {
+    setBackupSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleCreateBackup = async () => {
+    setIsBackupBusy(true);
+    try {
+      const result = await window.electronAPI.server.createBackup({ serverId: server.id, trigger: 'manual' });
+      if (!result.success) {
+        toast.error(t('toast.backupCreateFailed'));
+        return;
+      }
+      toast.success(t('toast.backupCreated'));
+      await loadBackups();
+    } finally {
+      setIsBackupBusy(false);
+    }
+  };
+
+  const handleRestoreBackup = async (backup: BackupInfoDto) => {
+    if (!window.confirm(t('backup.restoreConfirm', { name: backup.name }))) return;
+    setIsBackupBusy(true);
+    try {
+      const result = await window.electronAPI.server.restoreBackup({ serverId: server.id, backupId: backup.id });
+      if (!result.success) {
+        toast.error(t('toast.backupRestoreFailed'));
+        return;
+      }
+      toast.success(t('toast.backupRestored'));
+      await loadBackups();
+    } finally {
+      setIsBackupBusy(false);
+    }
+  };
+
+  const handleDeleteBackup = async (backup: BackupInfoDto) => {
+    if (!window.confirm(t('backup.deleteConfirm', { name: backup.name }))) return;
+    setIsBackupBusy(true);
+    try {
+      const result = await window.electronAPI.server.deleteBackup(server.id, backup.id);
+      if (!result.success) {
+        toast.error(t('toast.backupDeleteFailed'));
+        return;
+      }
+      toast.success(t('toast.backupDeleted'));
+      await loadBackups();
+    } finally {
+      setIsBackupBusy(false);
     }
   };
 
@@ -346,6 +448,224 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
               step={512}
               disabled={isRunning}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Archive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            {t('backup.title')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 p-4 pt-1">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+            <div className="rounded-lg border border-border/60 bg-card/45 p-3">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">{t('backup.automatic')}</Label>
+                  <p className="text-xs leading-5 text-muted-foreground">{t('backup.description')}</p>
+                </div>
+                <Switch
+                  checked={backupSettings.enabled}
+                  onCheckedChange={(checked) => updateBackupSetting('enabled', checked)}
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">{t('backup.scheduleType')}</Label>
+                  <Select
+                    value={backupSettings.scheduleType}
+                    onValueChange={(value) => updateBackupSetting('scheduleType', value as BackupSettings['scheduleType'])}
+                    disabled={!backupSettings.enabled}
+                  >
+                    <SelectTrigger className="h-9 bg-secondary/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="while-running">{t('backup.schedule.whileRunning')}</SelectItem>
+                      <SelectItem value="hourly">{t('backup.schedule.hourly')}</SelectItem>
+                      <SelectItem value="daily">{t('backup.schedule.daily')}</SelectItem>
+                      <SelectItem value="weekly">{t('backup.schedule.weekly')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {backupSettings.scheduleType === 'while-running' ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('backup.intervalMinutes')}</Label>
+                    <Input
+                      type="number"
+                      min={5}
+                      max={1440}
+                      value={backupSettings.intervalMinutes ?? 30}
+                      onChange={(event) => updateBackupSetting('intervalMinutes', Number(event.target.value))}
+                      disabled={!backupSettings.enabled}
+                      className="h-9"
+                    />
+                  </div>
+                ) : backupSettings.scheduleType === 'hourly' ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('backup.intervalHours')}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={24}
+                      value={backupSettings.intervalHours ?? 6}
+                      onChange={(event) => updateBackupSetting('intervalHours', Number(event.target.value))}
+                      disabled={!backupSettings.enabled}
+                      className="h-9"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('backup.time')}</Label>
+                    <Input
+                      type="time"
+                      value={backupSettings.time}
+                      onChange={(event) => updateBackupSetting('time', event.target.value)}
+                      disabled={!backupSettings.enabled}
+                      className="h-9"
+                    />
+                  </div>
+                )}
+
+                {backupSettings.scheduleType === 'weekly' && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('backup.weekday')}</Label>
+                    <Select
+                      value={String(backupSettings.dayOfWeek ?? 0)}
+                      onValueChange={(value) => updateBackupSetting('dayOfWeek', Number(value))}
+                      disabled={!backupSettings.enabled}
+                    >
+                      <SelectTrigger className="h-9 bg-secondary/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WEEKDAYS.map((day) => (
+                          <SelectItem key={day} value={String(day)}>
+                            {t(`backup.weekdays.${day}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-secondary/30 px-3 py-2">
+                  <div>
+                    <Label className="text-xs font-medium">{t('backup.includeLogs')}</Label>
+                    <p className="text-[11px] text-muted-foreground">{t('backup.includeLogsDescription')}</p>
+                  </div>
+                  <Switch
+                    checked={Boolean(backupSettings.includeLogs)}
+                    onCheckedChange={(checked) => updateBackupSetting('includeLogs', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-secondary/30 px-3 py-2">
+                  <div>
+                    <Label className="text-xs font-medium">{t('backup.notifyOps')}</Label>
+                    <p className="text-[11px] text-muted-foreground">{t('backup.notifyOpsDescription')}</p>
+                  </div>
+                  <Switch
+                    checked={backupSettings.notifyOps !== false}
+                    onCheckedChange={(checked) => updateBackupSetting('notifyOps', checked)}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2 rounded-md bg-secondary/35 px-3 py-2 text-xs text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{t('backup.nextRun')}: {formatDateTime(backupSettings.nextRunAt)}</span>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border/60 bg-card/45 p-3">
+              <div className="mb-3 space-y-1">
+                <Label className="text-sm font-medium">{t('backup.manual')}</Label>
+                <p className="text-xs leading-5 text-muted-foreground">{t('backup.manualDescription')}</p>
+              </div>
+              <Button
+                type="button"
+                onClick={handleCreateBackup}
+                disabled={isBackupBusy}
+                className="w-full h-9 text-xs ripple"
+              >
+                {isBackupBusy ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Archive className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                {t('backup.createNow')}
+              </Button>
+              <p className="mt-3 text-xs text-muted-foreground">{t('backup.retention')}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-medium">{t('backup.recent')}</Label>
+              <span className="text-xs text-muted-foreground">{backups.length}/3</span>
+            </div>
+            {backups.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border/70 bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                {t('backup.empty')}
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {backups.map((backup) => (
+                  <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/45 p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{backup.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(backup.createdAt)} · {formatBackupSize(backup.sizeBytes)} · {t(`backup.trigger.${backup.trigger}`)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.electronAPI.app.openFolder(backup.path)}
+                        disabled={isBackupBusy}
+                        className="h-8 text-xs"
+                      >
+                        <FolderOpen className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        {t('backup.open')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreBackup(backup)}
+                        disabled={isBackupBusy || isRunning}
+                        className="h-8 text-xs"
+                      >
+                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        {t('backup.restore')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteBackup(backup)}
+                        disabled={isBackupBusy}
+                        className="h-8 text-xs text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        {t('common.delete')}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isRunning && (
+              <p className="text-xs text-muted-foreground">{t('backup.restoreLocked')}</p>
+            )}
           </div>
         </CardContent>
       </Card>

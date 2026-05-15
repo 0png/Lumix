@@ -19,6 +19,13 @@ export const ServerChannels = {
   SEND_COMMAND: 'server:send-command',
   GET_PLAYERS: 'server:get-players',
   PLAYER_ACTION: 'server:player-action',
+
+  // Backups
+  LIST_BACKUPS: 'server:list-backups',
+  CREATE_BACKUP: 'server:create-backup',
+  RESTORE_BACKUP: 'server:restore-backup',
+  DELETE_BACKUP: 'server:delete-backup',
+  UPDATE_BACKUP_SETTINGS: 'server:update-backup-settings',
   
   // Server properties
   GET_PROPERTIES: 'server:get-properties',
@@ -47,6 +54,11 @@ export function getAllServerChannels(): string[] {
     ServerChannels.SEND_COMMAND,
     ServerChannels.GET_PLAYERS,
     ServerChannels.PLAYER_ACTION,
+    ServerChannels.LIST_BACKUPS,
+    ServerChannels.CREATE_BACKUP,
+    ServerChannels.RESTORE_BACKUP,
+    ServerChannels.DELETE_BACKUP,
+    ServerChannels.UPDATE_BACKUP_SETTINGS,
     ServerChannels.GET_PROPERTIES,
     ServerChannels.GET_PROPERTIES_RAW,
     ServerChannels.UPDATE_PROPERTIES,

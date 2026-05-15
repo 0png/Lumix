@@ -4,12 +4,8 @@
  * 支援響應式設計、骨架屏載入、交錯動畫
  */
 
-import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Activity,
-  Cpu,
-  Gauge,
   Plus,
   Server,
   Settings,
@@ -19,7 +15,6 @@ import { ServerCard } from './ServerCard';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
@@ -33,9 +28,8 @@ export interface ServerInstance {
   status: ServerStatus;
   ramMax: number;
   isReady?: boolean;
+  backupSettings?: import('../../../../shared/ipc-types').BackupSettings;
 }
-
-type ServerFilter = 'all' | 'running' | 'stopped' | 'attention';
 
 interface ServerListProps {
   servers: ServerInstance[];
@@ -50,26 +44,6 @@ interface ServerListProps {
   loading?: boolean;
   /** 各伺服器的下載進度 */
   downloadProgress?: Map<string, number>;
-}
-
-const filterOptions: { value: ServerFilter; labelKey: string }[] = [
-  { value: 'all', labelKey: 'dashboard.filters.all' },
-  { value: 'running', labelKey: 'dashboard.filters.running' },
-  { value: 'stopped', labelKey: 'dashboard.filters.stopped' },
-  { value: 'attention', labelKey: 'dashboard.filters.attention' },
-];
-
-function isAttentionServer(server: ServerInstance, downloadProgress?: Map<string, number>) {
-  const progress = downloadProgress?.get(server.id);
-
-  return server.status === 'starting'
-    || server.status === 'stopping'
-    || server.isReady === false
-    || (progress !== undefined && progress < 100);
-}
-
-function formatMemory(value: number) {
-  return value >= 1024 ? `${Math.round(value / 1024)} GB` : `${value} MB`;
 }
 
 /**
@@ -145,34 +119,10 @@ export function ServerList({
   onStopServer,
   onCreateServer,
   onOpenSettings,
-  javaInstallationsCount = 0,
   loading = false,
   downloadProgress,
 }: ServerListProps) {
   const { t } = useTranslation();
-  const [filter, setFilter] = useState<ServerFilter>('all');
-
-  const summary = useMemo(() => {
-    const running = servers.filter((server) => server.status === 'running').length;
-    const stopped = servers.filter((server) => server.status === 'stopped').length;
-    const attention = servers.filter((server) => isAttentionServer(server, downloadProgress)).length;
-    const totalRam = servers.reduce((sum, server) => sum + server.ramMax, 0);
-
-    return { running, stopped, attention, totalRam };
-  }, [downloadProgress, servers]);
-
-  const filteredServers = useMemo(() => {
-    switch (filter) {
-      case 'running':
-        return servers.filter((server) => server.status === 'running');
-      case 'stopped':
-        return servers.filter((server) => server.status === 'stopped');
-      case 'attention':
-        return servers.filter((server) => isAttentionServer(server, downloadProgress));
-      default:
-        return servers;
-    }
-  }, [downloadProgress, filter, servers]);
 
   // 載入中顯示骨架屏
   if (loading) {
@@ -183,29 +133,6 @@ export function ServerList({
   if (servers.length === 0) {
     return <EmptyState onCreateServer={onCreateServer} onOpenSettings={onOpenSettings} />;
   }
-
-  const statCards = [
-    {
-      label: t('dashboard.stats.total'),
-      value: servers.length,
-      icon: Server,
-    },
-    {
-      label: t('dashboard.stats.running'),
-      value: summary.running,
-      icon: Activity,
-    },
-    {
-      label: t('dashboard.stats.java'),
-      value: javaInstallationsCount,
-      icon: Cpu,
-    },
-    {
-      label: t('dashboard.stats.memory'),
-      value: formatMemory(summary.totalRam),
-      icon: Gauge,
-    },
-  ];
 
   return (
     <div className="space-y-5">
@@ -226,85 +153,32 @@ export function ServerList({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map((card) => {
-          const Icon = card.icon;
-
-          return (
-            <Card key={card.label} className="glass">
-              <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                  <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
-                  <p className="truncate text-lg font-semibold">{card.value}</p>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <Card className="glass">
-        <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {filterOptions.map((option) => (
-              <Button
-                key={option.value}
-                variant={filter === option.value ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter(option.value)}
-                className="h-8"
-              >
-                {t(option.labelKey)}
-              </Button>
-            ))}
-          </div>
-          <Badge
-            variant={summary.attention > 0 ? 'warning' : 'secondary'}
-            className="w-fit shrink-0"
+      <div
+        className={cn('grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3')}
+        role="list"
+        aria-label={t('dashboard.serverList')}
+      >
+        {servers.map((server, index) => (
+          <div
+            key={server.id}
+            className="animate-fade-in-up"
+            style={{
+              animationDelay: `${index * 50}ms`,
+              animationFillMode: 'backwards',
+            }}
+            role="listitem"
           >
-            {summary.attention > 0
-              ? t('dashboard.attentionCount', { count: summary.attention })
-              : t('dashboard.allClear')}
-          </Badge>
-        </CardContent>
-      </Card>
-
-      {filteredServers.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/70 bg-secondary/20 px-4 py-8 text-center">
-          <p className="text-sm font-medium">{t('dashboard.noFilteredServers')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t('dashboard.noFilteredServersDescription')}</p>
-        </div>
-      ) : (
-        <div
-          className={cn('grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3')}
-          role="list"
-          aria-label={t('dashboard.serverList')}
-        >
-          {filteredServers.map((server, index) => (
-            <div
-              key={server.id}
-              className="animate-fade-in-up"
-              style={{
-                animationDelay: `${index * 50}ms`,
-                animationFillMode: 'backwards',
-              }}
-              role="listitem"
-            >
-              <ServerCard
-                server={server}
-                isSelected={selectedServerId === server.id}
-                onSelect={() => onSelectServer?.(server.id)}
-                onStart={() => onStartServer?.(server.id)}
-                onStop={() => onStopServer?.(server.id)}
-                downloadProgress={downloadProgress?.get(server.id)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+            <ServerCard
+              server={server}
+              isSelected={selectedServerId === server.id}
+              onSelect={() => onSelectServer?.(server.id)}
+              onStart={() => onStartServer?.(server.id)}
+              onStop={() => onStopServer?.(server.id)}
+              downloadProgress={downloadProgress?.get(server.id)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

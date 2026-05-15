@@ -6,10 +6,18 @@
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import { FileManager, ServerMetadata } from './file-manager';
 import { ProcessManager, ProcessConfig } from './process-manager';
 import { parseLogLevel, splitLogLines } from './log-parser';
+import {
+  calculateNextBackupRun,
+  createBackupId,
+  DEFAULT_BACKUP_SETTINGS,
+  normalizeBackupSettings,
+  withNextBackupRun,
+} from '../../shared/backup-utils';
 import type {
   ServerInstanceDto,
   ServerStatus,
@@ -21,6 +29,11 @@ import type {
   ServerProperties,
   PlayerActionRequest,
   PlayerDto,
+  BackupInfoDto,
+  BackupSettings,
+  BackupTrigger,
+  RestoreBackupRequest,
+  UpdateBackupSettingsRequest,
 } from '../../shared/ipc-types';
 import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 
@@ -32,6 +45,10 @@ import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-t
 const SERVER_STOP_TIMEOUT = 30000; // 30 秒
 const SERVER_START_TIMEOUT = 300000; // 5 分鐘
 const JAVA_VERIFY_TIMEOUT = 5000; // 5 秒
+const BACKUP_DIR_NAME = '.lumix-backups';
+const BACKUP_METADATA_FILE = '.lumix-backup.json';
+const MAX_BACKUPS_PER_SERVER = 3;
+const MAX_TIMER_DELAY = 2147483647;
 
 export interface ServerManagerEvents {
   'status-changed': (event: ServerStatusEvent) => void;
@@ -57,6 +74,7 @@ export class ServerManager extends EventEmitter {
   private serverReadyFlags: Set<string> = new Set(); // 追蹤已觸發 ready 事件的服務器
   private onlinePlayers: Map<string, Set<string>> = new Map();
   private pendingSilentListResponses: Map<string, number> = new Map();
+  private backupTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(config: ServerManagerConfig) {
     super();
@@ -148,6 +166,10 @@ export class ServerManager extends EventEmitter {
       }
     }
 
+    const backupSettings = request.backupSettings
+      ? withNextBackupRun(normalizeBackupSettings(request.backupSettings))
+      : server.backupSettings;
+
     const updatedServer: ServerInstanceDto = {
       ...server,
       name: request.name?.trim() ?? server.name,
@@ -155,10 +177,12 @@ export class ServerManager extends EventEmitter {
       ramMin: request.ramMin ?? server.ramMin,
       ramMax: request.ramMax ?? server.ramMax,
       jvmArgs: request.jvmArgs ?? server.jvmArgs,
+      backupSettings,
     };
 
     await this.persistServerUpdate(updatedServer);
     this.servers.set(request.id, updatedServer);
+    this.scheduleBackup(request.id);
     return updatedServer;
   }
 
@@ -178,6 +202,7 @@ export class ServerManager extends EventEmitter {
 
     await this.fileManager.deleteServerDirectory(server.directory);
     this.servers.delete(id);
+    this.clearBackupTimer(id);
   }
 
   /**
@@ -338,6 +363,7 @@ export class ServerManager extends EventEmitter {
       this.processManager.spawn(processConfig);
       await this.updateLastStartedAt(id);
       this.updateServerStatus(id, 'running');
+      this.scheduleBackup(id);
     } catch (error) {
       clearTimeout(startTimeout);
       this.updateServerStatus(id, 'stopped');
@@ -476,6 +502,168 @@ export class ServerManager extends EventEmitter {
   }
 
   // ==========================================================================
+  // Backup Operations
+  // ==========================================================================
+
+  async listBackups(id: string): Promise<BackupInfoDto[]> {
+    const server = this.getExistingServer(id);
+    const backupRoot = this.getBackupRoot(server.directory);
+
+    try {
+      await fs.access(backupRoot);
+    } catch {
+      return [];
+    }
+
+    const entries = await fs.readdir(backupRoot, { withFileTypes: true });
+    const backups = await Promise.all(entries
+      .filter((entry) => entry.isDirectory())
+      .map(async (entry): Promise<BackupInfoDto | null> => {
+        const backupPath = path.join(backupRoot, entry.name);
+        try {
+          const metadataPath = path.join(backupPath, BACKUP_METADATA_FILE);
+          const raw = await fs.readFile(metadataPath, 'utf-8');
+          const metadata = JSON.parse(raw) as Omit<BackupInfoDto, 'sizeBytes'>;
+          return {
+            ...metadata,
+            path: backupPath,
+            sizeBytes: await this.getDirectorySize(backupPath),
+          };
+        } catch {
+          return null;
+        }
+      }));
+
+    return backups
+      .filter((backup): backup is BackupInfoDto => backup !== null)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async createBackup(id: string, trigger: BackupTrigger = 'manual'): Promise<BackupInfoDto> {
+    const server = this.getExistingServer(id);
+    const createdAt = new Date().toISOString();
+    const backupId = createBackupId(createdAt);
+    const backupRoot = this.getBackupRoot(server.directory);
+    const backupPath = path.join(backupRoot, backupId);
+
+    await fs.mkdir(backupRoot, { recursive: true });
+    await fs.mkdir(backupPath, { recursive: true });
+    const shouldNotifyOps = trigger === 'scheduled' && server.backupSettings?.notifyOps !== false;
+
+    const copyServer = async (): Promise<void> => {
+      await this.copyServerDirectoryToBackup(server.directory, backupPath, server.backupSettings);
+    };
+
+    if (shouldNotifyOps) {
+      await this.notifyOps(id, 'Lumix 正在建立伺服器備份...');
+    }
+
+    if (server.status === 'running') {
+      this.processManager.writeStdin(id, 'save-off');
+      this.processManager.writeStdin(id, 'save-all flush');
+      await this.delay(2000);
+      try {
+        await copyServer();
+      } finally {
+        this.processManager.writeStdin(id, 'save-on');
+      }
+    } else {
+      await copyServer();
+    }
+
+    const backup: BackupInfoDto = {
+      id: backupId,
+      serverId: id,
+      name: `${server.name} ${createdAt.replace('T', ' ').slice(0, 19)}`,
+      path: backupPath,
+      createdAt,
+      sizeBytes: await this.getDirectorySize(backupPath),
+      trigger,
+    };
+
+    await fs.writeFile(
+      path.join(backupPath, BACKUP_METADATA_FILE),
+      JSON.stringify(backup, null, 2),
+      'utf-8'
+    );
+    await this.pruneBackups(id);
+
+    if (trigger === 'scheduled') {
+      await this.markBackupRun(id, createdAt);
+    }
+
+    if (shouldNotifyOps) {
+      await this.notifyOps(id, `Lumix 已完成伺服器備份: ${backup.name}`);
+    }
+
+    this.emitLogEntry(id, 'info', `已建立備份: ${backup.name}`);
+    return backup;
+  }
+
+  async restoreBackup(request: RestoreBackupRequest): Promise<void> {
+    const server = this.getExistingServer(request.serverId);
+    if (server.status !== 'stopped') {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_INVALID_STATE,
+        '還原備份前請先停止伺服器'
+      )));
+    }
+
+    const backups = await this.listBackups(request.serverId);
+    const backup = backups.find((item) => item.id === request.backupId);
+    if (!backup) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.FS_READ_ERROR,
+        '找不到指定的備份'
+      )));
+    }
+
+    const entries = await fs.readdir(server.directory, { withFileTypes: true });
+    await Promise.all(entries.map(async (entry) => {
+      if (entry.name === BACKUP_DIR_NAME) return;
+      await fs.rm(path.join(server.directory, entry.name), { recursive: true, force: true });
+    }));
+
+    await fs.cp(backup.path, server.directory, {
+      recursive: true,
+      filter: (source) => path.basename(source) !== BACKUP_METADATA_FILE,
+    });
+
+    const metadata = await this.fileManager.readServerJson(server.directory);
+    const restoredServer: ServerInstanceDto = {
+      id: metadata.id,
+      name: metadata.name,
+      coreType: metadata.coreType,
+      mcVersion: metadata.mcVersion,
+      javaPath: metadata.javaPath || this.defaultJavaPath,
+      ramMin: metadata.ramMin,
+      ramMax: metadata.ramMax,
+      jvmArgs: metadata.jvmArgs,
+      directory: server.directory,
+      status: 'stopped',
+      createdAt: metadata.createdAt,
+      lastStartedAt: metadata.lastStartedAt,
+      backupSettings: normalizeBackupSettings(metadata.backupSettings),
+    };
+    this.servers.set(request.serverId, restoredServer);
+    this.scheduleBackup(request.serverId);
+    this.emitLogEntry(request.serverId, 'info', `已還原備份: ${backup.name}`);
+  }
+
+  async deleteBackup(serverId: string, backupId: string): Promise<void> {
+    const server = this.getExistingServer(serverId);
+    const backupPath = path.join(this.getBackupRoot(server.directory), path.basename(backupId));
+    await fs.rm(backupPath, { recursive: true, force: true });
+  }
+
+  async updateBackupSettings(request: UpdateBackupSettingsRequest): Promise<ServerInstanceDto> {
+    return this.updateServer({
+      id: request.serverId,
+      backupSettings: normalizeBackupSettings(request.settings),
+    });
+  }
+
+  // ==========================================================================
   // Initialization
   // ==========================================================================
 
@@ -497,8 +685,10 @@ export class ServerManager extends EventEmitter {
         status: 'stopped',
         createdAt: metadata.createdAt,
         lastStartedAt: metadata.lastStartedAt,
+        backupSettings: normalizeBackupSettings(metadata.backupSettings),
       };
       this.servers.set(metadata.id, server);
+      this.startBackupSchedule(metadata.id);
     }
   }
 
@@ -508,6 +698,10 @@ export class ServerManager extends EventEmitter {
       clearTimeout(timeout);
     }
     this.stopTimeouts.clear();
+    for (const timeout of this.backupTimers.values()) {
+      clearTimeout(timeout);
+    }
+    this.backupTimers.clear();
     this.processManager.killAll();
   }
 
@@ -632,6 +826,7 @@ export class ServerManager extends EventEmitter {
     this.serverReadyFlags.delete(serverId);
     this.onlinePlayers.delete(serverId);
     this.pendingSilentListResponses.delete(serverId);
+    this.clearBackupTimer(serverId);
 
     const event: ServerStatusEvent = {
       serverId,
@@ -663,7 +858,6 @@ export class ServerManager extends EventEmitter {
 
   private async validateJava(javaPath: string): Promise<boolean> {
     return new Promise((resolve) => {
-      const { spawn } = require('child_process');
       let resolved = false;
 
       const proc = spawn(javaPath, ['-version'], {
@@ -715,6 +909,7 @@ export class ServerManager extends EventEmitter {
       jvmArgs: request.jvmArgs ?? [],
       javaPath: request.javaPath,
       createdAt: new Date().toISOString(),
+      backupSettings: { ...DEFAULT_BACKUP_SETTINGS },
     };
   }
 
@@ -741,6 +936,7 @@ export class ServerManager extends EventEmitter {
       javaPath: server.javaPath,
       createdAt: server.createdAt,
       lastStartedAt: server.lastStartedAt,
+      backupSettings: server.backupSettings,
     };
     await this.fileManager.writeServerJson(server.directory, metadata);
     await this.fileManager.writeRunBat(server.directory, {
@@ -767,8 +963,170 @@ export class ServerManager extends EventEmitter {
       javaPath: server.javaPath,
       createdAt: server.createdAt,
       lastStartedAt: server.lastStartedAt,
+      backupSettings: server.backupSettings,
     };
     await this.fileManager.writeServerJson(server.directory, metadata);
+  }
+
+  private getExistingServer(id: string): ServerInstanceDto {
+    const server = this.servers.get(id);
+    if (!server) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+    return server;
+  }
+
+  private async markBackupRun(serverId: string, runAt: string): Promise<void> {
+    const server = this.getExistingServer(serverId);
+    const settings = normalizeBackupSettings({
+      ...server.backupSettings,
+      lastRunAt: runAt,
+    });
+    settings.nextRunAt = calculateNextBackupRun(settings).toISOString();
+    const updatedServer = { ...server, backupSettings: settings };
+    this.servers.set(serverId, updatedServer);
+    await this.persistServerUpdate(updatedServer);
+    this.scheduleBackup(serverId);
+  }
+
+  private startBackupSchedule(serverId: string): void {
+    const server = this.servers.get(serverId);
+    const settings = normalizeBackupSettings(server?.backupSettings);
+    if (!server || !settings.enabled) return;
+    if (settings.scheduleType === 'while-running' && server.status !== 'running') return;
+
+    if (settings.nextRunAt && new Date(settings.nextRunAt).getTime() <= Date.now()) {
+      this.createBackup(serverId, 'scheduled').catch((error) => {
+        this.emitLogEntry(serverId, 'error', `錯過排程後補備份失敗: ${formatErrorMessage(error)}`);
+        if (settings.notifyOps !== false) {
+          this.notifyOps(serverId, `Lumix 錯過排程後補備份失敗: ${formatErrorMessage(error)}`).catch(() => {});
+        }
+        this.scheduleBackup(serverId);
+      });
+      return;
+    }
+
+    this.scheduleBackup(serverId);
+  }
+
+  private scheduleBackup(serverId: string): void {
+    this.clearBackupTimer(serverId);
+    const server = this.servers.get(serverId);
+    const settings = normalizeBackupSettings(server?.backupSettings);
+    if (!server || !settings.enabled) return;
+    if (settings.scheduleType === 'while-running' && server.status !== 'running') return;
+
+    const nextRun = calculateNextBackupRun(settings);
+    settings.nextRunAt = nextRun.toISOString();
+    server.backupSettings = settings;
+    this.servers.set(serverId, server);
+
+    const delayMs = Math.max(1000, nextRun.getTime() - Date.now());
+    const timeout = setTimeout(() => {
+      if (delayMs > MAX_TIMER_DELAY) {
+        this.scheduleBackup(serverId);
+        return;
+      }
+
+      this.createBackup(serverId, 'scheduled').catch((error) => {
+        this.emitLogEntry(serverId, 'error', `自動備份失敗: ${formatErrorMessage(error)}`);
+        if (settings.notifyOps !== false) {
+          this.notifyOps(serverId, `Lumix 自動備份失敗: ${formatErrorMessage(error)}`).catch(() => {});
+        }
+        this.scheduleBackup(serverId);
+      });
+    }, Math.min(delayMs, MAX_TIMER_DELAY));
+    this.backupTimers.set(serverId, timeout);
+  }
+
+  private clearBackupTimer(serverId: string): void {
+    const timer = this.backupTimers.get(serverId);
+    if (timer) {
+      clearTimeout(timer);
+      this.backupTimers.delete(serverId);
+    }
+  }
+
+  private getBackupRoot(serverDirectory: string): string {
+    return path.join(serverDirectory, BACKUP_DIR_NAME);
+  }
+
+  private shouldIncludeInBackup(serverDirectory: string, source: string, settings?: BackupSettings): boolean {
+    const relativePath = path.relative(serverDirectory, source);
+    if (!relativePath) return true;
+    const parts = relativePath.split(path.sep);
+    if (parts.includes(BACKUP_DIR_NAME)) return false;
+    if (path.basename(source) === BACKUP_METADATA_FILE) return false;
+    if (!settings?.includeLogs && (parts.includes('logs') || source.endsWith('.log'))) return false;
+    return true;
+  }
+
+  private async copyServerDirectoryToBackup(
+    serverDirectory: string,
+    backupPath: string,
+    settings?: BackupSettings
+  ): Promise<void> {
+    const entries = await fs.readdir(serverDirectory, { withFileTypes: true });
+    await Promise.all(entries.map(async (entry) => {
+      const source = path.join(serverDirectory, entry.name);
+      if (!this.shouldIncludeInBackup(serverDirectory, source, settings)) return;
+
+      const destination = path.join(backupPath, entry.name);
+      if (entry.isDirectory()) {
+        await fs.cp(source, destination, {
+          recursive: true,
+          filter: (currentSource) => this.shouldIncludeInBackup(serverDirectory, currentSource, settings),
+        });
+        return;
+      }
+
+      if (entry.isFile()) {
+        await fs.copyFile(source, destination);
+      }
+    }));
+  }
+
+  private async notifyOps(serverId: string, message: string): Promise<void> {
+    const server = this.servers.get(serverId);
+    if (!server || server.status !== 'running') return;
+
+    const ops = await this.readPlayerFile<PlayerListEntry>(server.directory, 'ops.json');
+    const opNames = ops
+      .map((entry) => entry.name)
+      .filter((name): name is string => Boolean(name));
+
+    for (const name of opNames) {
+      const payload = JSON.stringify({ text: `[Lumix] ${message}`, color: 'gold' });
+      this.processManager.writeStdin(serverId, `tellraw ${name} ${payload}`);
+    }
+  }
+
+  private async pruneBackups(serverId: string): Promise<void> {
+    const backups = await this.listBackups(serverId);
+    const staleBackups = backups.slice(MAX_BACKUPS_PER_SERVER);
+    await Promise.all(staleBackups.map((backup) => fs.rm(backup.path, { recursive: true, force: true })));
+  }
+
+  private async getDirectorySize(directory: string): Promise<number> {
+    let total = 0;
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    await Promise.all(entries.map(async (entry) => {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        total += await this.getDirectorySize(entryPath);
+      } else if (entry.isFile()) {
+        const stat = await fs.stat(entryPath);
+        total += stat.size;
+      }
+    }));
+    return total;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async readPlayerFile<T extends { name?: string; uuid?: string }>(
@@ -885,4 +1243,8 @@ function normalizeUuid(uuid?: string): string | undefined {
   const compact = uuid.replace(/-/g, '');
   if (!/^[0-9a-fA-F]{32}$/.test(compact)) return uuid;
   return compact.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5').toLowerCase();
+}
+
+function formatErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
