@@ -39,6 +39,33 @@
     "title": "Welcome to Lumix",
     "description": "Select a server from the sidebar or create a new one"
   },
+  "dashboard": {
+    "description": "Review server runtime state, resource allocation, and items that need attention in one place.",
+    "serverList": "Server list",
+    "emptyBadge": "Create your first server",
+    "emptyDescription": "Lumix helps you choose a Minecraft version, prepare the Java runtime, and move directly into a manageable server workflow after creation.",
+    "emptySteps": {
+      "version": "Choose the Minecraft version and core type",
+      "runtime": "Confirm Java and memory allocation",
+      "launch": "Create the server and inspect live output"
+    },
+    "stats": {
+      "total": "Total Servers",
+      "running": "Running",
+      "java": "Java Installs",
+      "memory": "Total Default RAM"
+    },
+    "filters": {
+      "all": "All",
+      "running": "Running",
+      "stopped": "Stopped",
+      "attention": "Needs Attention"
+    },
+    "attentionCount": "{{count}} item needs attention",
+    "allClear": "No action needed",
+    "noFilteredServers": "No servers in this filter",
+    "noFilteredServersDescription": "Switch filters or create a new server."
+  },
   "server": {
     "name": "Server Name",
     "version": "Version",
@@ -176,13 +203,23 @@
   },
   "settings": {
     "title": "Settings",
+    "description": "Tune Lumix's workspace, default resources, and Java runtime environment.",
     "appearance": "Appearance",
+    "appearanceDescription": "Choose the interface theme and display language that match your desktop environment.",
     "theme": "Theme",
     "language": "Language",
+    "currentTheme": "Current Theme",
+    "currentLanguage": "Current Language",
+    "runtimeProfile": "Default Profile",
     "defaults": "Defaults",
+    "defaultsDescription": "These values apply to newly created servers. Existing servers can still be adjusted individually.",
     "defaultRam": "Default RAM",
+    "defaultRamDescription": "Maximum memory allocation used when creating a new server.",
     "java": "Java Management",
-    "javaPath": "Java Path"
+    "javaDescription": "Manage available Java installations. Lumix selects a compatible runtime based on the Minecraft version.",
+    "javaPath": "Java Path",
+    "noJavaTitle": "No Java installation added",
+    "noJavaDescription": "Use detection to scan local Java installations, or install the required runtime while creating a server."
   },
   "difficulty": {
     "peaceful": "Peaceful",
@@ -225,14 +262,36 @@
   "about": {
     "title": "About",
     "description": "Minecraft Server Management Tool",
+    "summary": "Lumix is a desktop control center for everyday server operations, bringing creation, startup, version downloads, Java management, and live output into one workflow.",
+    "status": "Open source desktop app",
     "version": "Version",
-    "author": "Author",
+    "maintainer": "Maintainer",
+    "releaseChannel": "Release Channel",
+    "releaseChannelValue": "GitHub Releases",
     "license": "License",
     "copyright": "Copyright",
-    "techStack": "Tech Stack",
+    "projectTitle": "Project Commitments",
+    "signals": {
+      "localFirst": {
+        "title": "Local-first",
+        "description": "Server files, Java paths, and runtime state are centered around your local machine instead of basic operations depending on external services."
+      },
+      "releaseReady": {
+        "title": "Release-oriented",
+        "description": "Version details and update checks follow the release flow, so the current build and available updates stay clear."
+      },
+      "openProject": {
+        "title": "Open collaboration",
+        "description": "Issues and source code live on GitHub, making defects, requests, and changes easier to inspect and discuss."
+      }
+    },
     "openSource": "Open Source",
+    "openSourceDescription": "Lumix is maintained in a visible, reportable, and iterative way. Use the repository to inspect the project, or open an issue for bugs and improvements.",
     "viewOnGitHub": "View on GitHub",
-    "submitFeedback": "Submit Feedback"
+    "submitFeedback": "Submit Feedback",
+    "updatePolicyTitle": "Updates and compatibility",
+    "updatePolicyDescription": "Update checks use the configured release source. If no release is available, the app stays on the current stable build.",
+    "copyrightNotice": "© 2026 0png"
   },
   "update": {
     "available": {

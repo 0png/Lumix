@@ -19,6 +19,7 @@ interface MainLayoutProps {
   servers?: ServerItem[];
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
+  onGoHome?: () => void;
   onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
@@ -30,6 +31,7 @@ export function MainLayout({
   servers = [],
   selectedServerId,
   onSelectServer,
+  onGoHome,
   onCreateServer,
   onOpenSettings,
   onOpenAbout,
@@ -58,6 +60,7 @@ export function MainLayout({
         servers={servers}
         selectedServerId={selectedServerId}
         onSelectServer={onSelectServer}
+        onGoHome={onGoHome}
         onCreateServer={onCreateServer}
         onOpenSettings={onOpenSettings}
         onOpenAbout={onOpenAbout}

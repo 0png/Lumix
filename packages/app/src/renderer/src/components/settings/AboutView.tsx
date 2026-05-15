@@ -1,13 +1,23 @@
 /**
  * AboutView 元件 - 關於頁面
- * 完整頁面視圖，顯示應用程式資訊、技術棧和外部連結
+ * 完整頁面視圖，顯示產品資訊、專案狀態和外部連結
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, ArrowLeft, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  ExternalLink,
+  Github,
+  HeartHandshake,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useUpdate } from '@/hooks/use-update';
 import { toast } from 'sonner';
 import appIcon from '@/assets/icon.png';
@@ -19,15 +29,6 @@ interface AboutViewProps {
 /** 開啟外部連結 */
 function openExternal(url: string) {
   window.open(url, '_blank');
-}
-
-/** GitHub 圖示 */
-function GitHubIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-    </svg>
-  );
 }
 
 /** 關於頁面元件 */
@@ -47,8 +48,7 @@ export function AboutView({ onBack }: AboutViewProps) {
 
   const handleCheckUpdate = async () => {
     await checkForUpdates();
-    
-    // 如果沒有更新，顯示提示
+
     if (!available && !checking) {
       toast.success(t('update.noUpdate.title'), {
         description: t('update.noUpdate.description'),
@@ -56,11 +56,33 @@ export function AboutView({ onBack }: AboutViewProps) {
     }
   };
 
-  const techStack = ['Electron', 'React', 'Vite', 'TypeScript', 'Tailwind CSS', 'Radix UI'];
+  const projectSignals = [
+    {
+      icon: ShieldCheck,
+      title: t('about.signals.localFirst.title'),
+      description: t('about.signals.localFirst.description'),
+    },
+    {
+      icon: BadgeCheck,
+      title: t('about.signals.releaseReady.title'),
+      description: t('about.signals.releaseReady.description'),
+    },
+    {
+      icon: HeartHandshake,
+      title: t('about.signals.openProject.title'),
+      description: t('about.signals.openProject.description'),
+    },
+  ];
+
+  const metadata = [
+    { label: t('about.version'), value: version },
+    { label: t('about.releaseChannel'), value: t('about.releaseChannelValue') },
+    { label: t('about.license'), value: 'MIT' },
+    { label: t('about.maintainer'), value: '0png' },
+  ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* 標題列 */}
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack} className="hover:bg-primary/10 transition-colors">
           <ArrowLeft className="h-5 w-5" />
@@ -68,95 +90,101 @@ export function AboutView({ onBack }: AboutViewProps) {
         <h1 className="text-xl font-bold">{t('about.title')}</h1>
       </div>
 
-      <div className="grid gap-6">
-        {/* 應用程式資訊 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-              <img src={appIcon} alt="Lumix" className="w-16 h-16 rounded-xl shrink-0" />
-              <div>
-                <h2 className="text-xl font-bold">Lumix</h2>
-                <p className="text-sm text-muted-foreground">{t('about.description')}</p>
+      <Card className="glass overflow-hidden">
+        <CardContent className="p-0">
+          <div className="border-b border-border/50 bg-gradient-subtle px-5 py-6 sm:px-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-4">
+                <img src={appIcon} alt="Lumix" className="h-16 w-16 shrink-0 rounded-2xl shadow-sm" />
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-2xl font-semibold tracking-tight">Lumix</h2>
+                    <Badge variant="secondary" className="gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                      {t('about.status')}
+                    </Badge>
+                  </div>
+                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                    {t('about.summary')}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{t('about.version')}</p>
-                <p className="text-sm font-medium">{version}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{t('about.author')}</p>
-                <p className="text-sm font-medium">0png</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{t('about.license')}</p>
-                <p className="text-sm font-medium">MIT</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{t('about.copyright')}</p>
-                <p className="text-sm font-medium">© 2026 0png</p>
-              </div>
-            </div>
-
-            {/* 檢查更新按鈕 */}
-            <div className="mt-6 pt-4 border-t border-border/50">
               <Button
                 variant="outline"
                 onClick={handleCheckUpdate}
                 disabled={checking}
-                className="w-full hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                className="shrink-0 hover:bg-primary/10 hover:border-primary/50 transition-colors"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
                 {checking ? t('update.checking') : t('update.checkForUpdates')}
               </Button>
-              {available && updateInfo && (
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  {t('update.newVersionAvailable', { version: updateInfo.version })}
-                </p>
-              )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* 技術棧 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{t('about.techStack')}</CardTitle>
+            {available && updateInfo && (
+              <p className="mt-4 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                {t('update.newVersionAvailable', { version: updateInfo.version })}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-0 divide-y divide-border/50 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+            {metadata.map((item) => (
+              <div key={item.label} className="space-y-1 px-5 py-4 sm:px-6">
+                <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+                <p className="text-sm font-semibold">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+        <Card className="glass">
+          <CardHeader className="p-5 pb-3">
+            <CardTitle className="text-base">{t('about.projectTitle')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {techStack.map((tech) => (
-                <span
-                  key={tech}
-                  className="px-3 py-1 text-sm font-medium rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-default"
+          <CardContent className="grid gap-3 p-5 pt-0">
+            {projectSignals.map((signal) => {
+              const Icon = signal.icon;
+
+              return (
+                <div
+                  key={signal.title}
+                  className="flex gap-3 rounded-lg border border-border/50 bg-secondary/30 p-3"
                 >
-                  {tech}
-                </span>
-              ))}
-            </div>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="text-sm font-semibold">{signal.title}</h3>
+                    <p className="text-xs leading-5 text-muted-foreground">{signal.description}</p>
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
-        {/* 連結 */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
-          <CardHeader className="pb-3">
+        <Card className="glass">
+          <CardHeader className="p-5 pb-3">
             <CardTitle className="text-base">{t('about.openSource')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+          <CardContent className="space-y-4 p-5 pt-0">
+            <p className="text-sm leading-6 text-muted-foreground">{t('about.openSourceDescription')}</p>
+            <div className="grid gap-2">
               <Button
                 variant="outline"
                 onClick={() => openExternal('https://github.com/0png/Lumix')}
-                className="hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                className="justify-start hover:bg-primary/10 hover:border-primary/50 transition-colors"
               >
-                <GitHubIcon className="mr-2 h-4 w-4" />
+                <Github className="mr-2 h-4 w-4" />
                 {t('about.viewOnGitHub')}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => openExternal('https://github.com/0png/Lumix/issues')}
-                className="hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                className="justify-start hover:bg-primary/10 hover:border-primary/50 transition-colors"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t('about.submitFeedback')}
@@ -165,6 +193,18 @@ export function AboutView({ onBack }: AboutViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="glass">
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold">{t('about.updatePolicyTitle')}</h3>
+            <p className="text-xs leading-5 text-muted-foreground">{t('about.updatePolicyDescription')}</p>
+          </div>
+          <Badge variant="outline" className="w-fit shrink-0">
+            {t('about.copyrightNotice')}
+          </Badge>
+        </CardContent>
+      </Card>
     </div>
   );
 }

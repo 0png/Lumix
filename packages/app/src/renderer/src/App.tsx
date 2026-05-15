@@ -200,6 +200,12 @@ function AppContent() {
     setIsConsoleFullscreen(false);
   }, []);
 
+  const handleGoHome = useCallback(() => {
+    setSelectedServerId(undefined);
+    setCurrentView('servers');
+    setIsConsoleFullscreen(false);
+  }, []);
+
   const handleOpenFolder = useCallback(async (directory: string) => {
     await window.electronAPI.app.openFolder(directory);
   }, []);
@@ -290,6 +296,8 @@ function AppContent() {
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
                 onCreateServer={() => setShowCreateDialog(true)}
+                onOpenSettings={() => setCurrentView('settings')}
+                javaInstallationsCount={javaInstallations.length}
               />
             )}
           </div>
@@ -307,6 +315,7 @@ function AppContent() {
   return (
     <MainLayout
       servers={sidebarServers}
+      onGoHome={handleGoHome}
       onCreateServer={() => setShowCreateDialog(true)}
       onOpenSettings={() => setCurrentView('settings')}
       onOpenAbout={() => setCurrentView('about')}

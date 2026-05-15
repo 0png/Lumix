@@ -39,6 +39,33 @@
     "title": "歡迎使用 Lumix",
     "description": "從側邊欄選擇一個伺服器或建立新的伺服器"
   },
+  "dashboard": {
+    "description": "集中查看伺服器運行狀態、資源配置與需要處理的項目。",
+    "serverList": "伺服器列表",
+    "emptyBadge": "開始建立你的第一個伺服器",
+    "emptyDescription": "Lumix 會協助你選擇 Minecraft 版本、準備 Java 執行環境，並在建立完成後直接進入可管理的伺服器工作流。",
+    "emptySteps": {
+      "version": "選擇 Minecraft 版本與核心類型",
+      "runtime": "確認 Java 與記憶體配置",
+      "launch": "建立伺服器並查看即時輸出"
+    },
+    "stats": {
+      "total": "伺服器總數",
+      "running": "運行中",
+      "java": "Java 安裝",
+      "memory": "預設總記憶體"
+    },
+    "filters": {
+      "all": "全部",
+      "running": "運行中",
+      "stopped": "已停止",
+      "attention": "需處理"
+    },
+    "attentionCount": "{{count}} 個項目需處理",
+    "allClear": "目前無需處理",
+    "noFilteredServers": "此篩選下沒有伺服器",
+    "noFilteredServersDescription": "切換篩選條件或建立新的伺服器。"
+  },
   "server": {
     "name": "伺服器名稱",
     "version": "版本",
@@ -176,13 +203,23 @@
   },
   "settings": {
     "title": "設定",
+    "description": "調整 Lumix 的工作環境、預設資源與 Java 執行環境。",
     "appearance": "外觀",
+    "appearanceDescription": "選擇介面主題與顯示語言，讓控制台符合你的桌面環境。",
     "theme": "主題",
     "language": "語言",
+    "currentTheme": "目前主題",
+    "currentLanguage": "目前語言",
+    "runtimeProfile": "預設配置",
     "defaults": "預設值",
+    "defaultsDescription": "這些值會套用到新建立的伺服器，既有伺服器仍可個別調整。",
     "defaultRam": "預設記憶體",
+    "defaultRamDescription": "建立新伺服器時使用的最大記憶體配置。",
     "java": "Java 管理",
-    "javaPath": "Java 路徑"
+    "javaDescription": "管理可用的 Java 安裝，Lumix 會依 Minecraft 版本選擇相容執行環境。",
+    "javaPath": "Java 路徑",
+    "noJavaTitle": "尚未加入 Java 安裝",
+    "noJavaDescription": "使用偵測功能掃描本機 Java，或在建立伺服器時依版本需求安裝。"
   },
   "difficulty": {
     "peaceful": "和平",
@@ -225,14 +262,36 @@
   "about": {
     "title": "關於",
     "description": "Minecraft 伺服器管理工具",
+    "summary": "Lumix 是面向日常伺服器營運的桌面控制台，將建立、啟停、版本下載、Java 管理與即時輸出整合在同一個工作流中。",
+    "status": "開源桌面工具",
     "version": "版本",
-    "author": "作者",
+    "maintainer": "維護者",
+    "releaseChannel": "發行通道",
+    "releaseChannelValue": "GitHub Releases",
     "license": "授權",
     "copyright": "版權",
-    "techStack": "技術棧",
+    "projectTitle": "專案承諾",
+    "signals": {
+      "localFirst": {
+        "title": "本機優先",
+        "description": "伺服器檔案、Java 路徑與運行狀態都以本機環境為核心，避免把基礎管理流程綁到外部服務。"
+      },
+      "releaseReady": {
+        "title": "面向發行",
+        "description": "版本資訊與更新檢查走標準發行流程，讓使用者能清楚知道目前版本與可用更新。"
+      },
+      "openProject": {
+        "title": "公開協作",
+        "description": "問題回報與原始碼都集中在 GitHub，方便追蹤缺陷、討論需求與檢視變更。"
+      }
+    },
     "openSource": "開源專案",
+    "openSourceDescription": "Lumix 以可檢視、可回報、可迭代的方式維護。歡迎透過 repository 了解現況，或使用 issue 回報問題與改善建議。",
     "viewOnGitHub": "在 GitHub 上查看",
-    "submitFeedback": "提交回饋"
+    "submitFeedback": "提交回饋",
+    "updatePolicyTitle": "更新與相容性",
+    "updatePolicyDescription": "更新檢查會使用目前設定的發行來源；若沒有可用版本，應用程式會保持在目前穩定版本。",
+    "copyrightNotice": "© 2026 0png"
   },
   "update": {
     "available": {
