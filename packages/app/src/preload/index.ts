@@ -20,6 +20,8 @@ import type {
   ServerReadyEvent,
   ServerProperties,
   UpdateServerPropertiesRequest,
+  PlayerActionRequest,
+  PlayerDto,
   JavaInstallationDto,
   JavaInstallRequest,
   JavaInstallProgressEvent,
@@ -69,6 +71,12 @@ const electronAPI = {
 
     sendCommand: (id: string, command: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(ServerChannels.SEND_COMMAND, id, command),
+
+    getPlayers: (id: string): Promise<IpcResult<PlayerDto[]>> =>
+      ipcRenderer.invoke(ServerChannels.GET_PLAYERS, id),
+
+    playerAction: (data: PlayerActionRequest): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(ServerChannels.PLAYER_ACTION, data),
 
     getProperties: (id: string): Promise<IpcResult<ServerProperties>> =>
       ipcRenderer.invoke(ServerChannels.GET_PROPERTIES, id),

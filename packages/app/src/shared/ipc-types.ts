@@ -170,6 +170,31 @@ export interface ServerLogEvent {
   entry: LogEntryDto;
 }
 
+export interface PlayerDto {
+  name: string;
+  uuid?: string;
+  online: boolean;
+  isOp: boolean;
+  isBanned: boolean;
+  isWhitelisted: boolean;
+  lastSeenAt?: string;
+}
+
+export type PlayerActionType =
+  | 'op'
+  | 'deop'
+  | 'ban'
+  | 'pardon'
+  | 'kick'
+  | 'whitelist-add'
+  | 'whitelist-remove';
+
+export interface PlayerActionRequest {
+  serverId: string;
+  playerName: string;
+  action: PlayerActionType;
+}
+
 // ============================================================================
 // Java Types
 // ============================================================================

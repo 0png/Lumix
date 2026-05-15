@@ -3,4 +3,5 @@ export { ServerCard } from './ServerCard';
 export { ServerDetail } from './ServerDetail';
 export { ServerSettingsPage } from './ServerSettingsPage';
 export { ServerConsole, type LogEntry, type LogLevel } from './ServerConsole';
+export { PlayerManagement } from './PlayerManagement';
 export { CreateServerDialog, type CreateServerData } from './CreateServerDialog';

@@ -19,6 +19,8 @@ import type {
   ServerLogEvent,
   LogLevel,
   ServerProperties,
+  PlayerActionRequest,
+  PlayerDto,
 } from '../../shared/ipc-types';
 import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 
@@ -53,6 +55,8 @@ export class ServerManager extends EventEmitter {
   private defaultJavaPath: string;
   private stopTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private serverReadyFlags: Set<string> = new Set(); // 追蹤已觸發 ready 事件的服務器
+  private onlinePlayers: Map<string, Set<string>> = new Map();
+  private pendingSilentListResponses: Map<string, number> = new Map();
 
   constructor(config: ServerManagerConfig) {
     super();
@@ -408,6 +412,69 @@ export class ServerManager extends EventEmitter {
     this.emitLogEntry(id, 'info', `> ${command}`);
   }
 
+  async getPlayers(id: string): Promise<PlayerDto[]> {
+    const server = this.servers.get(id);
+    if (!server) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+
+    if (server.status === 'running') {
+      this.sendSilentListCommand(id);
+    }
+
+    const [userCache, ops, bannedPlayers, whitelist] = await Promise.all([
+      this.readPlayerFile<UserCacheEntry>(server.directory, 'usercache.json'),
+      this.readPlayerFile<PlayerListEntry>(server.directory, 'ops.json'),
+      this.readPlayerFile<PlayerListEntry>(server.directory, 'banned-players.json'),
+      this.readPlayerFile<PlayerListEntry>(server.directory, 'whitelist.json'),
+    ]);
+
+    const onlineNames = this.onlinePlayers.get(id) ?? new Set<string>();
+    const playersByName = new Map<string, PlayerDto>();
+    const upsert = (name: string, data: Partial<PlayerDto> = {}): void => {
+      const key = name.toLowerCase();
+      const existing = playersByName.get(key);
+      playersByName.set(key, {
+        name,
+        online: onlineNames.has(key),
+        isOp: false,
+        isBanned: false,
+        isWhitelisted: false,
+        ...existing,
+        ...data,
+      });
+    };
+
+    for (const entry of userCache) {
+      if (entry.name) {
+        upsert(entry.name, {
+          uuid: normalizeUuid(entry.uuid),
+          lastSeenAt: entry.expiresOn,
+        });
+      }
+    }
+    for (const entry of ops) if (entry.name) upsert(entry.name, { uuid: normalizeUuid(entry.uuid), isOp: true });
+    for (const entry of bannedPlayers) if (entry.name) upsert(entry.name, { uuid: normalizeUuid(entry.uuid), isBanned: true });
+    for (const entry of whitelist) if (entry.name) upsert(entry.name, { uuid: normalizeUuid(entry.uuid), isWhitelisted: true });
+    for (const onlineName of onlineNames) {
+      const cached = userCache.find((entry) => entry.name?.toLowerCase() === onlineName);
+      upsert(cached?.name ?? onlineName, { online: true, uuid: normalizeUuid(cached?.uuid) });
+    }
+
+    return Array.from(playersByName.values()).sort((a, b) => {
+      if (a.online !== b.online) return a.online ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async performPlayerAction(request: PlayerActionRequest): Promise<void> {
+    const command = this.buildPlayerActionCommand(request);
+    await this.sendCommand(request.serverId, command);
+  }
+
   // ==========================================================================
   // Initialization
   // ==========================================================================
@@ -511,6 +578,10 @@ export class ServerManager extends EventEmitter {
     const lines = splitLogLines(data);
     for (const line of lines) {
       const level = parseLogLevel(line) || defaultLevel;
+      this.trackPlayersFromLog(serverId, line);
+      if (this.shouldSuppressSilentListResponse(serverId, line)) {
+        continue;
+      }
       this.emitLogEntry(serverId, level, line);
       
       // 檢測服務器成功啟動
@@ -559,6 +630,8 @@ export class ServerManager extends EventEmitter {
 
     // 清除 ready 標誌，下次啟動時可以再次觸發
     this.serverReadyFlags.delete(serverId);
+    this.onlinePlayers.delete(serverId);
+    this.pendingSilentListResponses.delete(serverId);
 
     const event: ServerStatusEvent = {
       serverId,
@@ -697,4 +770,119 @@ export class ServerManager extends EventEmitter {
     };
     await this.fileManager.writeServerJson(server.directory, metadata);
   }
+
+  private async readPlayerFile<T extends { name?: string; uuid?: string }>(
+    directory: string,
+    fileName: string
+  ): Promise<T[]> {
+    try {
+      const content = await fs.readFile(path.join(directory, fileName), 'utf-8');
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private sendSilentListCommand(serverId: string): void {
+    const sent = this.processManager.writeStdin(serverId, 'list');
+    if (!sent) return;
+
+    const pending = this.pendingSilentListResponses.get(serverId) ?? 0;
+    this.pendingSilentListResponses.set(serverId, pending + 1);
+  }
+
+  private shouldSuppressSilentListResponse(serverId: string, line: string): boolean {
+    const pending = this.pendingSilentListResponses.get(serverId) ?? 0;
+    if (pending <= 0 || !this.isPlayerListResponse(line)) {
+      return false;
+    }
+
+    if (pending === 1) {
+      this.pendingSilentListResponses.delete(serverId);
+    } else {
+      this.pendingSilentListResponses.set(serverId, pending - 1);
+    }
+    return true;
+  }
+
+  private buildPlayerActionCommand(request: PlayerActionRequest): string {
+    if (!/^[A-Za-z0-9_]{1,16}$/.test(request.playerName)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        '玩家名稱格式無效'
+      )));
+    }
+
+    const commands: Record<PlayerActionRequest['action'], string> = {
+      op: `op ${request.playerName}`,
+      deop: `deop ${request.playerName}`,
+      ban: `ban ${request.playerName}`,
+      pardon: `pardon ${request.playerName}`,
+      kick: `kick ${request.playerName}`,
+      'whitelist-add': `whitelist add ${request.playerName}`,
+      'whitelist-remove': `whitelist remove ${request.playerName}`,
+    };
+    return commands[request.action];
+  }
+
+  private trackPlayersFromLog(serverId: string, line: string): void {
+    const joined = line.match(/:\s*([A-Za-z0-9_]{1,16}) joined the game\b/);
+    if (joined?.[1]) {
+      this.setPlayerOnline(serverId, joined[1], true);
+      return;
+    }
+
+    const left = line.match(/:\s*([A-Za-z0-9_]{1,16}) left the game\b/);
+    if (left?.[1]) {
+      this.setPlayerOnline(serverId, left[1], false);
+      return;
+    }
+
+    const list = this.matchPlayerListResponse(line);
+    if (list?.[1] !== undefined) {
+      const names = list[1]
+        .split(',')
+        .map((name) => name.trim())
+        .filter((name) => /^[A-Za-z0-9_]{1,16}$/.test(name));
+      this.onlinePlayers.set(serverId, new Set(names.map((name) => name.toLowerCase())));
+    }
+  }
+
+  private isPlayerListResponse(line: string): boolean {
+    return this.matchPlayerListResponse(line) !== null;
+  }
+
+  private matchPlayerListResponse(line: string): RegExpMatchArray | null {
+    return line.match(/There are \d+ of a max of \d+ players online:\s*(.*)$/i);
+  }
+
+  private setPlayerOnline(serverId: string, playerName: string, online: boolean): void {
+    const players = this.onlinePlayers.get(serverId) ?? new Set<string>();
+    const key = playerName.toLowerCase();
+    if (online) {
+      players.add(key);
+    } else {
+      players.delete(key);
+    }
+    this.onlinePlayers.set(serverId, players);
+  }
+}
+
+interface UserCacheEntry {
+  name?: string;
+  uuid?: string;
+  expiresOn?: string;
+}
+
+interface PlayerListEntry {
+  name?: string;
+  uuid?: string;
+}
+
+function normalizeUuid(uuid?: string): string | undefined {
+  if (!uuid) return undefined;
+  const compact = uuid.replace(/-/g, '');
+  if (!/^[0-9a-fA-F]{32}$/.test(compact)) return uuid;
+  return compact.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5').toLowerCase();
 }

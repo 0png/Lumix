@@ -10,6 +10,7 @@ import {
   ServerDetail,
   ServerSettingsPage,
   ServerConsole,
+  PlayerManagement,
   CreateServerDialog,
   type ServerInstance,
   type LogEntry,
@@ -279,13 +280,21 @@ function AppContent() {
                   />
                 )}
                 {selectedServer.status === 'running' && (
-                  <ServerConsole
-                    logs={currentLogs}
-                    onClear={() => clearLogs(selectedServer.id)}
-                    onSendCommand={(cmd) => sendCommand(selectedServer.id, cmd)}
-                    isFullscreen={isConsoleFullscreen}
-                    onToggleFullscreen={() => setIsConsoleFullscreen((prev) => !prev)}
-                  />
+                  <>
+                    {!isConsoleFullscreen && (
+                      <PlayerManagement
+                        serverId={selectedServer.id}
+                        status={selectedServer.status}
+                      />
+                    )}
+                    <ServerConsole
+                      logs={currentLogs}
+                      onClear={() => clearLogs(selectedServer.id)}
+                      onSendCommand={(cmd) => sendCommand(selectedServer.id, cmd)}
+                      isFullscreen={isConsoleFullscreen}
+                      onToggleFullscreen={() => setIsConsoleFullscreen((prev) => !prev)}
+                    />
+                  </>
                 )}
               </div>
             ) : (

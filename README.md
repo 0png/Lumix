@@ -9,6 +9,7 @@
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
   <a href="#development">Development</a> •
+  <a href="#acknowledgements">Acknowledgements</a> •
   <a href="#中文說明">中文說明</a>
 </p>
 
@@ -92,6 +93,10 @@ pnpm --filter @lumix/app build
 - React + TypeScript
 - Tailwind CSS + shadcn/ui
 
+## Acknowledgements
+
+Thanks to [Crafthead](https://crafthead.net/) for providing Minecraft avatar rendering used in player management.
+
 ---
 
 # 中文說明
@@ -150,6 +155,10 @@ pnpm --filter @lumix/app build
 | Paper | 高效能分支 |
 | Fabric | 輕量模組載入器 |
 | Forge | 熱門模組平台 |
+
+## 致謝
+
+感謝 [Crafthead](https://crafthead.net/) 提供 Minecraft 玩家頭像渲染服務，讓玩家管理功能可以顯示玩家頭像。
 
 ---
 

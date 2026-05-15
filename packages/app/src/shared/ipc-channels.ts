@@ -17,6 +17,8 @@ export const ServerChannels = {
   START: 'server:start',
   STOP: 'server:stop',
   SEND_COMMAND: 'server:send-command',
+  GET_PLAYERS: 'server:get-players',
+  PLAYER_ACTION: 'server:player-action',
   
   // Server properties
   GET_PROPERTIES: 'server:get-properties',
@@ -43,6 +45,8 @@ export function getAllServerChannels(): string[] {
     ServerChannels.START,
     ServerChannels.STOP,
     ServerChannels.SEND_COMMAND,
+    ServerChannels.GET_PLAYERS,
+    ServerChannels.PLAYER_ACTION,
     ServerChannels.GET_PROPERTIES,
     ServerChannels.GET_PROPERTIES_RAW,
     ServerChannels.UPDATE_PROPERTIES,

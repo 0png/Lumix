@@ -16,6 +16,8 @@ import type {
   ServerReadyEvent,
   ServerProperties,
   UpdateServerPropertiesRequest,
+  PlayerActionRequest,
+  PlayerDto,
 } from '../../shared/ipc-types';
 
 // ============================================================================
@@ -159,6 +161,32 @@ function registerHandlers(): void {
     async (_, id: string, command: string): Promise<IpcResult<void>> => {
       try {
         await serverManager!.sendCommand(id, command);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // GET_PLAYERS - 取得玩家清單與管理狀態
+  ipcMain.handle(
+    ServerChannels.GET_PLAYERS,
+    async (_, id: string): Promise<IpcResult<PlayerDto[]>> => {
+      try {
+        const players = await serverManager!.getPlayers(id);
+        return { success: true, data: players };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  // PLAYER_ACTION - 對玩家執行管理指令
+  ipcMain.handle(
+    ServerChannels.PLAYER_ACTION,
+    async (_, data: PlayerActionRequest): Promise<IpcResult<void>> => {
+      try {
+        await serverManager!.performPlayerAction(data);
         return { success: true };
       } catch (error) {
         return { success: false, error: formatError(error) };

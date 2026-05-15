@@ -94,6 +94,20 @@ export function ServerDetail({
   const isReady = server.isReady !== false;
   const readinessLabel = isReady ? t('server.ready') : t('server.downloading');
   const readinessDescription = isReady ? t('server.readyDescription') : t('server.downloadingDescription');
+  const settingsSections = [
+    {
+      label: t('serverProperties.sections.gameplay'),
+      fields: ['gamemode', 'difficulty', 'max-players', 'online-mode'],
+    },
+    {
+      label: t('serverProperties.sections.world'),
+      fields: ['level-name', 'level-seed', 'allow-nether', 'spawn-protection'],
+    },
+    {
+      label: t('serverProperties.sections.advanced'),
+      fields: ['view-distance', 'simulation-distance', 'enable-command-block', 'max-tick-time'],
+    },
+  ];
 
   const handleSave = () => {
     onUpdate?.({ name: editName, ramMax: editRamMax });
@@ -206,7 +220,7 @@ export function ServerDetail({
 
       <Separator />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)] gap-3 lg:gap-4">
+      <div className="grid grid-cols-1 items-stretch gap-3 lg:gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
         <Card className="glass overflow-hidden">
           <CardContent className="p-0">
             <div className="bg-gradient-subtle p-4 lg:p-5">
@@ -275,24 +289,38 @@ export function ServerDetail({
           </CardContent>
         </Card>
 
-        <div className="space-y-3 lg:space-y-4">
-          <Card className="glass">
+        <div className="h-full">
+          <Card className="glass flex h-full flex-col">
             <CardHeader className="p-4 pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 {t('server.settingsTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 p-4 pt-1">
-              <p className="text-xs leading-5 text-muted-foreground">
-                {t('server.settingsPreviewDescription')}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {['gamemode', 'difficulty', 'max-players', 'online-mode', 'server-port', 'view-distance'].map((key) => (
-                  <Badge key={key} variant="outline" className="text-[10px]">
-                    {key}
-                  </Badge>
-                ))}
+            <CardContent className="flex flex-1 flex-col justify-between gap-4 p-4 pt-1">
+              <div className="space-y-3">
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {t('server.settingsPreviewDescription')}
+                </p>
+                <div className="grid gap-2">
+                  {settingsSections.map((section) => (
+                    <div key={section.label} className="rounded-lg border border-border/60 bg-card/45 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium">{section.label}</p>
+                        <span className="text-[10px] tabular-nums text-muted-foreground">
+                          {section.fields.length}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {section.fields.map((key) => (
+                          <Badge key={key} variant="outline" className="text-[10px]">
+                            {key}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
               <Button
                 variant="secondary"
@@ -303,26 +331,6 @@ export function ServerDetail({
                 <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
                 {t('server.openServerSettings')}
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="glass">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm">{t('server.quickFacts')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 p-4 pt-1">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">{t('server.jarState')}</span>
-                <Badge variant={isReady ? 'success' : 'warning'}>{readinessLabel}</Badge>
-              </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">{t('server.console')}</span>
-                <span className="font-medium">{isRunning ? t('server.consoleLive') : t('server.consoleStandby')}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">{t('server.config')}</span>
-                <span className="font-medium">{isRunning ? t('server.locked') : t('server.editable')}</span>
-              </div>
             </CardContent>
           </Card>
         </div>
