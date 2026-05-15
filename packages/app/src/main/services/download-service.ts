@@ -23,17 +23,13 @@ interface VersionManifest {
 }
 
 interface PaperProjectResponse {
-  versions: string[];
+  versions: Record<string, string[]>;
 }
 
 interface PaperBuild {
-  build: number;
+  id: number;
   channel: string;
-  downloads: { application: { name: string; sha256: string } };
-}
-
-interface PaperBuildsResponse {
-  builds: PaperBuild[];
+  downloads: Record<string, { name: string; url: string; size?: number }>;
 }
 
 interface FabricGameVersion {
@@ -57,7 +53,7 @@ interface FabricInstallerVersion {
 
 const API_ENDPOINTS = {
   VANILLA_MANIFEST: 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json',
-  PAPER_PROJECT: 'https://api.papermc.io/v2/projects/paper',
+  PAPER_PROJECT: 'https://fill.papermc.io/v3/projects/paper',
   FABRIC_GAME: 'https://meta.fabricmc.net/v2/versions/game',
   FABRIC_LOADER: 'https://meta.fabricmc.net/v2/versions/loader',
   FABRIC_INSTALLER: 'https://meta.fabricmc.net/v2/versions/installer',
@@ -107,7 +103,9 @@ export class DownloadService extends EventEmitter {
 
   private async fetchPaperVersions(): Promise<string[]> {
     const data = await fetchJson<PaperProjectResponse>(API_ENDPOINTS.PAPER_PROJECT);
-    return data.versions.reverse();
+    return Object.values(data.versions)
+      .flat()
+      .sort((a, b) => this.compareVersions(b, a));
   }
 
   private async fetchFabricVersions(): Promise<string[]> {
@@ -225,19 +223,25 @@ export class DownloadService extends EventEmitter {
     serverId?: string
   ): Promise<void> {
     const buildsUrl = `${API_ENDPOINTS.PAPER_PROJECT}/versions/${mcVersion}/builds`;
-    const buildsData = await fetchJson<PaperBuildsResponse>(buildsUrl);
+    const buildsData = await fetchJson<PaperBuild[]>(buildsUrl);
 
-    if (!buildsData.builds || buildsData.builds.length === 0) {
+    if (!buildsData || buildsData.length === 0) {
       throw new Error(formatIpcError(createIpcError(
         IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
         `Paper ${mcVersion} 沒有可用的 build`
       )));
     }
 
-    const latestBuild = buildsData.builds[buildsData.builds.length - 1]!;
-    const downloadUrl = `${API_ENDPOINTS.PAPER_PROJECT}/versions/${mcVersion}/builds/${latestBuild.build}/downloads/paper-${mcVersion}-${latestBuild.build}.jar`;
+    const latestBuild = buildsData.find((build) => build.channel === 'STABLE') || buildsData[0]!;
+    const download = latestBuild.downloads['server:default'];
+    if (!download) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `Paper ${mcVersion} build ${latestBuild.id} 沒有可下載的 server JAR`
+      )));
+    }
 
-    await this.downloadWithProgress(downloadUrl, jarPath, 0, serverId);
+    await this.downloadWithProgress(download.url, jarPath, download.size || 0, serverId);
   }
 
   private async downloadFabricServer(
