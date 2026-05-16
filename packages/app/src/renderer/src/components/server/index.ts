@@ -5,4 +5,5 @@ export { ServerSettingsPage } from './ServerSettingsPage';
 export { ServerConsole, type LogEntry, type LogLevel } from './ServerConsole';
 export { PlayerManagement } from './PlayerManagement';
 export { CreateServerDialog, type CreateServerData } from './CreateServerDialog';
+export { ImportServerDialog } from './ImportServerDialog';
 export { DownloadProgressToast } from './DownloadProgressToast';

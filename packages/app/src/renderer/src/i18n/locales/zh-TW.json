@@ -11,7 +11,9 @@
     "edit": "編輯",
     "settings": "設定",
     "search": "搜尋",
-    "back": "返回"
+    "back": "返回",
+    "yes": "是",
+    "no": "否"
   },
   "header": {
     "title": "伺服器儀表板"
@@ -339,9 +341,46 @@
       "javaCompatibilityWarning": "目前系統中沒有可直接使用的 Java {{version}}+，建立前建議先安裝。"
     }
   },
+  "serverImport": {
+    "title": "匯入既有伺服器",
+    "importServer": "匯入伺服器",
+    "selectDescription": "選擇一個既有 Minecraft 伺服器資料夾，Lumix 會先掃描內容並讓你確認匯入資訊。",
+    "reviewDescription": "確認偵測結果，並補齊 Lumix 無法可靠推斷的欄位。",
+    "directory": "伺服器資料夾",
+    "directoryPlaceholder": "選擇或貼上伺服器資料夾路徑",
+    "browse": "瀏覽",
+    "scan": "掃描資料夾",
+    "confirmImport": "確認匯入",
+    "importSuccess": "伺服器已匯入到 Lumix",
+    "removeSuccess": "已從 Lumix 移除此匯入伺服器",
+    "deleteWarning": "此操作只會從 Lumix 移除伺服器註冊，不會刪除原始資料夾。",
+    "review": {
+      "directory": "資料夾",
+      "eula": "已接受 EULA",
+      "properties": "含 server.properties",
+      "worldData": "含世界資料",
+      "playerData": "含玩家資料",
+      "launchJar": "啟動 jar",
+      "selectJar": "選擇啟動 jar",
+      "selectCoreType": "選擇核心類型",
+      "detectedInfo": "偵測資訊",
+      "warnings": "警告與提醒",
+      "noWarnings": "目前沒有額外警告，可以直接確認匯入。",
+      "plugins": "Plugins",
+      "mods": "Mods",
+      "libraries": "Libraries"
+    },
+    "errors": {
+      "selectDirectory": "無法開啟資料夾選擇器",
+      "directoryRequired": "請先選擇要匯入的資料夾",
+      "scanFailed": "掃描伺服器資料夾失敗",
+      "duplicateName": "伺服器名稱已存在，請使用其他名稱"
+    }
+  },
   "coreType": {
     "vanilla": "原版",
     "paper": "Paper",
+    "spigot": "Spigot",
     "fabric": "Fabric",
     "forge": "Forge"
   },

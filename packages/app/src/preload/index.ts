@@ -15,6 +15,9 @@ import type {
   IpcResult,
   ServerInstanceDto,
   CreateServerRequest,
+  DetectImportCandidateRequest,
+  ImportCandidateDto,
+  ImportServerRequest,
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
@@ -62,6 +65,12 @@ const electronAPI = {
 
     create: (data: CreateServerRequest): Promise<IpcResult<ServerInstanceDto>> =>
       ipcRenderer.invoke(ServerChannels.CREATE, data),
+
+    detectImportCandidate: (data: DetectImportCandidateRequest): Promise<IpcResult<ImportCandidateDto>> =>
+      ipcRenderer.invoke(ServerChannels.DETECT_IMPORT_CANDIDATE, data),
+
+    importExisting: (data: ImportServerRequest): Promise<IpcResult<ServerInstanceDto>> =>
+      ipcRenderer.invoke(ServerChannels.IMPORT_EXISTING, data),
 
     update: (data: UpdateServerRequest): Promise<IpcResult<ServerInstanceDto>> =>
       ipcRenderer.invoke(ServerChannels.UPDATE, data),
@@ -193,6 +202,9 @@ const electronAPI = {
 
     getSystemInfo: (): Promise<IpcResult<SystemInfo>> =>
       ipcRenderer.invoke(AppChannels.GET_SYSTEM_INFO),
+
+    selectDirectory: (): Promise<IpcResult<string | null>> =>
+      ipcRenderer.invoke(AppChannels.SELECT_DIRECTORY),
 
     openFolder: (path: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_FOLDER, path),

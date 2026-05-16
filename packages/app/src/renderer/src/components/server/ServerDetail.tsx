@@ -94,6 +94,7 @@ export function ServerDetail({
   const isReady = server.isReady !== false;
   const readinessLabel = isReady ? t('server.ready') : t('server.downloading');
   const readinessDescription = isReady ? t('server.readyDescription') : t('server.downloadingDescription');
+  const isImported = server.origin === 'imported';
   const settingsSections = [
     {
       label: t('serverProperties.sections.gameplay'),
@@ -387,7 +388,11 @@ export function ServerDetail({
               <div className="text-xs lg:text-sm space-y-2 text-muted-foreground">
                 <p>{t('server.deleteConfirm', '確定要刪除此伺服器嗎？')}</p>
                 <p className="font-medium text-foreground">{t('server.name')}: {server.name}</p>
-                <p className="text-destructive">{t('server.deleteWarning', '此操作無法復原，所有伺服器資料將被永久刪除。')}</p>
+                <p className="text-destructive">
+                  {isImported
+                    ? t('serverImport.deleteWarning')
+                    : t('server.deleteWarning', '此操作無法復原，所有伺服器資料將被永久刪除。')}
+                </p>
               </div>
             </DialogDescription>
           </DialogHeader>

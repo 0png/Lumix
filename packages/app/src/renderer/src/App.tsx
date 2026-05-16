@@ -12,6 +12,7 @@ import {
   ServerConsole,
   PlayerManagement,
   CreateServerDialog,
+  ImportServerDialog,
   DownloadProgressToast,
   type ServerInstance,
   type LogEntry,
@@ -37,6 +38,7 @@ function isFullscreenLike(): boolean {
 function toServerInstance(dto: {
   id: string;
   name: string;
+  origin: 'managed' | 'imported';
   coreType: string;
   mcVersion: string;
   status: string;
@@ -47,6 +49,7 @@ function toServerInstance(dto: {
   return {
     id: dto.id,
     name: dto.name,
+    origin: dto.origin,
     coreType: dto.coreType as ServerInstance['coreType'],
     mcVersion: dto.mcVersion,
     status: dto.status as ServerInstance['status'],
@@ -65,6 +68,8 @@ function AppContent() {
     logs: serverLogs,
     downloadProgress,
     createServer,
+    detectImportCandidate,
+    importExistingServer,
     updateServer,
     deleteServer,
     startServer,
@@ -79,6 +84,7 @@ function AppContent() {
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
   const [isConsoleFullscreen, setIsConsoleFullscreen] = useState(false);
@@ -145,6 +151,27 @@ function AppContent() {
     }
   }, [createServer, t]);
 
+  const handleImportServer = useCallback(async (data: {
+    directory: string;
+    name: string;
+    coreType: ServerInstance['coreType'];
+    mcVersion: string;
+    launchJarPath: string;
+    eulaAccepted?: boolean;
+  }) => {
+    const { server, error } = await importExistingServer(data);
+    if (error) {
+      return error;
+    }
+
+    if (server) {
+      setSelectedServerId(server.id);
+      setCurrentView('servers');
+      toast.success(t('serverImport.importSuccess'));
+    }
+    return null;
+  }, [importExistingServer, t]);
+
   const handleStartServer = useCallback(async (id: string) => {
     // 檢查伺服器是否有 Java 路徑，如果沒有則嘗試自動設定
     const serverDto = serverDtos.find(s => s.id === id);
@@ -184,14 +211,15 @@ function AppContent() {
   }, [stopServer, t]);
 
   const handleDeleteServer = useCallback(async (id: string) => {
+    const target = serverDtos.find((server) => server.id === id);
     const success = await deleteServer(id);
     if (success) {
       setSelectedServerId(undefined);
-      toast.success(t('toast.serverDeleted'));
+      toast.success(target?.origin === 'imported' ? t('serverImport.removeSuccess') : t('toast.serverDeleted'));
     } else {
       toast.error(t('toast.deleteFailed'));
     }
-  }, [deleteServer, t]);
+  }, [deleteServer, serverDtos, t]);
 
   const handleUpdateServer = useCallback(async (updates: Partial<ServerInstance>) => {
     if (!selectedServerId) return;
@@ -258,6 +286,10 @@ function AppContent() {
     setActiveCreateServerPresentation(useCreateServerModal ? 'modal' : 'overlay');
     setShowCreateDialog(true);
   }, [useCreateServerModal]);
+
+  const handleOpenImportServer = useCallback(() => {
+    setShowImportDialog(true);
+  }, []);
 
   const renderContent = () => {
     if (loading) {
@@ -337,6 +369,7 @@ function AppContent() {
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
                 onCreateServer={handleOpenCreateServer}
+                onImportServer={handleOpenImportServer}
                 onOpenSettings={() => setCurrentView('settings')}
                 javaInstallationsCount={javaInstallations.length}
                 downloadProgress={new Map(
@@ -394,6 +427,14 @@ function AppContent() {
           presentation="modal"
         />
       ) : null}
+
+      <ImportServerDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        existingNames={servers.map((s) => s.name)}
+        onDetect={async (directory) => detectImportCandidate({ directory })}
+        onImport={handleImportServer}
+      />
 
       <Toaster position="bottom-right" theme={theme} />
       <DownloadProgressToast servers={servers} downloadProgress={downloadProgress} />

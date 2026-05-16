@@ -14,6 +14,7 @@ interface ServerCoreIconProps {
 const CORE_ICON_SOURCES: Record<CoreType, string> = {
   vanilla: minecraftIcon,
   paper: paperIcon,
+  spigot: paperIcon,
   fabric: fabricIcon,
   forge: forgeIcon,
 };

@@ -5,7 +5,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { BackupSettings, CoreType, ServerProperties } from '../../shared/ipc-types';
+import type { BackupSettings, CoreType, ServerOrigin, ServerProperties } from '../../shared/ipc-types';
 
 // ============================================================================
 // Types
@@ -14,19 +14,23 @@ import type { BackupSettings, CoreType, ServerProperties } from '../../shared/ip
 export interface ServerMetadata {
   id: string;
   name: string;
+  origin?: ServerOrigin;
   coreType: CoreType;
   mcVersion: string;
   ramMin: number;
   ramMax: number;
   jvmArgs: string[];
   javaPath?: string;
+  launchJarPath?: string;
   createdAt: string;
   lastStartedAt?: string;
+  eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
 }
 
 export interface RunBatConfig {
   javaPath: string;
+  jarPath?: string;
   ramMin: number;
   ramMax: number;
   jvmArgs: string[];
@@ -97,8 +101,9 @@ export class FileManager {
   async writeRunBat(serverPath: string, config: RunBatConfig): Promise<void> {
     const batPath = path.join(serverPath, 'run.bat');
     const jvmArgsStr = config.jvmArgs.length > 0 ? config.jvmArgs.join(' ') + ' ' : '';
+    const jarPath = config.jarPath || 'server.jar';
     const content = `@echo off
-"${config.javaPath}" -Xms${config.ramMin}M -Xmx${config.ramMax}M ${jvmArgsStr}-jar server.jar nogui
+"${config.javaPath}" -Xms${config.ramMin}M -Xmx${config.ramMax}M ${jvmArgsStr}-jar "${jarPath}" nogui
 pause
 `;
     await fs.writeFile(batPath, content, 'utf-8');
@@ -138,7 +143,10 @@ pause
       throw new Error(`Invalid server.json: missing or invalid 'mcVersion'`);
     }
     
-    return data as ServerMetadata;
+    return {
+      ...data,
+      origin: data.origin === 'imported' ? 'imported' : 'managed',
+    } as ServerMetadata;
   }
 
   /**

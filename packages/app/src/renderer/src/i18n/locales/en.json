@@ -11,7 +11,9 @@
     "edit": "Edit",
     "settings": "Settings",
     "search": "Search",
-    "back": "Back"
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No"
   },
   "header": {
     "title": "Server Dashboard"
@@ -339,9 +341,46 @@
       "javaCompatibilityWarning": "No directly usable Java {{version}}+ is currently available. Installing it first is recommended."
     }
   },
+  "serverImport": {
+    "title": "Import Existing Server",
+    "importServer": "Import Server",
+    "selectDescription": "Choose an existing Minecraft server folder. Lumix will scan it first and let you review the detected details.",
+    "reviewDescription": "Confirm the detected values and fill in anything Lumix could not determine reliably.",
+    "directory": "Server folder",
+    "directoryPlaceholder": "Choose or paste the server folder path",
+    "browse": "Browse",
+    "scan": "Scan Folder",
+    "confirmImport": "Confirm Import",
+    "importSuccess": "Server imported into Lumix",
+    "removeSuccess": "Imported server removed from Lumix",
+    "deleteWarning": "This only removes the server from Lumix. The original folder will not be deleted.",
+    "review": {
+      "directory": "Directory",
+      "eula": "EULA accepted",
+      "properties": "Has server.properties",
+      "worldData": "Has world data",
+      "playerData": "Has player data",
+      "launchJar": "Launch jar",
+      "selectJar": "Select a launch jar",
+      "selectCoreType": "Select a core type",
+      "detectedInfo": "Detected details",
+      "warnings": "Warnings",
+      "noWarnings": "No additional warnings. You can proceed with the import.",
+      "plugins": "Plugins",
+      "mods": "Mods",
+      "libraries": "Libraries"
+    },
+    "errors": {
+      "selectDirectory": "Unable to open the folder picker",
+      "directoryRequired": "Choose a folder to import first",
+      "scanFailed": "Failed to scan the server folder",
+      "duplicateName": "A server with this name already exists"
+    }
+  },
   "coreType": {
     "vanilla": "Vanilla",
     "paper": "Paper",
+    "spigot": "Spigot",
     "fabric": "Fabric",
     "forge": "Forge"
   },

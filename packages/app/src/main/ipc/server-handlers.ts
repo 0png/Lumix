@@ -10,6 +10,9 @@ import type {
   IpcResult,
   ServerInstanceDto,
   CreateServerRequest,
+  DetectImportCandidateRequest,
+  ImportCandidateDto,
+  ImportServerRequest,
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
@@ -100,6 +103,41 @@ function registerHandlers(): void {
         }
         
         const server = await serverManager!.createServer(effectiveData);
+        return { success: true, data: server };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    ServerChannels.DETECT_IMPORT_CANDIDATE,
+    async (_, data: DetectImportCandidateRequest): Promise<IpcResult<ImportCandidateDto>> => {
+      try {
+        const candidate = await serverManager!.detectImportCandidate(data);
+        return { success: true, data: candidate };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    ServerChannels.IMPORT_EXISTING,
+    async (_, data: ImportServerRequest): Promise<IpcResult<ServerInstanceDto>> => {
+      try {
+        let effectiveData = data;
+        if (!data.javaPath) {
+          const { JavaDetector } = await import('../services/java-detector');
+          const javaDetector = new JavaDetector();
+          const installations = await javaDetector.detectAll();
+          const selectedJava = await javaDetector.selectForMinecraft(installations, data.mcVersion);
+          if (selectedJava) {
+            effectiveData = { ...data, javaPath: selectedJava.path };
+          }
+        }
+
+        const server = await serverManager!.importExistingServer(effectiveData);
         return { success: true, data: server };
       } catch (error) {
         return { success: false, error: formatError(error) };

@@ -6,6 +6,7 @@
 // ============================================================================
 
 export type CoreType = 'vanilla' | 'paper' | 'spigot' | 'fabric' | 'forge';
+export type ServerOrigin = 'managed' | 'imported';
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type LogLevel = 'info' | 'warn' | 'error';
 export type Theme = 'light' | 'dark' | 'system';
@@ -121,6 +122,7 @@ export interface IpcResult<T = void> {
 export interface ServerInstanceDto {
   id: string;
   name: string;
+  origin: ServerOrigin;
   coreType: CoreType;
   mcVersion: string;
   javaPath: string;
@@ -128,10 +130,12 @@ export interface ServerInstanceDto {
   ramMax: number;
   jvmArgs: string[];
   directory: string;
+  launchJarPath?: string;
   status: ServerStatus;
   createdAt: string;
   lastStartedAt?: string;
   isReady?: boolean; // server.jar 是否已下載完成
+  eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
 }
 
@@ -152,7 +156,46 @@ export interface UpdateServerRequest {
   ramMin?: number;
   ramMax?: number;
   jvmArgs?: string[];
+  launchJarPath?: string;
+  eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+}
+
+export interface DetectImportCandidateRequest {
+  directory: string;
+}
+
+export interface ImportCandidateDto {
+  directory: string;
+  suggestedName: string;
+  detectedCoreType?: CoreType;
+  detectedMcVersion?: string;
+  serverJarPath?: string;
+  jarCandidates: string[];
+  hasEula: boolean;
+  eulaAccepted: boolean;
+  hasServerProperties: boolean;
+  hasWorldData: boolean;
+  hasModsFolder: boolean;
+  hasPluginsFolder: boolean;
+  hasLibrariesFolder: boolean;
+  hasUserCache: boolean;
+  hasOpsFile: boolean;
+  hasWhitelistFile: boolean;
+  warnings: string[];
+}
+
+export interface ImportServerRequest {
+  directory: string;
+  name: string;
+  coreType: CoreType;
+  mcVersion: string;
+  launchJarPath: string;
+  javaPath?: string;
+  ramMin?: number;
+  ramMax?: number;
+  jvmArgs?: string[];
+  eulaAccepted?: boolean;
 }
 
 export interface ServerStatusEvent {

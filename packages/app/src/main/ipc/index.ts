@@ -12,6 +12,8 @@ import { initAppHandlers } from './app-handlers';
 import { registerUpdateHandlers, removeUpdateHandlers } from './update-handlers';
 import { ServerManager } from '../services/server-manager';
 import { FileManager } from '../services/file-manager';
+import { ImportRegistry } from '../services/import-registry';
+import { ImportScanner } from '../services/import-scanner';
 import { ProcessManager } from '../services/process-manager';
 
 // ============================================================================
@@ -28,10 +30,14 @@ export async function initAllIpcHandlers(): Promise<void> {
   // 初始化核心服務
   const dataPath = app.getPath('userData');
   const fileManager = new FileManager(dataPath);
+  const importRegistry = new ImportRegistry(dataPath);
+  const importScanner = new ImportScanner();
   const processManager = new ProcessManager();
 
   serverManager = new ServerManager({
     fileManager,
+    importRegistry,
+    importScanner,
     processManager,
     defaultJavaPath: 'java',
   });

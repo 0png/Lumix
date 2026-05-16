@@ -5,6 +5,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type {
   ServerInstanceDto,
   CreateServerRequest,
+  DetectImportCandidateRequest,
+  ImportCandidateDto,
+  ImportServerRequest,
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
@@ -29,6 +32,8 @@ interface UseServersReturn {
   downloadProgress: Map<string, DownloadProgress>;
   refresh: () => Promise<void>;
   createServer: (data: CreateServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
+  detectImportCandidate: (data: DetectImportCandidateRequest) => Promise<ImportCandidateDto | null>;
+  importExistingServer: (data: ImportServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
   updateServer: (data: UpdateServerRequest) => Promise<ServerInstanceDto | null>;
   deleteServer: (id: string) => Promise<boolean>;
   startServer: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -215,6 +220,39 @@ export function useServers(): UseServersReturn {
     });
   }, []);
 
+  const detectImportCandidate = useCallback(async (data: DetectImportCandidateRequest): Promise<ImportCandidateDto | null> => {
+    try {
+      const result = await window.electronAPI.server.detectImportCandidate(data);
+      if (result.success && result.data) {
+        return result.data;
+      }
+      setError(result.error || 'Failed to detect import candidate');
+      return null;
+    } catch (err) {
+      setError(String(err));
+      return null;
+    }
+  }, []);
+
+  const importExistingServer = useCallback(async (data: ImportServerRequest): Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }> => {
+    try {
+      const result = await window.electronAPI.server.importExisting(data);
+      if (!result.success || !result.data) {
+        const errorStr = result.error || 'Failed to import server';
+        const parsedError = parseIpcError(errorStr);
+        setError(errorStr);
+        return { server: null, error: { code: parsedError.code, message: parsedError.message } };
+      }
+
+      setServers((prev) => [...prev, { ...result.data!, isReady: true }]);
+      return { server: result.data, error: null };
+    } catch (err) {
+      const errorStr = String(err);
+      setError(errorStr);
+      return { server: null, error: { code: IpcErrorCode.UNKNOWN_ERROR, message: errorStr } };
+    }
+  }, []);
+
   // 訂閱狀態變更事件
   useEffect(() => {
     const unsubscribe = window.electronAPI.server.onStatusChanged((event: ServerStatusEvent) => {
@@ -284,6 +322,8 @@ export function useServers(): UseServersReturn {
     downloadProgress,
     refresh,
     createServer,
+    detectImportCandidate,
+    importExistingServer,
     updateServer,
     deleteServer,
     startServer,

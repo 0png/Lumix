@@ -9,6 +9,8 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import { FileManager, ServerMetadata } from './file-manager';
+import { ImportRegistry, type ImportedServerRecord } from './import-registry';
+import { ImportScanner } from './import-scanner';
 import { ProcessManager, ProcessConfig } from './process-manager';
 import { parseLogLevel, splitLogLines } from './log-parser';
 import {
@@ -22,6 +24,9 @@ import type {
   ServerInstanceDto,
   ServerStatus,
   CreateServerRequest,
+  DetectImportCandidateRequest,
+  ImportCandidateDto,
+  ImportServerRequest,
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
@@ -57,6 +62,8 @@ export interface ServerManagerEvents {
 
 export interface ServerManagerConfig {
   fileManager: FileManager;
+  importRegistry: ImportRegistry;
+  importScanner: ImportScanner;
   processManager: ProcessManager;
   defaultJavaPath?: string;
 }
@@ -67,6 +74,8 @@ export interface ServerManagerConfig {
 
 export class ServerManager extends EventEmitter {
   private fileManager: FileManager;
+  private importRegistry: ImportRegistry;
+  private importScanner: ImportScanner;
   private processManager: ProcessManager;
   private servers: Map<string, ServerInstanceDto> = new Map();
   private defaultJavaPath: string;
@@ -79,6 +88,8 @@ export class ServerManager extends EventEmitter {
   constructor(config: ServerManagerConfig) {
     super();
     this.fileManager = config.fileManager;
+    this.importRegistry = config.importRegistry;
+    this.importScanner = config.importScanner;
     this.processManager = config.processManager;
     this.defaultJavaPath = config.defaultJavaPath || 'java';
     this.setupProcessManagerListeners();
@@ -94,6 +105,81 @@ export class ServerManager extends EventEmitter {
 
   async getServerById(id: string): Promise<ServerInstanceDto | null> {
     return this.servers.get(id) ?? null;
+  }
+
+  async detectImportCandidate(request: DetectImportCandidateRequest): Promise<ImportCandidateDto> {
+    const candidate = await this.importScanner.scan(request.directory);
+    const existingByDirectory = this.findServerByDirectory(candidate.directory);
+    if (existingByDirectory) {
+      candidate.warnings.unshift('此資料夾已經匯入到 Lumix。');
+    }
+    return candidate;
+  }
+
+  async importExistingServer(request: ImportServerRequest): Promise<ServerInstanceDto> {
+    const candidate = await this.importScanner.scan(request.directory);
+    const trimmedName = request.name.trim();
+    const resolvedDirectory = path.resolve(request.directory);
+    const resolvedJarPath = path.resolve(request.launchJarPath);
+
+    if (!trimmedName) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_INVALID_NAME,
+        '伺服器名稱不能為空'
+      )));
+    }
+
+    if (this.findServerByName(trimmedName)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_DUPLICATE_NAME,
+        '伺服器名稱已存在'
+      )));
+    }
+
+    if (this.findServerByDirectory(resolvedDirectory)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        '此資料夾已經匯入過'
+      )));
+    }
+
+    if (!request.mcVersion.trim()) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        'Minecraft 版本不能為空'
+      )));
+    }
+
+    if (!candidate.jarCandidates.includes(resolvedJarPath)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        '選擇的啟動 jar 不在匯入資料夾中'
+      )));
+    }
+
+    const id = uuidv4();
+    const metadata: ImportedServerRecord = {
+      id,
+      name: trimmedName,
+      origin: 'imported',
+      directory: resolvedDirectory,
+      coreType: request.coreType,
+      mcVersion: request.mcVersion.trim(),
+      ramMin: request.ramMin ?? 1024,
+      ramMax: request.ramMax ?? 2048,
+      jvmArgs: request.jvmArgs ?? [],
+      javaPath: request.javaPath,
+      launchJarPath: resolvedJarPath,
+      createdAt: new Date().toISOString(),
+      eulaAccepted: request.eulaAccepted ?? candidate.eulaAccepted,
+      backupSettings: { ...DEFAULT_BACKUP_SETTINGS },
+    };
+
+    await this.importRegistry.save(metadata);
+
+    const server = this.createServerDtoFromImportedRecord(metadata);
+    this.servers.set(id, server);
+    return server;
   }
 
   async createServer(request: CreateServerRequest): Promise<ServerInstanceDto> {
@@ -130,7 +216,10 @@ export class ServerManager extends EventEmitter {
         ...metadata,
         javaPath: metadata.javaPath || this.defaultJavaPath,
         directory: serverPath,
+        launchJarPath: metadata.launchJarPath,
         status: 'stopped',
+        origin: 'managed',
+        eulaAccepted: metadata.eulaAccepted,
       };
 
       this.servers.set(id, server);
@@ -177,6 +266,8 @@ export class ServerManager extends EventEmitter {
       ramMin: request.ramMin ?? server.ramMin,
       ramMax: request.ramMax ?? server.ramMax,
       jvmArgs: request.jvmArgs ?? server.jvmArgs,
+      launchJarPath: request.launchJarPath ?? server.launchJarPath,
+      eulaAccepted: request.eulaAccepted ?? server.eulaAccepted,
       backupSettings,
     };
 
@@ -200,7 +291,11 @@ export class ServerManager extends EventEmitter {
       await this.stopServerAndWait(id);
     }
 
-    await this.fileManager.deleteServerDirectory(server.directory);
+    if (server.origin === 'imported') {
+      await this.importRegistry.delete(id);
+    } else {
+      await this.fileManager.deleteServerDirectory(server.directory);
+    }
     this.servers.delete(id);
     this.clearBackupTimer(id);
   }
@@ -292,7 +387,7 @@ export class ServerManager extends EventEmitter {
       )));
     }
 
-    const jarPath = path.join(server.directory, 'server.jar');
+    const jarPath = server.launchJarPath || path.join(server.directory, 'server.jar');
     
     // 檢查是否為新版 Forge
     let forgeArgsFile: string | undefined;
@@ -314,7 +409,7 @@ export class ServerManager extends EventEmitter {
       } catch {
         throw new Error(formatIpcError(createIpcError(
           IpcErrorCode.SERVER_JAR_NOT_FOUND,
-          '找不到 server.jar 檔案',
+          '找不到可用的伺服器 jar 檔案',
           { path: jarPath }
         )));
       }
@@ -629,23 +724,13 @@ export class ServerManager extends EventEmitter {
       filter: (source) => path.basename(source) !== BACKUP_METADATA_FILE,
     });
 
-    const metadata = await this.fileManager.readServerJson(server.directory);
     const restoredServer: ServerInstanceDto = {
-      id: metadata.id,
-      name: metadata.name,
-      coreType: metadata.coreType,
-      mcVersion: metadata.mcVersion,
-      javaPath: metadata.javaPath || this.defaultJavaPath,
-      ramMin: metadata.ramMin,
-      ramMax: metadata.ramMax,
-      jvmArgs: metadata.jvmArgs,
+      ...server,
       directory: server.directory,
       status: 'stopped',
-      createdAt: metadata.createdAt,
-      lastStartedAt: metadata.lastStartedAt,
-      backupSettings: normalizeBackupSettings(metadata.backupSettings),
     };
     this.servers.set(request.serverId, restoredServer);
+    await this.persistServerUpdate(restoredServer);
     this.scheduleBackup(request.serverId);
     this.emitLogEntry(request.serverId, 'info', `已還原備份: ${backup.name}`);
   }
@@ -669,26 +754,19 @@ export class ServerManager extends EventEmitter {
 
   async loadServers(): Promise<void> {
     const metadataList = await this.fileManager.discoverServers();
+    const importedServers = await this.importRegistry.list();
 
     for (const metadata of metadataList) {
       const serverPath = this.fileManager.getServerPath(metadata.name);
-      const server: ServerInstanceDto = {
-        id: metadata.id,
-        name: metadata.name,
-        coreType: metadata.coreType,
-        mcVersion: metadata.mcVersion,
-        javaPath: metadata.javaPath || this.defaultJavaPath,
-        ramMin: metadata.ramMin,
-        ramMax: metadata.ramMax,
-        jvmArgs: metadata.jvmArgs,
-        directory: serverPath,
-        status: 'stopped',
-        createdAt: metadata.createdAt,
-        lastStartedAt: metadata.lastStartedAt,
-        backupSettings: normalizeBackupSettings(metadata.backupSettings),
-      };
+      const server = this.createServerDtoFromManagedMetadata(metadata, serverPath);
       this.servers.set(metadata.id, server);
       this.startBackupSchedule(metadata.id);
+    }
+
+    for (const record of importedServers) {
+      const server = this.createServerDtoFromImportedRecord(record);
+      this.servers.set(record.id, server);
+      this.startBackupSchedule(record.id);
     }
   }
 
@@ -898,17 +976,27 @@ export class ServerManager extends EventEmitter {
     );
   }
 
+  private findServerByDirectory(directory: string, excludeId?: string): ServerInstanceDto | undefined {
+    const resolved = path.resolve(directory);
+    return Array.from(this.servers.values()).find(
+      (s) => path.resolve(s.directory) === resolved && s.id !== excludeId
+    );
+  }
+
   private buildMetadata(id: string, name: string, request: CreateServerRequest): ServerMetadata {
     return {
       id,
       name,
+      origin: 'managed',
       coreType: request.coreType,
       mcVersion: request.mcVersion,
       ramMin: request.ramMin ?? 1024,
       ramMax: request.ramMax ?? 2048,
       jvmArgs: request.jvmArgs ?? [],
       javaPath: request.javaPath,
+      launchJarPath: 'server.jar',
       createdAt: new Date().toISOString(),
+      eulaAccepted: true,
       backupSettings: { ...DEFAULT_BACKUP_SETTINGS },
     };
   }
@@ -917,6 +1005,7 @@ export class ServerManager extends EventEmitter {
     await this.fileManager.writeEula(serverPath);
     await this.fileManager.writeRunBat(serverPath, {
       javaPath: metadata.javaPath || this.defaultJavaPath,
+      jarPath: metadata.launchJarPath,
       ramMin: metadata.ramMin,
       ramMax: metadata.ramMax,
       jvmArgs: metadata.jvmArgs,
@@ -925,22 +1014,16 @@ export class ServerManager extends EventEmitter {
   }
 
   private async persistServerUpdate(server: ServerInstanceDto): Promise<void> {
-    const metadata: ServerMetadata = {
-      id: server.id,
-      name: server.name,
-      coreType: server.coreType,
-      mcVersion: server.mcVersion,
-      ramMin: server.ramMin,
-      ramMax: server.ramMax,
-      jvmArgs: server.jvmArgs,
-      javaPath: server.javaPath,
-      createdAt: server.createdAt,
-      lastStartedAt: server.lastStartedAt,
-      backupSettings: server.backupSettings,
-    };
+    if (server.origin === 'imported') {
+      await this.importRegistry.save(this.toImportedRecord(server));
+      return;
+    }
+
+    const metadata = this.toManagedMetadata(server);
     await this.fileManager.writeServerJson(server.directory, metadata);
     await this.fileManager.writeRunBat(server.directory, {
       javaPath: server.javaPath,
+      jarPath: server.launchJarPath,
       ramMin: server.ramMin,
       ramMax: server.ramMax,
       jvmArgs: server.jvmArgs,
@@ -951,21 +1034,88 @@ export class ServerManager extends EventEmitter {
     const server = this.servers.get(id)!;
     server.lastStartedAt = new Date().toISOString();
     this.servers.set(id, server);
+    await this.persistServerUpdate(server);
+  }
 
-    const metadata: ServerMetadata = {
+  private createServerDtoFromManagedMetadata(metadata: ServerMetadata, directory: string): ServerInstanceDto {
+    return {
+      id: metadata.id,
+      name: metadata.name,
+      origin: 'managed',
+      coreType: metadata.coreType,
+      mcVersion: metadata.mcVersion,
+      javaPath: metadata.javaPath || this.defaultJavaPath,
+      ramMin: metadata.ramMin,
+      ramMax: metadata.ramMax,
+      jvmArgs: metadata.jvmArgs,
+      directory,
+      launchJarPath: metadata.launchJarPath,
+      status: 'stopped',
+      createdAt: metadata.createdAt,
+      lastStartedAt: metadata.lastStartedAt,
+      eulaAccepted: metadata.eulaAccepted,
+      backupSettings: normalizeBackupSettings(metadata.backupSettings),
+    };
+  }
+
+  private createServerDtoFromImportedRecord(record: ImportedServerRecord): ServerInstanceDto {
+    return {
+      id: record.id,
+      name: record.name,
+      origin: 'imported',
+      coreType: record.coreType,
+      mcVersion: record.mcVersion,
+      javaPath: record.javaPath || this.defaultJavaPath,
+      ramMin: record.ramMin,
+      ramMax: record.ramMax,
+      jvmArgs: record.jvmArgs,
+      directory: record.directory,
+      launchJarPath: record.launchJarPath,
+      status: 'stopped',
+      createdAt: record.createdAt,
+      lastStartedAt: record.lastStartedAt,
+      eulaAccepted: record.eulaAccepted,
+      backupSettings: normalizeBackupSettings(record.backupSettings),
+    };
+  }
+
+  private toManagedMetadata(server: ServerInstanceDto): ServerMetadata {
+    return {
       id: server.id,
       name: server.name,
+      origin: 'managed',
       coreType: server.coreType,
       mcVersion: server.mcVersion,
       ramMin: server.ramMin,
       ramMax: server.ramMax,
       jvmArgs: server.jvmArgs,
       javaPath: server.javaPath,
+      launchJarPath: server.launchJarPath,
       createdAt: server.createdAt,
       lastStartedAt: server.lastStartedAt,
+      eulaAccepted: server.eulaAccepted,
       backupSettings: server.backupSettings,
     };
-    await this.fileManager.writeServerJson(server.directory, metadata);
+  }
+
+  private toImportedRecord(server: ServerInstanceDto): ImportedServerRecord {
+    return {
+      id: server.id,
+      name: server.name,
+      origin: 'imported',
+      directory: server.directory,
+      coreType: server.coreType,
+      mcVersion: server.mcVersion,
+      ramMin: server.ramMin,
+      ramMax: server.ramMax,
+      jvmArgs: server.jvmArgs,
+      javaPath: server.javaPath,
+      launchJarPath: server.launchJarPath,
+      createdAt: server.createdAt,
+      lastStartedAt: server.lastStartedAt,
+      eulaAccepted: server.eulaAccepted,
+      backupSettings: server.backupSettings,
+    };
   }
 
   private getExistingServer(id: string): ServerInstanceDto {

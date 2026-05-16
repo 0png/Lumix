@@ -1,7 +1,7 @@
 // App IPC Handlers
 // 處理應用程式相關的 IPC 請求
 
-import { ipcMain, app, shell, BrowserWindow } from 'electron';
+import { ipcMain, app, shell, BrowserWindow, dialog } from 'electron';
 import os from 'os';
 import { AppChannels, WindowChannels } from '../../shared/ipc-channels';
 import type { IpcResult, SystemInfo } from '../../shared/ipc-types';
@@ -64,6 +64,17 @@ function registerHandlers(): void {
           platform: process.platform,
         },
       };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.handle(AppChannels.SELECT_DIRECTORY, async (): Promise<IpcResult<string | null>> => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory'],
+      });
+      return { success: true, data: result.canceled ? null : (result.filePaths[0] ?? null) };
     } catch (error) {
       return { success: false, error: String(error) };
     }

@@ -10,6 +10,8 @@ export const ServerChannels = {
   GET_ALL: 'server:get-all',
   GET_BY_ID: 'server:get-by-id',
   CREATE: 'server:create',
+  DETECT_IMPORT_CANDIDATE: 'server:detect-import-candidate',
+  IMPORT_EXISTING: 'server:import-existing',
   UPDATE: 'server:update',
   DELETE: 'server:delete',
   
@@ -47,6 +49,8 @@ export function getAllServerChannels(): string[] {
     ServerChannels.GET_ALL,
     ServerChannels.GET_BY_ID,
     ServerChannels.CREATE,
+    ServerChannels.DETECT_IMPORT_CANDIDATE,
+    ServerChannels.IMPORT_EXISTING,
     ServerChannels.UPDATE,
     ServerChannels.DELETE,
     ServerChannels.START,
@@ -109,6 +113,7 @@ export const AppChannels = {
   GET_VERSION: 'app:get-version',
   GET_DATA_PATH: 'app:get-data-path',
   GET_SYSTEM_INFO: 'app:get-system-info',
+  SELECT_DIRECTORY: 'app:select-directory',
   OPEN_FOLDER: 'app:open-folder',
   OPEN_EXTERNAL: 'app:open-external',
 } as const;

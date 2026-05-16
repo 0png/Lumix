@@ -7,6 +7,7 @@
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
+  FolderInput,
   Server,
   Settings,
   Sparkles,
@@ -18,11 +19,13 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
-export type CoreType = 'vanilla' | 'paper' | 'fabric' | 'forge';
+export type CoreType = 'vanilla' | 'paper' | 'spigot' | 'fabric' | 'forge';
+export type ServerOrigin = 'managed' | 'imported';
 
 export interface ServerInstance {
   id: string;
   name: string;
+  origin: ServerOrigin;
   coreType: CoreType;
   mcVersion: string;
   status: ServerStatus;
@@ -38,6 +41,7 @@ interface ServerListProps {
   onStartServer?: (id: string) => void;
   onStopServer?: (id: string) => void;
   onCreateServer?: () => void;
+  onImportServer?: () => void;
   onOpenSettings?: () => void;
   javaInstallationsCount?: number;
   /** 是否正在載入 */
@@ -49,7 +53,15 @@ interface ServerListProps {
 /**
  * 空狀態元件 - 帶動畫效果和引導
  */
-function EmptyState({ onCreateServer, onOpenSettings }: { onCreateServer?: () => void; onOpenSettings?: () => void }) {
+function EmptyState({
+  onCreateServer,
+  onImportServer,
+  onOpenSettings,
+}: {
+  onCreateServer?: () => void;
+  onImportServer?: () => void;
+  onOpenSettings?: () => void;
+}) {
   const { t } = useTranslation();
 
   const steps = [
@@ -86,6 +98,10 @@ function EmptyState({ onCreateServer, onOpenSettings }: { onCreateServer?: () =>
               <Plus className="h-4 w-4" aria-hidden="true" />
               {t('sidebar.addServer')}
             </Button>
+            <Button variant="outline" onClick={onImportServer} className="gap-2">
+              <FolderInput className="h-4 w-4" aria-hidden="true" />
+              {t('serverImport.importServer')}
+            </Button>
             <Button variant="outline" onClick={onOpenSettings} className="gap-2">
               <Settings className="h-4 w-4" aria-hidden="true" />
               {t('settings.title')}
@@ -118,6 +134,7 @@ export function ServerList({
   onStartServer,
   onStopServer,
   onCreateServer,
+  onImportServer,
   onOpenSettings,
   loading = false,
   downloadProgress,
@@ -131,7 +148,7 @@ export function ServerList({
 
   // 空狀態
   if (servers.length === 0) {
-    return <EmptyState onCreateServer={onCreateServer} onOpenSettings={onOpenSettings} />;
+    return <EmptyState onCreateServer={onCreateServer} onImportServer={onImportServer} onOpenSettings={onOpenSettings} />;
   }
 
   return (
@@ -145,6 +162,10 @@ export function ServerList({
           <Button variant="outline" onClick={onOpenSettings} className="gap-2">
             <Settings className="h-4 w-4" aria-hidden="true" />
             {t('settings.title')}
+          </Button>
+          <Button variant="outline" onClick={onImportServer} className="gap-2">
+            <FolderInput className="h-4 w-4" aria-hidden="true" />
+            {t('serverImport.importServer')}
           </Button>
           <Button onClick={onCreateServer} className="gap-2 ripple">
             <Plus className="h-4 w-4" aria-hidden="true" />
