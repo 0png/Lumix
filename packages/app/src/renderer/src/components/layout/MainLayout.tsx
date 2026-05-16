@@ -6,6 +6,7 @@
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from './Sidebar';
+import { TitleBar } from './TitleBar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ServerItem {
@@ -55,27 +56,30 @@ export function MainLayout({
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      <Sidebar
-        servers={servers}
-        selectedServerId={selectedServerId}
-        onSelectServer={onSelectServer}
-        onGoHome={onGoHome}
-        onCreateServer={onCreateServer}
-        onOpenSettings={onOpenSettings}
-        onOpenAbout={onOpenAbout}
-        currentView={currentView}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        {/* 標題區域 - 與 Sidebar Logo 區域對齊 */}
-        <header className="h-12 border-b border-border/50 flex items-center px-4 lg:px-6 shrink-0">
-          <h2 className="text-lg font-semibold truncate">{getTitle()}</h2>
-        </header>
-        <ScrollArea className="flex-1">
-          <main className="p-4 lg:p-6">
-            {children}
-          </main>
-        </ScrollArea>
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <TitleBar />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <Sidebar
+          servers={servers}
+          selectedServerId={selectedServerId}
+          onSelectServer={onSelectServer}
+          onGoHome={onGoHome}
+          onCreateServer={onCreateServer}
+          onOpenSettings={onOpenSettings}
+          onOpenAbout={onOpenAbout}
+          currentView={currentView}
+        />
+        <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+          {/* 標題區域 - 與 Sidebar Logo 區域對齊 */}
+          <header className="h-12 border-b border-border/50 flex items-center px-4 lg:px-6 shrink-0">
+            <h2 className="text-lg font-semibold truncate">{getTitle()}</h2>
+          </header>
+          <ScrollArea className="flex-1">
+            <main className="p-4 lg:p-6">
+              {children}
+            </main>
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );

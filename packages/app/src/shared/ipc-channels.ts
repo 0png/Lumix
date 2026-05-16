@@ -113,6 +113,17 @@ export const AppChannels = {
 } as const;
 
 // ============================================================================
+// Window Channels
+// ============================================================================
+
+export const WindowChannels = {
+  MINIMIZE: 'window:minimize',
+  TOGGLE_MAXIMIZE: 'window:toggle-maximize',
+  CLOSE: 'window:close',
+  SET_TITLE_BAR_OVERLAY: 'window:set-title-bar-overlay',
+} as const;
+
+// ============================================================================
 // Update Channels
 // ============================================================================
 
@@ -140,5 +151,6 @@ export const IpcChannels = {
   Download: DownloadChannels,
   Settings: SettingsChannels,
   App: AppChannels,
+  Window: WindowChannels,
   Update: UpdateChannels,
 } as const;

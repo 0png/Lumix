@@ -314,12 +314,20 @@ export class DownloadService extends EventEmitter {
     expectedSize: number,
     serverId?: string
   ): Promise<void> {
+    if (serverId) {
+      this.emit('progress', serverId, {
+        downloaded: 0,
+        total: expectedSize,
+        percentage: 0,
+      });
+    }
+
     await downloadFile(url, destPath, expectedSize, (downloaded, total) => {
       if (serverId) {
         this.emit('progress', serverId, {
           downloaded,
           total,
-          percentage: Math.round((downloaded / total) * 100),
+          percentage: total > 0 ? Math.round((downloaded / total) * 100) : 0,
         });
       }
     });

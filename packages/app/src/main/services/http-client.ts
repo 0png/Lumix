@@ -118,7 +118,7 @@ export function downloadFile(
 
         res.on('data', (chunk: Buffer) => {
           downloadedSize += chunk.length;
-          if (onProgress && totalSize > 0) {
+          if (onProgress) {
             onProgress(downloadedSize, totalSize);
           }
         });

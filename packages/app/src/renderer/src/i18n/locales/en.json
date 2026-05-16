@@ -16,6 +16,11 @@
   "header": {
     "title": "Server Dashboard"
   },
+  "window": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "close": "Close window"
+  },
   "sidebar": {
     "servers": "Servers",
     "addServer": "Add Server",
@@ -305,7 +310,11 @@
     "error": "An error occurred",
     "downloadStarted": "Download started",
     "downloadComplete": "Download complete",
-    "downloadingServer": "Downloading server JAR, this may take about 20 seconds...",
+    "downloadingServer": "Preparing server core...",
+    "downloadProgressTitle": "Preparing {{name}}",
+    "downloadProgressDescription": "Downloading {{core}} {{version}} server core",
+    "downloadPreparing": "Installing and preparing {{core}} {{version}} files",
+    "downloadProgressUnknown": "Working",
     "serverReady": "Server is ready to start",
     "downloadFailed": "Failed to download server",
     "startFailed": "Failed to start server",

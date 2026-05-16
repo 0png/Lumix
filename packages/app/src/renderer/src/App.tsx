@@ -12,6 +12,7 @@ import {
   ServerConsole,
   PlayerManagement,
   CreateServerDialog,
+  DownloadProgressToast,
   type ServerInstance,
   type LogEntry,
   type CreateServerData,
@@ -56,6 +57,7 @@ function AppContent() {
     servers: serverDtos,
     loading,
     logs: serverLogs,
+    downloadProgress,
     createServer,
     updateServer,
     deleteServer,
@@ -109,10 +111,7 @@ function AppContent() {
 
       const selectedJava = selectResult.data;
 
-      // 3. 顯示下載中提示
-      toast.info(t('toast.downloadingServer'));
-
-      // 4. 建立伺服器實例（包含下載 server.jar）
+      // 3. 建立伺服器實例（包含下載 server.jar）
       const { server, error: createError } = await createServer({
         name: data.name,
         coreType: data.coreType,
@@ -309,6 +308,12 @@ function AppContent() {
                 onCreateServer={() => setShowCreateDialog(true)}
                 onOpenSettings={() => setCurrentView('settings')}
                 javaInstallationsCount={javaInstallations.length}
+                downloadProgress={new Map(
+                  Array.from(downloadProgress.entries()).map(([serverId, progress]) => [
+                    serverId,
+                    progress.percentage,
+                  ])
+                )}
               />
             )}
           </div>
@@ -344,7 +349,8 @@ function AppContent() {
         existingNames={servers.map((s) => s.name)}
       />
 
-      <Toaster position="bottom-right" theme={theme} richColors />
+      <Toaster position="bottom-right" theme={theme} />
+      <DownloadProgressToast servers={servers} downloadProgress={downloadProgress} />
       <UpdateNotification />
     </MainLayout>
   );

@@ -10,6 +10,7 @@ import type {
   ServerLogEvent,
   LogEntryDto,
   IpcErrorCodeType,
+  DownloadProgress,
 } from '../../../shared/ipc-types';
 import { parseIpcError, IpcErrorCode } from '../../../shared/ipc-types';
 
@@ -25,6 +26,7 @@ interface UseServersReturn {
   loading: boolean;
   error: string | null;
   logs: Map<string, LogEntryDto[]>;
+  downloadProgress: Map<string, DownloadProgress>;
   refresh: () => Promise<void>;
   createServer: (data: CreateServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
   updateServer: (data: UpdateServerRequest) => Promise<ServerInstanceDto | null>;
@@ -40,6 +42,7 @@ export function useServers(): UseServersReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<Map<string, LogEntryDto[]>>(new Map());
+  const [downloadProgress, setDownloadProgress] = useState<Map<string, DownloadProgress>>(new Map());
 
   // 載入伺服器列表
   const refresh = useCallback(async () => {
@@ -77,6 +80,11 @@ export function useServers(): UseServersReturn {
       // 標記為未就緒（正在下載）
       const serverWithStatus = { ...server, isReady: false };
       setServers((prev) => [...prev, serverWithStatus]);
+      setDownloadProgress((prev) => {
+        const next = new Map(prev);
+        next.set(server.id, { downloaded: 0, total: 0, percentage: 0 });
+        return next;
+      });
 
       // 2. 下載 server.jar
       const downloadResult = await window.electronAPI.download.downloadServer({
@@ -95,6 +103,11 @@ export function useServers(): UseServersReturn {
         }
         // 無論 delete 是否成功，都從 UI 移除（因為伺服器已不可用）
         setServers((prev) => prev.filter((s) => s.id !== server.id));
+        setDownloadProgress((prev) => {
+          const next = new Map(prev);
+          next.delete(server.id);
+          return next;
+        });
         const errorStr = downloadResult.error || 'Failed to download server.jar';
         setError(errorStr);
         return { server: null, error: { code: IpcErrorCode.DOWNLOAD_FAILED, message: errorStr } };
@@ -103,6 +116,11 @@ export function useServers(): UseServersReturn {
       // 標記為已就緒
       const readyServer = { ...server, isReady: true };
       setServers((prev) => prev.map((s) => (s.id === server.id ? readyServer : s)));
+      setDownloadProgress((prev) => {
+        const next = new Map(prev);
+        next.set(server.id, { downloaded: 1, total: 1, percentage: 100 });
+        return next;
+      });
       return { server: readyServer, error: null };
     } catch (err) {
       const errorStr = String(err);
@@ -239,6 +257,20 @@ export function useServers(): UseServersReturn {
     };
   }, []);
 
+  // 訂閱下載進度事件
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.download.onProgress((event) => {
+      setDownloadProgress((prev) => {
+        const next = new Map(prev);
+        next.set(event.serverId, event.progress);
+        return next;
+      });
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   // 初始載入
   useEffect(() => {
     refresh();
@@ -249,6 +281,7 @@ export function useServers(): UseServersReturn {
     loading,
     error,
     logs,
+    downloadProgress,
     refresh,
     createServer,
     updateServer,

@@ -44,10 +44,12 @@ function ServerNavItem({ server, isSelected, onSelect, isCollapsed, showLabel }:
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       className={cn(
-        'group flex w-full items-center rounded-xl border transition-all duration-200 focus-ring',
+        'group flex items-center rounded-xl border transition-all duration-200 focus-ring',
         'border-transparent hover:border-border/80 hover:bg-accent/40',
         isSelected && 'border-border bg-accent/60 text-accent-foreground shadow-sm',
-        isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-3 text-left'
+        isCollapsed
+          ? 'mx-auto w-12 justify-center px-0 py-2.5'
+          : 'w-full gap-3 px-3 py-3 text-left'
       )}
       role="menuitem"
       aria-selected={isSelected}
@@ -408,7 +410,14 @@ export function Sidebar({
                 )}
               </div>
 
-              <nav className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto" role="menu" aria-label={t('sidebar.servers')}>
+              <nav
+                className={cn(
+                  'sidebar-server-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1',
+                  isCollapsed && 'sidebar-server-scroll-collapsed items-center pr-0'
+                )}
+                role="menu"
+                aria-label={t('sidebar.servers')}
+              >
                 {servers.map((server) => (
                   <ServerNavItem
                     key={server.id}

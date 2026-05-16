@@ -1,8 +1,8 @@
 // App IPC Handlers
 // 處理應用程式相關的 IPC 請求
 
-import { ipcMain, app, shell } from 'electron';
-import { AppChannels } from '../../shared/ipc-channels';
+import { ipcMain, app, shell, BrowserWindow } from 'electron';
+import { AppChannels, WindowChannels } from '../../shared/ipc-channels';
 import type { IpcResult } from '../../shared/ipc-types';
 
 /**
@@ -50,6 +50,52 @@ function registerHandlers(): void {
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.on(WindowChannels.MINIMIZE, (event) => {
+    try {
+      BrowserWindow.fromWebContents(event.sender)?.minimize();
+    } catch (error) {
+      console.error('Failed to minimize window:', error);
+    }
+  });
+
+  ipcMain.on(WindowChannels.TOGGLE_MAXIMIZE, (event) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (!window) return;
+
+      if (window.isMaximized()) {
+        window.unmaximize();
+      } else {
+        window.maximize();
+      }
+    } catch (error) {
+      console.error('Failed to toggle window maximize state:', error);
+    }
+  });
+
+  ipcMain.on(WindowChannels.CLOSE, (event) => {
+    try {
+      BrowserWindow.fromWebContents(event.sender)?.close();
+    } catch (error) {
+      console.error('Failed to close window:', error);
+    }
+  });
+
+  ipcMain.on(WindowChannels.SET_TITLE_BAR_OVERLAY, (event, theme: 'light' | 'dark') => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (!window || process.platform !== 'win32') return;
+
+      window.setTitleBarOverlay({
+        color: theme === 'dark' ? '#0a0a0b' : '#ffffff',
+        symbolColor: theme === 'dark' ? '#f2f2f2' : '#111827',
+        height: 36,
+      });
+    } catch (error) {
+      console.error('Failed to update title bar overlay:', error);
     }
   });
 }

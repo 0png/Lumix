@@ -58,7 +58,7 @@ function registerHandlers(): void {
           data.coreType,
           data.mcVersion,
           data.targetDir,
-          data.targetDir // 使用 targetDir 作為 serverId 來追蹤進度
+          data.serverId || data.targetDir
         );
         return { success: true, data: jarPath };
       } catch (error) {

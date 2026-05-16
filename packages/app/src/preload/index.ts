@@ -8,6 +8,7 @@ import {
   DownloadChannels,
   SettingsChannels,
   AppChannels,
+  WindowChannels,
   UpdateChannels,
 } from '../shared/ipc-channels';
 import type {
@@ -194,6 +195,27 @@ const electronAPI = {
 
     openExternal: (url: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_EXTERNAL, url),
+  },
+
+  // --------------------------------------------------------------------------
+  // Window
+  // --------------------------------------------------------------------------
+  window: {
+    minimize: (): void => {
+      ipcRenderer.send(WindowChannels.MINIMIZE);
+    },
+
+    toggleMaximize: (): void => {
+      ipcRenderer.send(WindowChannels.TOGGLE_MAXIMIZE);
+    },
+
+    close: (): void => {
+      ipcRenderer.send(WindowChannels.CLOSE);
+    },
+
+    setTitleBarOverlayTheme: (theme: 'light' | 'dark'): void => {
+      ipcRenderer.send(WindowChannels.SET_TITLE_BAR_OVERLAY, theme);
+    },
   },
 
   // --------------------------------------------------------------------------
