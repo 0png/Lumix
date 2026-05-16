@@ -245,7 +245,17 @@
   },
   "createServer": {
     "title": "建立新伺服器",
+    "wizardDescription": "依序完成名稱、核心、記憶體、EULA 與建立前確認。",
+    "progressLabel": "步驟 {{current}} / {{total}}",
+    "next": "下一步",
+    "createServer": "建立伺服器",
+    "stepHint": "目前步驟：{{step}}",
+    "reviewHint": "確認摘要無誤後，Lumix 會開始建立並下載伺服器核心。",
     "namePlaceholder": "輸入伺服器名稱",
+    "nameHint": "這個名稱會用於清單顯示，也會成為伺服器資料夾名稱。",
+    "folderPreview": "資料夾名稱預覽",
+    "folderPreviewEmpty": "尚未輸入有效名稱",
+    "folderPreviewHint": "Lumix 會使用安全的資料夾名稱建立伺服器目錄。",
     "selectVersion": "選擇版本",
     "searchVersion": "搜尋版本...",
     "noVersionFound": "找不到版本",
@@ -255,13 +265,79 @@
     "maxRam": "最大記憶體",
     "eulaAgree": "我同意 Minecraft EULA",
     "eulaDescription": "您必須同意",
+    "eulaTitle": "Minecraft EULA",
+    "eulaDescriptionLong": "建立伺服器前，必須由你本人閱讀並同意 Mojang 的 Minecraft EULA。Lumix 不會預設勾選此選項。",
+    "eulaManualConfirm": "請確認你已閱讀內容並願意自行承擔營運責任。",
+    "openEula": "開啟 EULA",
     "javaRequired": "需要 Java {{version}}+",
     "javaNotFound": "找不到 Java {{version}}+",
     "installJava": "安裝 Java {{version}}",
     "installingJava": "正在安裝 Java...",
     "javaInstallFailed": "Java 安裝失敗，請稍後再試",
     "javaInstallMaxRetries": "已達到最大重試次數（{{max}} 次），請稍後再試或手動安裝 Java",
-    "java8Required": "此版本需要 Java 8，但系統中找不到 Java 8。請先安裝 Java 8 後再建立伺服器。"
+    "java8Required": "此版本需要 Java 8，但系統中找不到 Java 8。請先安裝 Java 8 後再建立伺服器。",
+    "systemRam": "系統記憶體",
+    "systemCpu": "CPU 執行緒",
+    "memoryValue": "{{value}} GB",
+    "cpuValue": "{{value}} 執行緒",
+    "safeRamLimit": "為避免 Windows 失去回應，建議上限 {{value}} GB",
+    "recommendedRam": "建議配置",
+    "ramRecommendationHint": "Lumix 會依核心類型與本機資源給出較保守的建議值。",
+    "ramRecommendationSafe": "目前配置在建議範圍內",
+    "ramRecommendationWarning": "目前配置偏高",
+    "ramRecommendationMessage": "建議值約 {{recommended}} GB；本機安全上限約 {{safeMax}} GB。若超過建議值，背景程式與 Windows 本身可能變得不穩定。",
+    "ramProfiles": {
+      "vanilla": "原版需求較低，適合少量玩家與輕量世界。",
+      "paper": "Paper 適合多人日常伺服器，通常比原版更有效率。",
+      "fabric": "Fabric 對模組與效能插件更友善，建議保留額外空間。",
+      "forge": "Forge 與大型模組包較吃記憶體，建議從較高配置開始。"
+    },
+    "steps": {
+      "name": {
+        "title": "伺服器名稱",
+        "description": "先定義名稱與資料夾預覽。"
+      },
+      "core": {
+        "title": "核心與版本",
+        "description": "選擇適合的核心與 Minecraft 版本。"
+      },
+      "ram": {
+        "title": "Smart RAM Recommendation",
+        "description": "依本機 RAM / CPU 推薦安全的記憶體配置。"
+      },
+      "eula": {
+        "title": "Minecraft EULA",
+        "description": "必須由使用者手動同意。"
+      },
+      "review": {
+        "title": "Review & Create",
+        "description": "最後確認摘要並開始建立。"
+      }
+    },
+    "core": {
+      "vanilla": {
+        "description": "最接近官方原版行為，安裝最直接。",
+        "usage": "適合純生存、小型朋友服與最少維護成本。"
+      },
+      "paper": {
+        "description": "常見高效能核心，插件生態成熟。",
+        "usage": "適合多人社群服、日常營運與需要穩定 TPS 的情境。"
+      },
+      "fabric": {
+        "description": "輕量模組核心，更新通常較快。",
+        "usage": "適合效能模組、技術向玩法與精簡模組組合。"
+      },
+      "forge": {
+        "description": "傳統大型模組生態，兼容度高。",
+        "usage": "適合經典模組包、內容量大的冒險或科技服。"
+      }
+    },
+    "review": {
+      "javaRequirement": "Java 需求",
+      "javaRequirementValue": "Java {{version}}+",
+      "javaRequirementPending": "建立時自動偵測",
+      "javaCompatibilityWarning": "目前系統中沒有可直接使用的 Java {{version}}+，建立前建議先安裝。"
+    }
   },
   "coreType": {
     "vanilla": "原版",
@@ -344,36 +420,27 @@
   },
   "about": {
     "title": "關於",
-    "description": "Minecraft 伺服器管理工具",
-    "summary": "Lumix 是面向日常伺服器營運的桌面控制台，將建立、啟停、版本下載、Java 管理與即時輸出整合在同一個工作流中。",
-    "status": "開源桌面工具",
+    "description": "產品資訊與更新狀態",
+    "tagline": "為 Minecraft 伺服器建立、啟停、下載與日常維護設計的桌面控制台。",
     "version": "版本",
     "maintainer": "維護者",
     "releaseChannel": "發行通道",
     "releaseChannelValue": "GitHub Releases",
     "license": "授權",
-    "copyright": "版權",
-    "projectTitle": "專案承諾",
-    "signals": {
-      "localFirst": {
-        "title": "本機優先",
-        "description": "伺服器檔案、Java 路徑與運行狀態都以本機環境為核心，避免把基礎管理流程綁到外部服務。"
-      },
-      "releaseReady": {
-        "title": "面向發行",
-        "description": "版本資訊與更新檢查走標準發行流程，讓使用者能清楚知道目前版本與可用更新。"
-      },
-      "openProject": {
-        "title": "公開協作",
-        "description": "問題回報與原始碼都集中在 GitHub，方便追蹤缺陷、討論需求與檢視變更。"
-      }
-    },
-    "openSource": "開源專案",
-    "openSourceDescription": "Lumix 以可檢視、可回報、可迭代的方式維護。歡迎透過 repository 了解現況，或使用 issue 回報問題與改善建議。",
+    "runtime": "執行環境",
+    "runtimeValue": "Electron + React + TypeScript",
+    "quickLinks": "快捷連結",
     "viewOnGitHub": "在 GitHub 上查看",
-    "submitFeedback": "提交回饋",
-    "updatePolicyTitle": "更新與相容性",
-    "updatePolicyDescription": "更新檢查會使用目前設定的發行來源；若沒有可用版本，應用程式會保持在目前穩定版本。",
+    "reportIssue": "回報問題",
+    "releaseNotes": "版本說明",
+    "updateStatusTitle": "更新狀態",
+    "updateIdleLabel": "尚未檢查",
+    "updateIdleDescription": "可手動檢查目前版本是否有新發行。",
+    "updateAvailableLabel": "可取得新版本",
+    "upToDateLabel": "目前已是最新",
+    "updateCardTitle": "軟體更新",
+    "availableBadge": "可更新",
+    "currentBadge": "目前版本",
     "copyrightNotice": "© 2026 0png"
   },
   "update": {

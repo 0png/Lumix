@@ -98,6 +98,7 @@
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-gutter: stable;
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 8px;
@@ -114,6 +115,55 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .modal-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.24) transparent;
+    scrollbar-gutter: stable both-edges;
+    overscroll-behavior: contain;
+  }
+
+  .modal-scrollbar::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .modal-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: 8px;
+  }
+
+  .modal-scrollbar::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    background-clip: content-box;
+  }
+
+  .modal-scrollbar:hover::-webkit-scrollbar-thumb,
+  .modal-scrollbar:focus-within::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.34);
+  }
+
+  .modal-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.46);
+  }
+}
+
+@media (max-width: 640px) {
+  @layer utilities {
+    .modal-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .modal-scrollbar::-webkit-scrollbar-track {
+      margin-block: 6px;
+    }
+
+    .modal-scrollbar::-webkit-scrollbar-thumb {
+      border-width: 2px;
+    }
   }
 }
 

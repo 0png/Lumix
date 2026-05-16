@@ -37,6 +37,7 @@ import type {
   SettingsDto,
   SaveSettingsRequest,
   CoreType,
+  SystemInfo,
   UpdateCheckResult,
   UpdateInfo,
   UpdateDownloadProgress,
@@ -189,6 +190,9 @@ const electronAPI = {
 
     getDataPath: (): Promise<IpcResult<string>> =>
       ipcRenderer.invoke(AppChannels.GET_DATA_PATH),
+
+    getSystemInfo: (): Promise<IpcResult<SystemInfo>> =>
+      ipcRenderer.invoke(AppChannels.GET_SYSTEM_INFO),
 
     openFolder: (path: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_FOLDER, path),

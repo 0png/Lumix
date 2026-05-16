@@ -17,6 +17,7 @@ interface ServerItem {
 
 interface MainLayoutProps {
   children: ReactNode;
+  overlay?: ReactNode;
   servers?: ServerItem[];
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
@@ -29,6 +30,7 @@ interface MainLayoutProps {
 
 export function MainLayout({
   children,
+  overlay,
   servers = [],
   selectedServerId,
   onSelectServer,
@@ -58,7 +60,7 @@ export function MainLayout({
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <TitleBar />
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <Sidebar
           servers={servers}
           selectedServerId={selectedServerId}
@@ -80,6 +82,11 @@ export function MainLayout({
             </main>
           </ScrollArea>
         </div>
+        {overlay ? (
+          <div className="absolute inset-0 z-40 bg-background">
+            {overlay}
+          </div>
+        ) : null}
       </div>
     </div>
   );

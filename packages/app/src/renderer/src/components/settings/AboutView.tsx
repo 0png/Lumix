@@ -1,19 +1,20 @@
 /**
  * AboutView 元件 - 關於頁面
- * 完整頁面視圖，顯示產品資訊、專案狀態和外部連結
+ * 完整頁面視圖，顯示產品資訊、更新狀態與外部連結
  */
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
-  BadgeCheck,
+  BellDot,
+  BookText,
   ExternalLink,
   Github,
-  HeartHandshake,
+  Layers3,
+  Radio,
   RefreshCw,
-  ShieldCheck,
-  Sparkles,
+  UserRound,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,18 +28,18 @@ interface AboutViewProps {
 }
 
 /** 開啟外部連結 */
-function openExternal(url: string) {
-  window.open(url, '_blank');
+async function openExternal(url: string) {
+  await window.electronAPI.app.openExternal(url);
 }
 
 /** 關於頁面元件 */
 export function AboutView({ onBack }: AboutViewProps) {
   const { t } = useTranslation();
   const [version, setVersion] = useState('0.1.0');
+  const [hasCheckedUpdate, setHasCheckedUpdate] = useState(false);
   const { checkForUpdates, checking, available, updateInfo } = useUpdate();
 
   useEffect(() => {
-    // 動態讀取版本號
     window.electronAPI.app.getVersion().then((result) => {
       if (result.success && result.data) {
         setVersion(result.data);
@@ -47,39 +48,58 @@ export function AboutView({ onBack }: AboutViewProps) {
   }, []);
 
   const handleCheckUpdate = async () => {
-    await checkForUpdates();
+    const result = await checkForUpdates();
+    setHasCheckedUpdate(true);
 
-    if (!available && !checking) {
+    if (result.success && !result.data?.hasUpdate) {
       toast.success(t('update.noUpdate.title'), {
         description: t('update.noUpdate.description'),
       });
     }
   };
 
-  const projectSignals = [
+  const metadata = [
+    { label: t('about.version'), value: version, icon: Layers3 },
+    { label: t('about.releaseChannel'), value: t('about.releaseChannelValue'), icon: Radio },
+    { label: t('about.license'), value: 'MIT', icon: BookText },
+    { label: t('about.runtime'), value: t('about.runtimeValue'), icon: ExternalLink },
+    { label: t('about.maintainer'), value: '0png', icon: UserRound },
+  ];
+
+  const metadataPrimary = metadata.slice(0, 3);
+  const metadataSecondary = metadata.slice(3);
+
+  const quickLinks = [
     {
-      icon: ShieldCheck,
-      title: t('about.signals.localFirst.title'),
-      description: t('about.signals.localFirst.description'),
+      label: t('about.viewOnGitHub'),
+      href: 'https://github.com/0png/Lumix',
+      icon: Github,
     },
     {
-      icon: BadgeCheck,
-      title: t('about.signals.releaseReady.title'),
-      description: t('about.signals.releaseReady.description'),
+      label: t('about.reportIssue'),
+      href: 'https://github.com/0png/Lumix/issues',
+      icon: BellDot,
     },
     {
-      icon: HeartHandshake,
-      title: t('about.signals.openProject.title'),
-      description: t('about.signals.openProject.description'),
+      label: t('about.releaseNotes'),
+      href: 'https://github.com/0png/Lumix/releases',
+      icon: BookText,
     },
   ];
 
-  const metadata = [
-    { label: t('about.version'), value: version },
-    { label: t('about.releaseChannel'), value: t('about.releaseChannelValue') },
-    { label: t('about.license'), value: 'MIT' },
-    { label: t('about.maintainer'), value: '0png' },
-  ];
+  const updateStatusLabel = checking
+    ? t('update.checking')
+    : available && updateInfo
+      ? t('about.updateAvailableLabel')
+      : hasCheckedUpdate
+        ? t('about.upToDateLabel')
+        : t('about.updateIdleLabel');
+
+  const updateSummary = available && updateInfo
+    ? t('update.newVersionAvailable', { version: updateInfo.version })
+    : hasCheckedUpdate
+      ? t('update.noUpdate.description')
+      : t('about.updateIdleDescription');
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -87,124 +107,138 @@ export function AboutView({ onBack }: AboutViewProps) {
         <Button variant="ghost" size="icon" onClick={onBack} className="hover:bg-primary/10 transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold">{t('about.title')}</h1>
+        <div>
+          <h1 className="text-xl font-bold">{t('about.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('about.description')}</p>
+        </div>
       </div>
 
-      <Card className="glass overflow-hidden">
-        <CardContent className="p-0">
-          <div className="border-b border-border/50 bg-gradient-subtle px-5 py-6 sm:px-6">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-4">
-                <img src={appIcon} alt="Lumix" className="h-16 w-16 shrink-0 rounded-2xl shadow-sm" />
-                <div className="min-w-0 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-2xl font-semibold tracking-tight">Lumix</h2>
-                    <Badge variant="secondary" className="gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                      {t('about.status')}
-                    </Badge>
+      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.75fr]">
+        <Card className="glass overflow-hidden">
+          <CardContent className="p-0">
+            <div className="border-b border-border/50 bg-gradient-subtle px-5 py-6 sm:px-6">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={appIcon}
+                      alt="Lumix"
+                      className="h-16 w-16 shrink-0 rounded-2xl shadow-sm ring-1 ring-border/50"
+                    />
+                    <div className="min-w-0 space-y-2.5">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <h2 className="text-[28px] font-semibold tracking-tight text-foreground">Lumix</h2>
+                        <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px] font-medium">
+                          v{version}
+                        </Badge>
+                      </div>
+                      <p className="max-w-xl text-sm leading-6 text-muted-foreground">
+                        {t('about.tagline')}
+                      </p>
+                    </div>
                   </div>
-                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                    {t('about.summary')}
-                  </p>
+
+                  <div className="min-w-[220px] rounded-2xl border border-border/60 bg-background/70 p-4 backdrop-blur-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground/90">
+                          {t('about.updateStatusTitle')}
+                        </p>
+                        <p className="text-sm font-semibold">{updateStatusLabel}</p>
+                      </div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                        <RefreshCw className={`h-4 w-4 text-primary ${checking ? 'animate-spin' : ''}`} />
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                      {updateSummary}
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={handleCheckUpdate}
+                      disabled={checking}
+                      className="mt-4 w-full justify-center hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                    >
+                      <RefreshCw className={`mr-2 h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
+                      {checking ? t('update.checking') : t('update.checkForUpdates')}
+                    </Button>
+                  </div>
                 </div>
               </div>
-
-              <Button
-                variant="outline"
-                onClick={handleCheckUpdate}
-                disabled={checking}
-                className="shrink-0 hover:bg-primary/10 hover:border-primary/50 transition-colors"
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
-                {checking ? t('update.checking') : t('update.checkForUpdates')}
-              </Button>
             </div>
 
-            {available && updateInfo && (
-              <p className="mt-4 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-                {t('update.newVersionAvailable', { version: updateInfo.version })}
-              </p>
-            )}
-          </div>
+            <div className="space-y-px bg-border/50">
+              <div className="grid gap-px md:grid-cols-3">
+                {metadataPrimary.map((item) => {
+                  const Icon = item.icon;
 
-          <div className="grid gap-0 divide-y divide-border/50 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
-            {metadata.map((item) => (
-              <div key={item.label} className="space-y-1 px-5 py-4 sm:px-6">
-                <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
-                <p className="text-sm font-semibold">{item.value}</p>
+                  return (
+                    <div key={item.label} className="bg-card px-5 py-4 sm:px-6">
+                      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                        <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                      </div>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/90">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-foreground">{item.value}</p>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <Card className="glass">
-          <CardHeader className="p-5 pb-3">
-            <CardTitle className="text-base">{t('about.projectTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 p-5 pt-0">
-            {projectSignals.map((signal) => {
-              const Icon = signal.icon;
+              <div className="grid gap-px md:grid-cols-2">
+                {metadataSecondary.map((item) => {
+                  const Icon = item.icon;
 
-              return (
-                <div
-                  key={signal.title}
-                  className="flex gap-3 rounded-lg border border-border/50 bg-secondary/30 p-3"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <h3 className="text-sm font-semibold">{signal.title}</h3>
-                    <p className="text-xs leading-5 text-muted-foreground">{signal.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        <Card className="glass">
-          <CardHeader className="p-5 pb-3">
-            <CardTitle className="text-base">{t('about.openSource')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 p-5 pt-0">
-            <p className="text-sm leading-6 text-muted-foreground">{t('about.openSourceDescription')}</p>
-            <div className="grid gap-2">
-              <Button
-                variant="outline"
-                onClick={() => openExternal('https://github.com/0png/Lumix')}
-                className="justify-start hover:bg-primary/10 hover:border-primary/50 transition-colors"
-              >
-                <Github className="mr-2 h-4 w-4" />
-                {t('about.viewOnGitHub')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => openExternal('https://github.com/0png/Lumix/issues')}
-                className="justify-start hover:bg-primary/10 hover:border-primary/50 transition-colors"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                {t('about.submitFeedback')}
-              </Button>
+                  return (
+                    <div key={item.label} className="bg-card px-5 py-4 sm:px-6">
+                      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                        <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                      </div>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/90">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-foreground">{item.value}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      <Card className="glass">
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold">{t('about.updatePolicyTitle')}</h3>
-            <p className="text-xs leading-5 text-muted-foreground">{t('about.updatePolicyDescription')}</p>
-          </div>
-          <Badge variant="outline" className="w-fit shrink-0">
-            {t('about.copyrightNotice')}
-          </Badge>
-        </CardContent>
-      </Card>
+        <div className="space-y-5">
+          <Card className="glass">
+            <CardHeader className="p-5 pb-3">
+              <CardTitle className="text-base">{t('about.quickLinks')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 p-5 pt-0">
+              {quickLinks.map((link) => {
+                const Icon = link.icon;
+
+                return (
+                  <Button
+                    key={link.label}
+                    variant="outline"
+                    onClick={() => void openExternal(link.href)}
+                    className="h-11 w-full justify-between rounded-xl px-4 hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Icon className="h-4 w-4" />
+                      <span>{link.label}</span>
+                    </span>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                );
+              })}
+              <div className="flex items-center justify-between gap-3 pt-3 text-xs text-muted-foreground">
+                <span>{t('about.copyrightNotice')}</span>
+                <span>{t('about.releaseChannelValue')}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

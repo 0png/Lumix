@@ -108,6 +108,7 @@ export const SettingsChannels = {
 export const AppChannels = {
   GET_VERSION: 'app:get-version',
   GET_DATA_PATH: 'app:get-data-path',
+  GET_SYSTEM_INFO: 'app:get-system-info',
   OPEN_FOLDER: 'app:open-folder',
   OPEN_EXTERNAL: 'app:open-external',
 } as const;

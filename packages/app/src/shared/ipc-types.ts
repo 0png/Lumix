@@ -323,6 +323,12 @@ export interface AppInfo {
   dataPath: string;
 }
 
+export interface SystemInfo {
+  totalMemoryMb: number;
+  cpuThreads: number;
+  platform: string;
+}
+
 // ============================================================================
 // Update Types
 // ============================================================================

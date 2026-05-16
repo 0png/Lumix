@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type {
+  IpcResult,
   UpdateInfo,
+  UpdateCheckResult,
   UpdateDownloadProgress,
   UpdateErrorEvent,
 } from '../../../shared/ipc-types';
@@ -45,6 +47,8 @@ export function useUpdate() {
         error: result.error || 'Failed to check for updates',
       }));
     }
+
+    return result as IpcResult<UpdateCheckResult>;
   }, []);
 
   // 下載更新

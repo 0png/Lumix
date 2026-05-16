@@ -2,8 +2,9 @@
 // 處理應用程式相關的 IPC 請求
 
 import { ipcMain, app, shell, BrowserWindow } from 'electron';
+import os from 'os';
 import { AppChannels, WindowChannels } from '../../shared/ipc-channels';
-import type { IpcResult } from '../../shared/ipc-types';
+import type { IpcResult, SystemInfo } from '../../shared/ipc-types';
 
 /**
  * 初始化應用程式 handlers
@@ -48,6 +49,21 @@ function registerHandlers(): void {
     try {
       await shell.openExternal(url);
       return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.handle(AppChannels.GET_SYSTEM_INFO, async (): Promise<IpcResult<SystemInfo>> => {
+    try {
+      return {
+        success: true,
+        data: {
+          totalMemoryMb: Math.floor(os.totalmem() / (1024 * 1024)),
+          cpuThreads: os.cpus().length,
+          platform: process.platform,
+        },
+      };
     } catch (error) {
       return { success: false, error: String(error) };
     }

@@ -66,6 +66,50 @@ export function fetchJson<T>(url: string, redirectCount: number = 0): Promise<T>
 }
 
 /**
+ * 發送 HTTP GET 請求並回傳文字內容
+ */
+export function fetchText(url: string, redirectCount: number = 0): Promise<string> {
+  const MAX_REDIRECTS = 5;
+
+  return new Promise((resolve, reject) => {
+    if (redirectCount >= MAX_REDIRECTS) {
+      reject(new Error(`HTTP_ERROR: 超過最大重定向次數 (${MAX_REDIRECTS}) - ${url}`));
+      return;
+    }
+
+    const protocol = url.startsWith('https') ? https : http;
+    const options = {
+      headers: { 'User-Agent': USER_AGENT },
+    };
+
+    protocol
+      .get(url, options, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          let redirectUrl = res.headers.location;
+          if (redirectUrl) {
+            if (redirectUrl.startsWith('/')) {
+              const baseUrl = new URL(url);
+              redirectUrl = `${baseUrl.protocol}//${baseUrl.host}${redirectUrl}`;
+            }
+            fetchText(redirectUrl, redirectCount + 1).then(resolve).catch(reject);
+            return;
+          }
+        }
+
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP_ERROR: ${res.statusCode} - ${url}`));
+          return;
+        }
+
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => resolve(data));
+      })
+      .on('error', reject);
+  });
+}
+
+/**
  * 下載檔案到指定路徑
  */
 export function downloadFile(

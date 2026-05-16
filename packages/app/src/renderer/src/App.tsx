@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from '@/components/ui/sonner';
 import { useTheme } from '@/contexts/theme-context';
@@ -24,6 +24,12 @@ import { toast } from '@/lib/toast';
 import '@/i18n';
 
 type ViewType = 'servers' | 'server-settings' | 'settings' | 'about';
+
+function isFullscreenLike(): boolean {
+  const widthDelta = Math.abs(window.screen.availWidth - window.innerWidth);
+  const heightDelta = Math.abs(window.screen.availHeight - window.innerHeight);
+  return widthDelta <= 24 && heightDelta <= 32;
+}
 
 /**
  * 轉換 DTO 為前端 ServerInstance 格式
@@ -76,6 +82,10 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
   const [isConsoleFullscreen, setIsConsoleFullscreen] = useState(false);
+  const [useCreateServerModal, setUseCreateServerModal] = useState(() => isFullscreenLike());
+  const [activeCreateServerPresentation, setActiveCreateServerPresentation] = useState<'modal' | 'overlay'>(
+    () => (isFullscreenLike() ? 'modal' : 'overlay')
+  );
 
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
@@ -228,6 +238,27 @@ function AppContent() {
     toast.info(t('toast.javaCannotRemove'));
   }, [t]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setUseCreateServerModal(isFullscreenLike());
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!showCreateDialog) {
+      setActiveCreateServerPresentation(useCreateServerModal ? 'modal' : 'overlay');
+    }
+  }, [showCreateDialog, useCreateServerModal]);
+
+  const handleOpenCreateServer = useCallback(() => {
+    setActiveCreateServerPresentation(useCreateServerModal ? 'modal' : 'overlay');
+    setShowCreateDialog(true);
+  }, [useCreateServerModal]);
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -305,7 +336,7 @@ function AppContent() {
                 onSelectServer={handleSelectServer}
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
-                onCreateServer={() => setShowCreateDialog(true)}
+                onCreateServer={handleOpenCreateServer}
                 onOpenSettings={() => setCurrentView('settings')}
                 javaInstallationsCount={javaInstallations.length}
                 downloadProgress={new Map(
@@ -330,9 +361,21 @@ function AppContent() {
 
   return (
     <MainLayout
+      overlay={
+        showCreateDialog && activeCreateServerPresentation === 'overlay' ? (
+          <CreateServerDialog
+            open={showCreateDialog}
+            onOpenChange={setShowCreateDialog}
+            onSubmit={handleCreateServer}
+            disabled={isCreating}
+            existingNames={servers.map((s) => s.name)}
+            presentation="overlay"
+          />
+        ) : undefined
+      }
       servers={sidebarServers}
       onGoHome={handleGoHome}
-      onCreateServer={() => setShowCreateDialog(true)}
+      onCreateServer={handleOpenCreateServer}
       onOpenSettings={() => setCurrentView('settings')}
       onOpenAbout={() => setCurrentView('about')}
       selectedServerId={selectedServerId}
@@ -341,13 +384,16 @@ function AppContent() {
     >
       {renderContent()}
 
-      <CreateServerDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSubmit={handleCreateServer}
-        disabled={isCreating}
-        existingNames={servers.map((s) => s.name)}
-      />
+      {showCreateDialog && activeCreateServerPresentation === 'modal' ? (
+        <CreateServerDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSubmit={handleCreateServer}
+          disabled={isCreating}
+          existingNames={servers.map((s) => s.name)}
+          presentation="modal"
+        />
+      ) : null}
 
       <Toaster position="bottom-right" theme={theme} />
       <DownloadProgressToast servers={servers} downloadProgress={downloadProgress} />

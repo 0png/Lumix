@@ -245,7 +245,17 @@
   },
   "createServer": {
     "title": "Create New Server",
+    "wizardDescription": "Work through name, core, memory, EULA, and final review in sequence.",
+    "progressLabel": "Step {{current}} / {{total}}",
+    "next": "Next",
+    "createServer": "Create Server",
+    "stepHint": "Current step: {{step}}",
+    "reviewHint": "After the summary looks right, Lumix will create the server and download the selected core.",
     "namePlaceholder": "Enter server name",
+    "nameHint": "This name is shown in the list and also becomes the server folder name.",
+    "folderPreview": "Folder name preview",
+    "folderPreviewEmpty": "No valid name yet",
+    "folderPreviewHint": "Lumix uses a safe folder name when creating the server directory.",
     "selectVersion": "Select Version",
     "searchVersion": "Search version...",
     "noVersionFound": "No version found",
@@ -255,13 +265,79 @@
     "maxRam": "Max RAM",
     "eulaAgree": "I agree to the Minecraft EULA",
     "eulaDescription": "You must agree to the",
+    "eulaTitle": "Minecraft EULA",
+    "eulaDescriptionLong": "Before creating a server, you must read and accept Mojang's Minecraft EULA yourself. Lumix will not pre-check this box.",
+    "eulaManualConfirm": "Confirm that you have reviewed the terms and accept the operational responsibility.",
+    "openEula": "Open EULA",
     "javaRequired": "Requires Java {{version}}+",
     "javaNotFound": "Java {{version}}+ not found",
     "installJava": "Install Java {{version}}",
     "installingJava": "Installing Java...",
     "javaInstallFailed": "Failed to install Java, please try again later",
     "javaInstallMaxRetries": "Maximum retry limit reached ({{max}} attempts). Please try again later or install Java manually",
-    "java8Required": "This version requires Java 8, but Java 8 is not found on your system. Please install Java 8 before creating the server."
+    "java8Required": "This version requires Java 8, but Java 8 is not found on your system. Please install Java 8 before creating the server.",
+    "systemRam": "System memory",
+    "systemCpu": "CPU threads",
+    "memoryValue": "{{value}} GB",
+    "cpuValue": "{{value}} threads",
+    "safeRamLimit": "Recommended ceiling to avoid freezing Windows: {{value}} GB",
+    "recommendedRam": "Recommended allocation",
+    "ramRecommendationHint": "Lumix uses a conservative suggestion based on core type and local hardware.",
+    "ramRecommendationSafe": "Current allocation is within the recommended range",
+    "ramRecommendationWarning": "Current allocation is aggressive",
+    "ramRecommendationMessage": "The recommendation is around {{recommended}} GB, with a local safety ceiling near {{safeMax}} GB. Going beyond that can make Windows and background apps unstable.",
+    "ramProfiles": {
+      "vanilla": "Vanilla usually needs less memory and fits smaller worlds well.",
+      "paper": "Paper is suited for everyday multiplayer servers and usually runs efficiently.",
+      "fabric": "Fabric is friendlier to modded and performance-focused setups, so leave some headroom.",
+      "forge": "Forge and larger modpacks need more memory, so start higher."
+    },
+    "steps": {
+      "name": {
+        "title": "Server Name",
+        "description": "Define the name and folder preview first."
+      },
+      "core": {
+        "title": "Core & Version",
+        "description": "Choose the server core and Minecraft version."
+      },
+      "ram": {
+        "title": "Smart RAM Recommendation",
+        "description": "Use local RAM and CPU data to pick a safer memory profile."
+      },
+      "eula": {
+        "title": "Minecraft EULA",
+        "description": "The user must accept it manually."
+      },
+      "review": {
+        "title": "Review & Create",
+        "description": "Check the summary and start provisioning."
+      }
+    },
+    "core": {
+      "vanilla": {
+        "description": "Closest to official Minecraft behavior with the simplest setup.",
+        "usage": "Best for pure survival, small private servers, and minimal maintenance."
+      },
+      "paper": {
+        "description": "A common high-performance server core with mature plugin support.",
+        "usage": "Best for community servers, day-to-day multiplayer, and stable TPS."
+      },
+      "fabric": {
+        "description": "A lightweight modding core that usually updates quickly.",
+        "usage": "Best for performance mods, technical playstyles, and lean mod stacks."
+      },
+      "forge": {
+        "description": "Traditional large mod ecosystem with broad compatibility.",
+        "usage": "Best for classic modpacks and content-heavy tech or adventure servers."
+      }
+    },
+    "review": {
+      "javaRequirement": "Java requirement",
+      "javaRequirementValue": "Java {{version}}+",
+      "javaRequirementPending": "Auto-detect during creation",
+      "javaCompatibilityWarning": "No directly usable Java {{version}}+ is currently available. Installing it first is recommended."
+    }
   },
   "coreType": {
     "vanilla": "Vanilla",
@@ -344,36 +420,27 @@
   },
   "about": {
     "title": "About",
-    "description": "Minecraft Server Management Tool",
-    "summary": "Lumix is a desktop control center for everyday server operations, bringing creation, startup, version downloads, Java management, and live output into one workflow.",
-    "status": "Open source desktop app",
+    "description": "Product details and update status",
+    "tagline": "A desktop control center for Minecraft server setup, lifecycle management, downloads, and day-to-day maintenance.",
     "version": "Version",
     "maintainer": "Maintainer",
     "releaseChannel": "Release Channel",
     "releaseChannelValue": "GitHub Releases",
     "license": "License",
-    "copyright": "Copyright",
-    "projectTitle": "Project Commitments",
-    "signals": {
-      "localFirst": {
-        "title": "Local-first",
-        "description": "Server files, Java paths, and runtime state are centered around your local machine instead of basic operations depending on external services."
-      },
-      "releaseReady": {
-        "title": "Release-oriented",
-        "description": "Version details and update checks follow the release flow, so the current build and available updates stay clear."
-      },
-      "openProject": {
-        "title": "Open collaboration",
-        "description": "Issues and source code live on GitHub, making defects, requests, and changes easier to inspect and discuss."
-      }
-    },
-    "openSource": "Open Source",
-    "openSourceDescription": "Lumix is maintained in a visible, reportable, and iterative way. Use the repository to inspect the project, or open an issue for bugs and improvements.",
+    "runtime": "Runtime",
+    "runtimeValue": "Electron + React + TypeScript",
+    "quickLinks": "Quick Links",
     "viewOnGitHub": "View on GitHub",
-    "submitFeedback": "Submit Feedback",
-    "updatePolicyTitle": "Updates and compatibility",
-    "updatePolicyDescription": "Update checks use the configured release source. If no release is available, the app stays on the current stable build.",
+    "reportIssue": "Report Issue",
+    "releaseNotes": "Release Notes",
+    "updateStatusTitle": "Update Status",
+    "updateIdleLabel": "Not checked yet",
+    "updateIdleDescription": "Run a manual check to see whether a newer release is available.",
+    "updateAvailableLabel": "Update available",
+    "upToDateLabel": "Up to date",
+    "updateCardTitle": "Software Update",
+    "availableBadge": "Available",
+    "currentBadge": "Current",
     "copyrightNotice": "© 2026 0png"
   },
   "update": {
