@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-17
+
+### Added
+- Existing server import flow for bringing an existing Minecraft server folder into Lumix
+- First-run onboarding checklist and quick actions after server creation
+- Connection info and diagnostics for localhost, LAN, and WAN guidance
+- Backup and restore flow with preflight checks and pre-restore backup support
+
+### Changed
+- Promoted Lumix release metadata, installer naming, and release documentation to the 1.0.0 formal release line
+- Updated release and update setup docs to reflect the actual `0png/Lumix` GitHub release target
+- Refined release-facing product messaging around Windows-first support and currently shipped capabilities
+
+### Technical
+- Verified the release candidate with `pnpm --filter @lumix/app typecheck`
+- Verified the release candidate with `pnpm --filter @lumix/app lint`
+- Verified the release candidate with `pnpm --filter @lumix/app test`
+- Verified the release candidate with `pnpm --filter @lumix/app build`
+- Verified the Windows package with `pnpm --filter @lumix/app build:win`
+
 ## [0.1.0-beta] - 2026-01-18
 
 ### Added
@@ -40,7 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added IPC communication layer for update operations
 - Added use-update React hook for update state management
 - Added UpdateNotification component for user notifications
-- 164 test cases passing (unit tests + property-based tests)
 - Full TypeScript type safety
 
 ## [0.1.0] - 2025-01-17

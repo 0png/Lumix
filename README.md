@@ -20,8 +20,11 @@
 - **Multi-Core Support** - Vanilla, Paper, Fabric, Forge
 - **Auto Java Detection** - Automatically detects installed Java versions
 - **Server Management** - Create, start, stop, delete servers
+- **Import Existing Server** - Bring an existing server folder under Lumix management
 - **Real-time Console** - View server logs and send commands
 - **Server Properties Editor** - Edit server.properties via GUI
+- **Backups and Restore** - Create backups and restore with preflight checks
+- **Connection Diagnostics** - Distinguish localhost, LAN, and WAN connection paths
 - **Multi-language** - English / 繁體中文
 - **Dark/Light Theme** - Follows system or manual selection
 
@@ -35,8 +38,7 @@
 
 Download from [GitHub Releases](https://github.com/0png/Lumix/releases):
 
-- `Lumix-Setup-x.x.x.exe` - Installer
-- `Lumix-x.x.x-portable.exe` - Portable version
+- `Lumix Setup x.y.z.exe` - Windows installer
 
 ## Usage
 
@@ -106,8 +108,11 @@ Thanks to [Crafthead](https://crafthead.net/) for providing Minecraft avatar ren
 - **多核心支援** - Vanilla、Paper、Fabric、Forge
 - **自動偵測 Java** - 自動找到系統安裝的 Java
 - **伺服器管理** - 建立、啟動、停止、刪除伺服器
+- **匯入既有伺服器** - 將現有伺服器資料夾納入 Lumix 管理
 - **即時控制台** - 查看日誌並發送指令
 - **屬性編輯器** - 透過介面編輯 server.properties
+- **備份與還原** - 建立備份並在還原前執行檢查
+- **連線診斷** - 區分本機、區網與外網連線方式
 - **多語言** - English / 繁體中文
 - **深色/淺色主題** - 跟隨系統或手動選擇
 
@@ -121,8 +126,7 @@ Thanks to [Crafthead](https://crafthead.net/) for providing Minecraft avatar ren
 
 從 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
 
-- `Lumix-Setup-x.x.x.exe` - 安裝版
-- `Lumix-x.x.x-portable.exe` - 免安裝版
+- `Lumix Setup x.y.z.exe` - Windows 安裝版
 
 ## 使用方式
 

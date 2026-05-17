@@ -1,6 +1,7 @@
 {
   "name": "@lumix/app",
-  "version": "0.1.0-beta",
+  "version": "1.0.0",
+  "author": "0png",
   "private": true,
   "description": "Lumix GUI - Electron + React application",
   "main": "./out/main/index.js",
@@ -54,7 +55,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Lumix",
-      "artifactName": "Lumix Setup Beta.${ext}"
+      "artifactName": "Lumix Setup ${version}.${ext}"
     },
     "mac": {
       "icon": "resources/icon.png"

@@ -1,138 +1,123 @@
-# Electron 自動更新設定指南
+# Lumix 自動更新與發版設定指南
 
 ## 概述
 
-本專案已整合 `electron-updater`，可從 GitHub Release 自動檢查並下載更新。
+Lumix 使用 `electron-updater` 搭配 GitHub Releases 提供桌面版自動更新。  
+目前設定的發布目標為 `0png/Lumix`，正式版與後續更新都應沿用這個 repo。
 
-## 配置步驟
+## 目前發版設定
 
-### 1. 更新 package.json 的 publish 設定
-
-在 `packages/app/package.json` 中的 `build.publish` 區塊，將 GitHub 資訊改為你的實際 repo：
+`packages/app/package.json` 的 `build.publish` 已設定為：
 
 ```json
 "publish": {
   "provider": "github",
-  "owner": "your-github-username",
-  "repo": "lumix"
+  "owner": "0png",
+  "repo": "Lumix"
 }
 ```
 
-### 2. 設定 GitHub Token（用於發布）
+Windows 安裝程式會輸出為：
 
-建立 GitHub Personal Access Token：
-1. 前往 GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. 點擊 "Generate new token (classic)"
-3. 勾選 `repo` 權限
-4. 複製產生的 token
+```text
+Lumix Setup <version>.exe
+```
 
-設定環境變數：
-```bash
-# Windows (PowerShell)
+## 發布前準備
+
+1. 確認版本號已同步更新
+   - `package.json`
+   - `packages/app/package.json`
+2. 更新 `CHANGELOG.md`
+3. 更新 `RELEASE.md`
+4. 設定 `GH_TOKEN`
+
+PowerShell:
+
+```powershell
 $env:GH_TOKEN="your-github-token"
-
-# macOS/Linux
-export GH_TOKEN="your-github-token"
 ```
 
-### 3. 建置與發布
+## 驗證指令
+
+在 repo root 執行：
 
 ```bash
-# 建置應用程式
+pnpm --filter @lumix/app typecheck
+pnpm --filter @lumix/app lint
+pnpm --filter @lumix/app test
+pnpm --filter @lumix/app build
 pnpm --filter @lumix/app build:win
-
-# 發布到 GitHub Release（需要 GH_TOKEN）
-pnpm --filter @lumix/app publish
 ```
 
-或使用 electron-builder 直接發布：
+## 發布方式
+
+### 方式一：在 app 目錄使用 electron-builder
+
 ```bash
 cd packages/app
 npx electron-builder --win --publish always
 ```
 
-## 更新流程
+### 方式二：先打包，再依需要手動上傳 Release 資產
 
-### 自動檢查更新
-
-應用程式啟動後 3 秒會自動檢查更新（在 `use-app.ts` 中實作）。
-
-### 手動觸發更新
-
-你也可以在設定頁面加入「檢查更新」按鈕：
-
-```tsx
-import { useUpdate } from '@/hooks/use-update';
-
-function SettingsView() {
-  const { checkForUpdates, checking } = useUpdate();
-  
-  return (
-    <Button onClick={checkForUpdates} disabled={checking}>
-      {checking ? '檢查中...' : '檢查更新'}
-    </Button>
-  );
-}
+```bash
+pnpm --filter @lumix/app build:win
 ```
 
-### 更新通知
+輸出檔案位於：
 
-當有新版本時，會自動顯示 toast 通知：
-- 點擊「下載更新」開始下載
-- 下載完成後顯示「立即重啟並安裝」按鈕
-- 點擊後應用程式會重啟並安裝更新
+```text
+packages/app/dist/
+```
 
-## 開發模式
+至少應包含：
 
-在開發模式下，`electron-updater` 不會實際檢查更新。若要測試更新功能：
+- `Lumix Setup <version>.exe`
+- `Lumix Setup <version>.exe.blockmap`
+- `latest.yml`
 
-1. 建置正式版本
-2. 發布到 GitHub Release
-3. 修改版本號（例如從 0.1.0 改為 0.1.1）
-4. 再次建置並執行，應該會檢測到更新
+## 更新測試流程
 
-## 版本號管理
+自動更新無法在開發模式中完整驗證，請使用已建置版本測試：
 
-更新版本號時需同步修改：
-- `package.json` (根目錄)
-- `packages/app/package.json`
-
-建議使用語意化版本號（Semantic Versioning）：
-- `0.1.0` → `0.1.1` (patch: 修正 bug)
-- `0.1.0` → `0.2.0` (minor: 新功能)
-- `0.1.0` → `1.0.0` (major: 重大變更)
+1. 先發布目前版本到 GitHub Releases
+2. 將版本號提升到下一個版本，例如 `1.0.0` -> `1.0.1`
+3. 重新建置並發布新版安裝檔
+4. 在已安裝舊版的 Windows 環境啟動 Lumix
+5. 確認可以檢查到更新、下載並完成重新啟動安裝
 
 ## 發布檢查清單
 
-- [ ] 更新版本號
-- [ ] 更新 CHANGELOG.md
-- [ ] 執行所有測試 (`pnpm test`)
-- [ ] 建置應用程式 (`pnpm build`)
-- [ ] 設定 GH_TOKEN 環境變數
-- [ ] 發布到 GitHub Release
-- [ ] 驗證 Release 包含正確的安裝檔案
+- [ ] 版本號一致
+- [ ] `CHANGELOG.md` 已更新
+- [ ] `RELEASE.md` 已更新
+- [ ] `GH_TOKEN` 已設定
+- [ ] `pnpm --filter @lumix/app typecheck` 通過
+- [ ] `pnpm --filter @lumix/app lint` 通過
+- [ ] `pnpm --filter @lumix/app test` 通過
+- [ ] `pnpm --filter @lumix/app build` 通過
+- [ ] `pnpm --filter @lumix/app build:win` 通過
+- [ ] GitHub Release 內容與版本號一致
+- [ ] Release 資產包含安裝程式與 `latest.yml`
 
-## 故障排除
+## 常見問題
 
-### 更新檢查失敗
+### 檢查不到更新
 
-- 確認 `package.json` 中的 GitHub repo 資訊正確
-- 確認 GitHub Release 存在且包含安裝檔案
-- 檢查網路連線
+- 確認 GitHub Release 已發布且版本號比目前安裝版本新
+- 確認 `latest.yml` 已隨 Release 資產一併提供
+- 確認 `owner/repo` 仍是 `0png/Lumix`
 
-### 下載失敗
+### 下載或安裝失敗
 
-- 確認 Release 中的檔案可公開存取
-- 檢查防火牆設定
-
-### 安裝失敗
-
-- 確認使用者有足夠權限
-- 檢查防毒軟體是否阻擋
+- 確認 Release 資產可公開存取
+- 確認 Windows 防火牆或防毒軟體沒有阻擋
+- 確認目前使用者有安裝更新所需權限
 
 ## 相關檔案
 
-- `packages/app/src/main/services/update-service.ts` - 更新服務
-- `packages/app/src/main/ipc/update-handlers.ts` - IPC handlers
-- `packages/app/src/renderer/src/hooks/use-update.ts` - React hook
-- `packages/app/src/renderer/src/components/update/UpdateNotification.tsx` - UI 元件
+- `packages/app/package.json`
+- `packages/app/src/main/services/update-service.ts`
+- `packages/app/src/main/ipc/update-handlers.ts`
+- `packages/app/src/renderer/src/hooks/use-update.ts`

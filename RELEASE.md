@@ -1,174 +1,103 @@
-# Lumix Beta Release Notes
+# Lumix 1.0.0 Release Notes
 
-**版本**: 0.1.0-beta  
-**發布日期**: 2026-01-18  
-**類型**: Beta Release
+**版本**: 1.0.0  
+**發布日期**: 2026-05-17  
+**類型**: Formal Release
 
 ## 概述
 
-Lumix Beta 是一個跨平台的 Minecraft 伺服器管理工具，提供直覺的圖形介面來建立、管理和監控 Minecraft 伺服器。此 Beta 版本包含核心功能與自動更新系統。
+Lumix 1.0.0 是一個 Windows-first 的 Minecraft 伺服器啟動與管理工具，提供從建立、匯入、啟停、備份還原，到連線資訊與更新檢查的一體化桌面體驗。
 
-## 新增功能
+本次正式版以目前已經落地的功能為準，重點是把核心伺服器操作流程收斂成可穩定發布、可實際使用、可持續更新的正式產品。
 
-### 🎮 伺服器管理
-- **多核心支援**: 支援 Vanilla、Paper、Fabric、Forge 四種伺服器核心
-- **伺服器生命週期管理**: 建立、啟動、停止、刪除伺服器
-- **即時控制台**: 顯示伺服器日誌並支援指令輸入
-- **伺服器屬性編輯器**: 圖形化編輯 server.properties（難度、遊戲模式、最大玩家數等）
-- **資料夾快速開啟**: 一鍵開啟伺服器資料夾
+## 正式版重點
 
-### ☕ Java 管理
-- **自動偵測**: 自動偵測系統已安裝的 Java 版本
-- **版本匹配**: 根據 Minecraft 版本自動選擇合適的 Java 版本
-- **Java 路徑管理**: 支援自訂 Java 路徑
+### 伺服器管理
+- 建立、啟動、停止、刪除 Minecraft 伺服器
+- 支援 Vanilla、Paper、Fabric、Forge 核心
+- 即時 console 輸出與指令輸入
+- 圖形化編輯 `server.properties`
+- 一鍵開啟伺服器資料夾
 
-### 🔄 自動更新系統（本次新增）
-- **自動檢查更新**: 應用程式啟動 3 秒後自動檢查 GitHub Release 更新
-- **手動檢查更新**: 在關於頁面提供「檢查更新」按鈕
-- **下載進度顯示**: 即時顯示更新下載進度
-- **一鍵安裝**: 下載完成後可立即重啟並安裝更新
-- **更新通知**: 使用 toast 通知提示使用者更新狀態
+### 匯入與首次使用流程
+- 匯入既有伺服器資料夾並納入 Lumix 管理
+- 建立新伺服器後顯示首次引導 checklist
+- 快速導向 Java、記憶體、設定、連線資訊與啟動動作
 
-### 🌍 多語系支援
-- **繁體中文** (zh-TW)
-- **English** (en)
-- 所有 UI 元素與訊息皆支援多語系
+### Java 與版本相容
+- 自動偵測系統已安裝的 Java
+- 依 Minecraft 版本匹配合適的 Java 版本
+- 支援自訂 Java 路徑
 
-### 🎨 主題系統
-- **淺色主題**: 適合白天使用
-- **深色主題**: 適合夜間使用
-- **跟隨系統**: 自動跟隨作業系統主題設定
+### 備份與還原
+- 建立手動與排程備份
+- 顯示備份清單、建立時間、大小與路徑
+- 還原前執行 preflight 檢查
+- 支援還原前自動建立保護性備份
 
-## 技術架構
+### 連線資訊與診斷
+- 顯示 `localhost`、LAN 位址與連接埠資訊
+- 區分本機、區網與外網使用情境
+- 提示常見連線問題與可行下一步
 
-### 前端技術棧
-- **Electron 28**: 跨平台桌面應用框架
-- **React 18**: UI 框架
-- **TypeScript 5**: 型別安全
-- **Vite 5**: 快速建置工具
-- **Tailwind CSS 3**: 樣式框架
-- **Radix UI**: 無障礙 UI 元件庫
-- **shadcn/ui**: UI 元件集合
+### 更新與桌面體驗
+- 整合 GitHub Releases 自動更新
+- 啟動後自動檢查更新
+- 提供手動檢查、下載進度與重新啟動安裝流程
+- 支援繁體中文與 English
+- 支援淺色、深色與跟隨系統主題
 
-### 後端服務
-- **ServerManager**: 伺服器生命週期管理
-- **ProcessManager**: 程序管理與監控
-- **FileManager**: 檔案系統操作
-- **DownloadService**: 伺服器 JAR 下載
-- **UpdateService**: 自動更新服務（新增）
-- **JavaDetector**: Java 版本偵測
+## 系統需求
 
-### 測試覆蓋
-- **164 個測試案例**: 包含單元測試與 property-based testing
-- **測試覆蓋範圍**: ServerManager, ProcessManager, FileManager, DownloadService
-- **測試框架**: Vitest + fast-check
+- 作業系統: Windows 10 / 11
+- 記憶體: 建議 4GB 以上
+- 可用空間: 至少 500MB
+- 網路: 下載伺服器核心、更新與版本資料時需要網路
+- Java:
+  - MC 1.16.x 及以下建議 Java 8
+  - MC 1.17 至 1.20.4 建議 Java 17
+  - MC 1.20.5 以上建議 Java 21
+
+## 安裝方式
+
+從 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
+
+- `Lumix Setup 1.0.0.exe`
+
+安裝完成後首次啟動，Lumix 會自動偵測系統 Java 並可立即建立或匯入伺服器。
 
 ## 已知限制
 
-### 功能限制
-1. **Forge 安裝器**: 目前僅支援基本的 Forge 安裝流程，部分版本可能需要手動處理
-2. **Java 8 支援**: 系統無法自動安裝 Java 8，需使用者手動安裝
-3. **更新功能**: 開發模式下無法測試更新功能，需建置正式版本
+- 產品目前以 Windows-first 為主，本次正式版發布與驗證目標為 Windows 桌面環境
+- Forge 部分版本仍可能需要額外安裝處理或手動介入
+- Lumix 可提供區網與外網連線診斷，但不會自動設定路由器轉發或代管遠端連線
+- 自動更新需要 GitHub Release 資產與版本資訊正確發布後才會生效
 
-### 平台支援
-- **Windows**: 完整支援（已測試）
-- **macOS**: 理論支援（未完整測試）
-- **Linux**: 理論支援（未完整測試）
+## 驗證摘要
 
-## 安裝需求
+本次正式版發版前已完成：
 
-### 系統需求
-- **作業系統**: Windows 10/11, macOS 10.15+, Linux (Ubuntu 20.04+)
-- **記憶體**: 建議 4GB 以上
-- **硬碟空間**: 至少 500MB 可用空間
-- **網路**: 需要網路連線以下載伺服器 JAR 與更新
-
-### 軟體需求
-- **Java**: 根據 Minecraft 版本需要 Java 8/17/21
-  - MC 1.16 及以下: Java 8
-  - MC 1.17-1.20.4: Java 17
-  - MC 1.20.5+: Java 21
-
-## 安裝步驟
-
-1. 從 [GitHub Releases](https://github.com/your-username/lumix/releases) 下載 `Lumix Setup Beta.exe`
-2. 執行安裝程式
-3. 選擇安裝位置（或使用預設位置）
-4. 完成安裝後啟動 Lumix
-5. 首次啟動會自動偵測系統 Java
-
-## 使用指南
-
-### 建立第一個伺服器
-1. 點擊側邊欄的「新增伺服器」按鈕
-2. 輸入伺服器名稱
-3. 選擇核心類型（Vanilla/Paper/Fabric/Forge）
-4. 選擇 Minecraft 版本
-5. 設定記憶體配置（建議最小 1GB，最大 2-4GB）
-6. 勾選同意 Minecraft EULA
-7. 點擊「建立」並等待下載完成
-
-### 啟動伺服器
-1. 在伺服器列表中選擇伺服器
-2. 點擊「啟動」按鈕
-3. 等待伺服器啟動完成（控制台會顯示 "Done"）
-4. 使用 Minecraft 客戶端連線到 `localhost:25565`
-
-### 檢查更新
-1. 點擊側邊欄的「關於」
-2. 在應用程式資訊卡片底部點擊「檢查更新」
-3. 如果有新版本，會顯示下載按鈕
-4. 下載完成後點擊「立即重啟並安裝」
-
-## 故障排除
-
-### 伺服器無法啟動
-- **檢查 Java 版本**: 確認已安裝對應版本的 Java
-- **檢查記憶體**: 確認系統有足夠的可用記憶體
-- **檢查埠號**: 確認 25565 埠未被佔用
-- **查看日誌**: 在控制台查看詳細錯誤訊息
-
-### 找不到 Java
-- **手動安裝**: 從 [Adoptium](https://adoptium.net/) 下載並安裝對應版本的 Java
-- **重新偵測**: 安裝完成後在設定頁面點擊「偵測」按鈕
-
-### 更新失敗
-- **檢查網路**: 確認網路連線正常
-- **手動下載**: 從 GitHub Releases 手動下載最新版本
-- **防毒軟體**: 檢查防毒軟體是否阻擋更新
+- 手動功能測試
+- `pnpm --filter @lumix/app typecheck`
+- `pnpm --filter @lumix/app lint`
+- `pnpm --filter @lumix/app test`
+- `pnpm --filter @lumix/app build`
+- `pnpm --filter @lumix/app build:win`
 
 ## 回報問題
 
-如果遇到問題或有功能建議，請前往：
-- **GitHub Issues**: https://github.com/your-username/lumix/issues
-- **提供資訊**: 作業系統版本、Java 版本、錯誤訊息、重現步驟
+- GitHub Releases: https://github.com/0png/Lumix/releases
+- GitHub Issues: https://github.com/0png/Lumix/issues
 
-## 未來計畫
+回報問題時建議附上：
+- Windows 版本
+- Java 版本
+- Minecraft 版本與核心類型
+- 錯誤訊息
+- 重現步驟
 
-以下功能正在規劃中（不保證實作）：
-- 插件/模組管理
-- 備份與還原
-- 多伺服器同時運行
-- 效能監控圖表
-- 遠端管理功能
+## 授權
 
-## 授權資訊
+- License: MIT
+- Author: 0png
 
-- **授權**: MIT License
-- **作者**: 0png
-- **版權**: © 2026 0png
-
-## 致謝
-
-感謝以下開源專案：
-- Electron
-- React
-- TypeScript
-- Tailwind CSS
-- Radix UI
-- shadcn/ui
-- electron-updater
-
----
-
-**注意**: 這是 Beta 版本，可能存在未知的 bug。建議在測試環境中使用，不要用於生產環境的重要伺服器。

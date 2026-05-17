@@ -29,7 +29,7 @@ function openExternal(url: string) {
 /** 關於對話框元件 */
 export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
   const { t } = useTranslation();
-  const [version, setVersion] = useState('0.1.0');
+  const [version, setVersion] = useState('1.0.0');
 
   useEffect(() => {
     window.electronAPI.app.getVersion().then((result) => {

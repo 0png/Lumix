@@ -35,7 +35,7 @@ async function openExternal(url: string) {
 /** 關於頁面元件 */
 export function AboutView({ onBack }: AboutViewProps) {
   const { t } = useTranslation();
-  const [version, setVersion] = useState('0.1.0');
+  const [version, setVersion] = useState('1.0.0');
   const [hasCheckedUpdate, setHasCheckedUpdate] = useState(false);
   const { checkForUpdates, checking, available, updateInfo } = useUpdate();
 
