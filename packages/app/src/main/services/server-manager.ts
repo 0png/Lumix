@@ -21,6 +21,8 @@ import {
   withNextBackupRun,
 } from '../../shared/backup-utils';
 import type {
+  BackupFailureCode,
+  BackupKind,
   ServerInstanceDto,
   ServerStatus,
   CreateServerRequest,
@@ -35,10 +37,16 @@ import type {
   PlayerActionRequest,
   PlayerDto,
   BackupInfoDto,
+  BackupOperationContext,
+  BackupOperationFailure,
+  BackupPreflightResult,
   BackupSettings,
   BackupTrigger,
+  GetRestorePreflightRequest,
   RestoreBackupRequest,
+  RestoreBackupResult,
   UpdateBackupSettingsRequest,
+  IpcError,
 } from '../../shared/ipc-types';
 import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 
@@ -53,7 +61,26 @@ const JAVA_VERIFY_TIMEOUT = 5000; // 5 秒
 const BACKUP_DIR_NAME = '.lumix-backups';
 const BACKUP_METADATA_FILE = '.lumix-backup.json';
 const MAX_BACKUPS_PER_SERVER = 3;
+const MAX_PRE_RESTORE_BACKUPS_PER_SERVER = 3;
 const MAX_TIMER_DELAY = 2147483647;
+const RESTORE_STAGING_PREFIX = '.lumix-restore-staging-';
+const RESTORE_ROLLBACK_PREFIX = '.lumix-restore-rollback-';
+const BACKUP_EXCLUDED_LOCK_FILES = new Set(['session.lock']);
+const RESTORE_FILE_NAMES = new Set([
+  'server.properties',
+  'ops.json',
+  'whitelist.json',
+  'banned-players.json',
+  'banned-ips.json',
+]);
+const RESTORE_DIRECTORY_NAMES = new Set(['mods', 'plugins']);
+
+class ServerManagerIpcError extends Error {
+  constructor(public readonly ipcError: IpcError) {
+    super(formatIpcError(ipcError));
+    this.name = 'ServerManagerIpcError';
+  }
+}
 
 export interface ServerManagerEvents {
   'status-changed': (event: ServerStatusEvent) => void;
@@ -634,9 +661,10 @@ export class ServerManager extends EventEmitter {
         try {
           const metadataPath = path.join(backupPath, BACKUP_METADATA_FILE);
           const raw = await fs.readFile(metadataPath, 'utf-8');
-          const metadata = JSON.parse(raw) as Omit<BackupInfoDto, 'sizeBytes'>;
+          const metadata = JSON.parse(raw) as Omit<BackupInfoDto, 'sizeBytes'> & { kind?: BackupKind };
           return {
             ...metadata,
+            kind: metadata.kind ?? 'regular',
             path: backupPath,
             sizeBytes: await this.getDirectorySize(backupPath),
           };
@@ -650,7 +678,11 @@ export class ServerManager extends EventEmitter {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  async createBackup(id: string, trigger: BackupTrigger = 'manual'): Promise<BackupInfoDto> {
+  async createBackup(
+    id: string,
+    trigger: BackupTrigger = 'manual',
+    kind: BackupKind = 'regular'
+  ): Promise<BackupInfoDto> {
     const server = this.getExistingServer(id);
     const createdAt = new Date().toISOString();
     const backupId = createBackupId(createdAt);
@@ -675,11 +707,21 @@ export class ServerManager extends EventEmitter {
       await this.delay(2000);
       try {
         await copyServer();
+      } catch (error) {
+        throw this.createBackupOperationError(
+          this.mapBackupOperationFailure(error, 'backup', '建立備份時發生錯誤', backupPath)
+        );
       } finally {
         this.processManager.writeStdin(id, 'save-on');
       }
     } else {
-      await copyServer();
+      try {
+        await copyServer();
+      } catch (error) {
+        throw this.createBackupOperationError(
+          this.mapBackupOperationFailure(error, 'backup', '建立備份時發生錯誤', backupPath)
+        );
+      }
     }
 
     const backup: BackupInfoDto = {
@@ -690,6 +732,8 @@ export class ServerManager extends EventEmitter {
       createdAt,
       sizeBytes: await this.getDirectorySize(backupPath),
       trigger,
+      kind,
+      sourceServerState: server.status === 'running' ? 'running' : 'stopped',
     };
 
     await fs.writeFile(
@@ -697,7 +741,7 @@ export class ServerManager extends EventEmitter {
       JSON.stringify(backup, null, 2),
       'utf-8'
     );
-    await this.pruneBackups(id);
+    await this.pruneBackups(id, kind);
 
     if (trigger === 'scheduled') {
       await this.markBackupRun(id, createdAt);
@@ -711,34 +755,186 @@ export class ServerManager extends EventEmitter {
     return backup;
   }
 
-  async restoreBackup(request: RestoreBackupRequest): Promise<void> {
+  async getRestoreBackupPreflight(request: GetRestorePreflightRequest): Promise<BackupPreflightResult> {
     const server = this.getExistingServer(request.serverId);
+    const backup = await this.getBackupById(request.serverId, request.backupId);
+    const warnings: string[] = [];
+    const blockingIssues: BackupOperationFailure[] = [];
+
     if (server.status !== 'stopped') {
-      throw new Error(formatIpcError(createIpcError(
-        IpcErrorCode.SERVER_INVALID_STATE,
-        '還原備份前請先停止伺服器'
-      )));
+      blockingIssues.push(this.createBackupFailure(
+        'SERVER_MUST_BE_STOPPED',
+        '還原備份前請先停止伺服器。',
+        'preflight',
+        server.directory,
+        undefined,
+        '先停止伺服器，再重新開啟還原流程。'
+      ));
     }
 
-    const backups = await this.listBackups(request.serverId);
-    const backup = backups.find((item) => item.id === request.backupId);
-    if (!backup) {
-      throw new Error(formatIpcError(createIpcError(
-        IpcErrorCode.FS_READ_ERROR,
-        '找不到指定的備份'
-      )));
+    const requiredEntries = await this.readBackupRestorableEntries(backup.path);
+    const hasWorldData = requiredEntries.some((entry) => entry.name.startsWith('world'));
+    const hasServerProperties = requiredEntries.some((entry) => entry.name === 'server.properties');
+    if (!hasWorldData && !hasServerProperties) {
+      blockingIssues.push(this.createBackupFailure(
+        'CORRUPTED_BACKUP',
+        '這份備份缺少世界資料與 server.properties，無法安全還原。',
+        'preflight',
+        backup.path,
+        ['需要至少包含 world 資料夾或 server.properties。'],
+        '改用另一份備份，或先檢查備份資料夾內容是否完整。'
+      ));
     }
 
-    const entries = await fs.readdir(server.directory, { withFileTypes: true });
-    await Promise.all(entries.map(async (entry) => {
-      if (entry.name === BACKUP_DIR_NAME) return;
-      await fs.rm(path.join(server.directory, entry.name), { recursive: true, force: true });
-    }));
+    const estimatedRestoreBytes = await this.getDirectorySize(backup.path);
+    const freeSpaceBytes = await this.getFreeSpaceBytes(server.directory);
+    if (freeSpaceBytes !== undefined && freeSpaceBytes < estimatedRestoreBytes) {
+      blockingIssues.push(this.createBackupFailure(
+        'INSUFFICIENT_DISK_SPACE',
+        '磁碟可用空間不足，無法完成還原。',
+        'preflight',
+        server.directory,
+        [
+          `需要約 ${estimatedRestoreBytes} bytes`,
+          `可用空間約 ${freeSpaceBytes} bytes`,
+        ],
+        '請先釋出磁碟空間，或移除不需要的檔案後再試一次。'
+      ));
+    }
 
-    await fs.cp(backup.path, server.directory, {
-      recursive: true,
-      filter: (source) => path.basename(source) !== BACKUP_METADATA_FILE,
+    try {
+      await fs.readdir(server.directory, { withFileTypes: true });
+      await this.assertDirectoryWritable(server.directory);
+    } catch (error) {
+      blockingIssues.push(this.mapBackupOperationFailure(
+        error,
+        'preflight',
+        '目前無法寫入伺服器資料夾，不能執行還原。',
+        server.directory
+      ));
+    }
+
+    if (!requiredEntries.some((entry) => entry.name === 'mods')) {
+      warnings.push('這份備份不包含 mods 資料夾。');
+    }
+
+    if (!requiredEntries.some((entry) => entry.name === 'plugins')) {
+      warnings.push('這份備份不包含 plugins 資料夾。');
+    }
+
+    const logsPath = path.join(backup.path, 'logs');
+    const hasLogs = await fs.stat(logsPath).then(() => true).catch(() => false);
+    if (!hasLogs) {
+      warnings.push('這份備份不包含 logs。');
+    }
+
+    if (backup.sourceServerState === 'running') {
+      warnings.push('這份備份建立時伺服器仍在運行中。');
+    }
+
+    return {
+      canRun: blockingIssues.length === 0,
+      requiresServerStop: server.status !== 'stopped',
+      estimatedRestoreBytes,
+      freeSpaceBytes,
+      warnings,
+      blockingIssues,
+    };
+  }
+
+  async restoreBackup(request: RestoreBackupRequest): Promise<RestoreBackupResult> {
+    const server = this.getExistingServer(request.serverId);
+    const backup = await this.getBackupById(request.serverId, request.backupId);
+    const preflight = await this.getRestoreBackupPreflight({
+      serverId: request.serverId,
+      backupId: request.backupId,
     });
+
+    if (!preflight.canRun) {
+      throw this.createBackupOperationError(
+        preflight.blockingIssues[0] ?? this.createBackupFailure(
+          'RESTORE_VALIDATION_FAILED',
+          '還原前檢查失敗。',
+          'restore',
+          server.directory,
+          preflight.warnings,
+          '先處理上方問題，再重新嘗試還原。'
+        ),
+        IpcErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    let preRestoreBackupId: string | undefined;
+    if (request.createPreRestoreBackup !== false) {
+      try {
+        const preRestoreBackup = await this.createBackup(request.serverId, 'manual', 'pre-restore');
+        preRestoreBackupId = preRestoreBackup.id;
+      } catch (error) {
+        throw this.createBackupOperationError(
+          this.mapBackupOperationFailure(
+            error,
+            'pre-restore-backup',
+            '建立還原前備份失敗，已取消還原。',
+            server.directory,
+            'PRE_RESTORE_BACKUP_FAILED'
+          ),
+          IpcErrorCode.FS_WRITE_ERROR
+        );
+      }
+    }
+
+    const workspaceRoot = path.dirname(server.directory);
+    const nonce = `${request.serverId}-${Date.now()}`;
+    const stagingDir = path.join(workspaceRoot, `${RESTORE_STAGING_PREFIX}${nonce}`);
+    const rollbackDir = path.join(workspaceRoot, `${RESTORE_ROLLBACK_PREFIX}${nonce}`);
+    let stagedEntryNames: string[] = [];
+    let preserveRollbackDir = false;
+
+    try {
+      await fs.mkdir(stagingDir, { recursive: true });
+      await fs.mkdir(rollbackDir, { recursive: true });
+      stagedEntryNames = await this.copyBackupContentsToRestoreStaging(backup.path, stagingDir);
+
+      for (const name of stagedEntryNames) {
+        const existingTarget = path.join(server.directory, name);
+        if (await this.pathExists(existingTarget)) {
+          await fs.rename(existingTarget, path.join(rollbackDir, name));
+        }
+      }
+
+      for (const name of stagedEntryNames) {
+        const source = path.join(stagingDir, name);
+        const destination = path.join(server.directory, name);
+        const stat = await fs.lstat(source);
+        if (stat.isDirectory()) {
+          await fs.cp(source, destination, { recursive: true });
+        } else {
+          await fs.copyFile(source, destination);
+        }
+      }
+    } catch (error) {
+      const rollbackFailure = await this.rollbackRestoreChanges(server.directory, rollbackDir, stagedEntryNames);
+      const failure = this.mapBackupOperationFailure(
+        error,
+        'restore',
+        '還原備份時發生錯誤。',
+        backup.path
+      );
+      if (rollbackFailure) {
+        preserveRollbackDir = true;
+        failure.details = [
+          ...(failure.details ?? []),
+          `回復暫存資料夾保留於 ${rollbackDir}`,
+        ];
+        failure.suggestedAction = '還原途中失敗，且自動回復未完全成功。請先檢查 rollback 資料夾內容。';
+      }
+      throw this.createBackupOperationError(failure);
+    } finally {
+      await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => undefined);
+      if (!preserveRollbackDir) {
+        await fs.rm(rollbackDir, { recursive: true, force: true }).catch(() => undefined);
+      }
+    }
 
     const restoredServer: ServerInstanceDto = {
       ...server,
@@ -749,6 +945,11 @@ export class ServerManager extends EventEmitter {
     await this.persistServerUpdate(restoredServer);
     this.scheduleBackup(request.serverId);
     this.emitLogEntry(request.serverId, 'info', `已還原備份: ${backup.name}`);
+    return {
+      restoredBackupId: backup.id,
+      preRestoreBackupId,
+      warnings: preflight.warnings,
+    };
   }
 
   async deleteBackup(serverId: string, backupId: string): Promise<void> {
@@ -1253,14 +1454,186 @@ export class ServerManager extends EventEmitter {
     return path.join(serverDirectory, BACKUP_DIR_NAME);
   }
 
+  private createBackupOperationError(
+    failure: BackupOperationFailure,
+    ipcCode: typeof IpcErrorCode[keyof typeof IpcErrorCode] = IpcErrorCode.FS_WRITE_ERROR
+  ): ServerManagerIpcError {
+    return new ServerManagerIpcError(
+      createIpcError(ipcCode, failure.message, { backupFailure: failure })
+    );
+  }
+
+  private createBackupFailure(
+    code: BackupFailureCode,
+    message: string,
+    context: BackupOperationContext,
+    failurePath?: string,
+    details?: string[],
+    suggestedAction?: string
+  ): BackupOperationFailure {
+    return {
+      code,
+      message,
+      context,
+      path: failurePath,
+      details,
+      suggestedAction,
+    };
+  }
+
+  private mapBackupOperationFailure(
+    error: unknown,
+    context: BackupOperationContext,
+    fallbackMessage: string,
+    failurePath?: string,
+    overrideCode?: BackupFailureCode
+  ): BackupOperationFailure {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'ipcError' in error &&
+      (error as { ipcError?: IpcError }).ipcError?.details?.backupFailure
+    ) {
+      return (error as { ipcError: IpcError }).ipcError.details?.backupFailure as BackupOperationFailure;
+    }
+
+    const nodeError = error as NodeJS.ErrnoException | undefined;
+    const rawMessage = error instanceof Error ? error.message : fallbackMessage;
+    const message = rawMessage.includes(': ') ? rawMessage.split(': ').slice(1).join(': ') : rawMessage;
+
+    let code: BackupFailureCode = overrideCode ?? 'UNKNOWN';
+    let suggestedAction = '請再試一次，若問題持續發生，請檢查備份資料夾與伺服器資料夾權限。';
+
+    if (!overrideCode) {
+      if (nodeError?.code === 'ENOENT') {
+        code = 'MISSING_SOURCE_PATH';
+        suggestedAction = '請確認備份資料夾或伺服器資料夾仍然存在。';
+      } else if (nodeError?.code === 'EACCES' || nodeError?.code === 'EPERM') {
+        code = 'PERMISSION_DENIED';
+        suggestedAction = '請確認 Lumix 對相關資料夾有讀寫權限，或以較高權限重新執行。';
+      } else if (/busy|lock|locked|used by another process|resource busy/i.test(rawMessage)) {
+        code = 'FILE_LOCKED';
+        suggestedAction = '請先關閉占用檔案的程式或確認伺服器程序已完全停止。';
+      }
+    }
+
+    return this.createBackupFailure(
+      code,
+      message || fallbackMessage,
+      context,
+      failurePath,
+      undefined,
+      suggestedAction
+    );
+  }
+
   private shouldIncludeInBackup(serverDirectory: string, source: string, settings?: BackupSettings): boolean {
     const relativePath = path.relative(serverDirectory, source);
     if (!relativePath) return true;
     const parts = relativePath.split(path.sep);
     if (parts.includes(BACKUP_DIR_NAME)) return false;
+    if (parts.some((part) => part.startsWith(RESTORE_STAGING_PREFIX) || part.startsWith(RESTORE_ROLLBACK_PREFIX))) return false;
     if (path.basename(source) === BACKUP_METADATA_FILE) return false;
+    if (BACKUP_EXCLUDED_LOCK_FILES.has(path.basename(source))) return false;
     if (!settings?.includeLogs && (parts.includes('logs') || source.endsWith('.log'))) return false;
     return true;
+  }
+
+  private async getBackupById(serverId: string, backupId: string): Promise<BackupInfoDto> {
+    const backups = await this.listBackups(serverId);
+    const backup = backups.find((item) => item.id === backupId);
+    if (!backup) {
+      throw this.createBackupOperationError(
+        this.createBackupFailure(
+          'MISSING_SOURCE_PATH',
+          '找不到指定的備份。',
+          'preflight',
+          path.join(this.getBackupRoot(this.getExistingServer(serverId).directory), backupId),
+          undefined,
+          '請確認備份仍存在於清單中，或重新整理後再試一次。'
+        ),
+        IpcErrorCode.FS_READ_ERROR
+      );
+    }
+    return backup;
+  }
+
+  private async getFreeSpaceBytes(targetPath: string): Promise<number | undefined> {
+    try {
+      const stat = await fs.statfs(targetPath);
+      return stat.bavail * stat.bsize;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async assertDirectoryWritable(directory: string): Promise<void> {
+    const probePath = path.join(directory, `.lumix-write-check-${Date.now()}.tmp`);
+    await fs.writeFile(probePath, 'ok', 'utf-8');
+    await fs.rm(probePath, { force: true });
+  }
+
+  private async readBackupRestorableEntries(backupPath: string) {
+    const entries = await fs.readdir(backupPath, { withFileTypes: true });
+    return entries.filter((entry) => this.shouldRestoreEntry(entry.name, entry.isDirectory()));
+  }
+
+  private shouldRestoreEntry(name: string, isDirectory: boolean): boolean {
+    if (name === BACKUP_METADATA_FILE || name === BACKUP_DIR_NAME) return false;
+    if (name === 'logs') return false;
+    if (name.startsWith(RESTORE_STAGING_PREFIX) || name.startsWith(RESTORE_ROLLBACK_PREFIX)) return false;
+    if (name.startsWith('world')) return true;
+    if (RESTORE_FILE_NAMES.has(name)) return true;
+    if (isDirectory && RESTORE_DIRECTORY_NAMES.has(name)) return true;
+    return false;
+  }
+
+  private async copyBackupContentsToRestoreStaging(backupPath: string, stagingDir: string): Promise<string[]> {
+    const entries = await this.readBackupRestorableEntries(backupPath);
+    const stagedEntryNames: string[] = [];
+
+    for (const entry of entries) {
+      const source = path.join(backupPath, entry.name);
+      const destination = path.join(stagingDir, entry.name);
+      if (entry.isDirectory()) {
+        await fs.cp(source, destination, { recursive: true });
+      } else if (entry.isFile()) {
+        await fs.copyFile(source, destination);
+      }
+      stagedEntryNames.push(entry.name);
+    }
+
+    return stagedEntryNames;
+  }
+
+  private async rollbackRestoreChanges(
+    serverDirectory: string,
+    rollbackDir: string,
+    stagedEntryNames: string[]
+  ): Promise<boolean> {
+    try {
+      await Promise.allSettled(
+        stagedEntryNames.map((name) => fs.rm(path.join(serverDirectory, name), { recursive: true, force: true }))
+      );
+
+      const rollbackEntries = await fs.readdir(rollbackDir, { withFileTypes: true });
+      for (const entry of rollbackEntries) {
+        await fs.rename(path.join(rollbackDir, entry.name), path.join(serverDirectory, entry.name));
+      }
+
+      return false;
+    } catch {
+      return true;
+    }
+  }
+
+  private async pathExists(targetPath: string): Promise<boolean> {
+    try {
+      await fs.access(targetPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async copyServerDirectoryToBackup(
@@ -1275,17 +1648,40 @@ export class ServerManager extends EventEmitter {
 
       const destination = path.join(backupPath, entry.name);
       if (entry.isDirectory()) {
-        await fs.cp(source, destination, {
-          recursive: true,
-          filter: (currentSource) => this.shouldIncludeInBackup(serverDirectory, currentSource, settings),
-        });
+        try {
+          await fs.cp(source, destination, {
+            recursive: true,
+            filter: (currentSource) => this.shouldIncludeInBackup(serverDirectory, currentSource, settings),
+          });
+        } catch (error) {
+          if (this.canIgnoreLiveBackupLockError(error, source)) return;
+          throw error;
+        }
         return;
       }
 
       if (entry.isFile()) {
-        await fs.copyFile(source, destination);
+        try {
+          await fs.copyFile(source, destination);
+        } catch (error) {
+          if (this.canIgnoreLiveBackupLockError(error, source)) return;
+          throw error;
+        }
       }
     }));
+  }
+
+  private canIgnoreLiveBackupLockError(error: unknown, sourcePath: string): boolean {
+    const nodeError = error as NodeJS.ErrnoException | undefined;
+    const baseName = path.basename(sourcePath);
+    if (!BACKUP_EXCLUDED_LOCK_FILES.has(baseName)) return false;
+
+    return (
+      nodeError?.code === 'EBUSY' ||
+      nodeError?.code === 'EPERM' ||
+      nodeError?.code === 'EACCES' ||
+      /busy|lock|locked|used by another process|resource busy/i.test(nodeError?.message ?? '')
+    );
   }
 
   private async notifyOps(serverId: string, message: string): Promise<void> {
@@ -1303,9 +1699,10 @@ export class ServerManager extends EventEmitter {
     }
   }
 
-  private async pruneBackups(serverId: string): Promise<void> {
+  private async pruneBackups(serverId: string, kind: BackupKind): Promise<void> {
     const backups = await this.listBackups(serverId);
-    const staleBackups = backups.slice(MAX_BACKUPS_PER_SERVER);
+    const limit = kind === 'pre-restore' ? MAX_PRE_RESTORE_BACKUPS_PER_SERVER : MAX_BACKUPS_PER_SERVER;
+    const staleBackups = backups.filter((backup) => backup.kind === kind).slice(limit);
     await Promise.all(staleBackups.map((backup) => fs.rm(backup.path, { recursive: true, force: true })));
   }
 

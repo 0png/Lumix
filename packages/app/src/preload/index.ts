@@ -27,8 +27,11 @@ import type {
   PlayerActionRequest,
   PlayerDto,
   BackupInfoDto,
+  BackupPreflightResult,
   CreateBackupRequest,
+  GetRestorePreflightRequest,
   RestoreBackupRequest,
+  RestoreBackupResult,
   UpdateBackupSettingsRequest,
   JavaInstallationDto,
   JavaInstallRequest,
@@ -99,7 +102,10 @@ const electronAPI = {
     createBackup: (data: CreateBackupRequest): Promise<IpcResult<BackupInfoDto>> =>
       ipcRenderer.invoke(ServerChannels.CREATE_BACKUP, data),
 
-    restoreBackup: (data: RestoreBackupRequest): Promise<IpcResult<void>> =>
+    getRestoreBackupPreflight: (data: GetRestorePreflightRequest): Promise<IpcResult<BackupPreflightResult>> =>
+      ipcRenderer.invoke(ServerChannels.GET_RESTORE_BACKUP_PREFLIGHT, data),
+
+    restoreBackup: (data: RestoreBackupRequest): Promise<IpcResult<RestoreBackupResult>> =>
       ipcRenderer.invoke(ServerChannels.RESTORE_BACKUP, data),
 
     deleteBackup: (serverId: string, backupId: string): Promise<IpcResult<void>> =>

@@ -261,6 +261,18 @@ export interface PlayerActionRequest {
 
 export type BackupScheduleType = 'hourly' | 'daily' | 'weekly' | 'while-running';
 export type BackupTrigger = 'manual' | 'scheduled';
+export type BackupKind = 'regular' | 'pre-restore';
+export type BackupFailureCode =
+  | 'INSUFFICIENT_DISK_SPACE'
+  | 'FILE_LOCKED'
+  | 'PERMISSION_DENIED'
+  | 'CORRUPTED_BACKUP'
+  | 'MISSING_SOURCE_PATH'
+  | 'SERVER_MUST_BE_STOPPED'
+  | 'PRE_RESTORE_BACKUP_FAILED'
+  | 'RESTORE_VALIDATION_FAILED'
+  | 'UNKNOWN';
+export type BackupOperationContext = 'backup' | 'restore' | 'preflight' | 'pre-restore-backup';
 
 export interface BackupSettings {
   enabled: boolean;
@@ -283,6 +295,26 @@ export interface BackupInfoDto {
   createdAt: string;
   sizeBytes: number;
   trigger: BackupTrigger;
+  kind: BackupKind;
+  sourceServerState?: 'running' | 'stopped';
+}
+
+export interface BackupOperationFailure {
+  code: BackupFailureCode;
+  message: string;
+  context: BackupOperationContext;
+  path?: string;
+  details?: string[];
+  suggestedAction?: string;
+}
+
+export interface BackupPreflightResult {
+  canRun: boolean;
+  requiresServerStop: boolean;
+  estimatedRestoreBytes?: number;
+  freeSpaceBytes?: number;
+  warnings: string[];
+  blockingIssues: BackupOperationFailure[];
 }
 
 export interface CreateBackupRequest {
@@ -290,9 +322,21 @@ export interface CreateBackupRequest {
   trigger?: BackupTrigger;
 }
 
+export interface GetRestorePreflightRequest {
+  serverId: string;
+  backupId: string;
+}
+
 export interface RestoreBackupRequest {
   serverId: string;
   backupId: string;
+  createPreRestoreBackup?: boolean;
+}
+
+export interface RestoreBackupResult {
+  restoredBackupId: string;
+  preRestoreBackupId?: string;
+  warnings: string[];
 }
 
 export interface UpdateBackupSettingsRequest {

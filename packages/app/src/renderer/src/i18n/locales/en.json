@@ -148,11 +148,29 @@
     "createNow": "Back Up Now",
     "retention": "Lumix automatically removes older backups and keeps the latest 3.",
     "recent": "Recent Backups",
+    "regularSection": "Regular Backups",
+    "preRestoreSection": "Pre-Restore Backups",
     "empty": "No backups yet",
+    "preRestoreEmpty": "No pre-restore backups yet",
     "open": "Open",
     "restore": "Restore",
     "restoreLocked": "Stop the server before restoring a backup.",
     "restoreConfirm": "Restore \"{{name}}\"? Current server files will be overwritten by this backup.",
+    "restoreDialogTitle": "Restore Backup",
+    "restoreDialogDescription": "Review the restore preflight before overwriting the current server files.",
+    "restoreDestructiveNotice": "Restoring overwrites the current world data, server.properties, and related admin files. Keeping a pre-restore backup is recommended.",
+    "createPreRestoreBackup": "Create a pre-restore backup first",
+    "createPreRestoreBackupDescription": "Enabled by default so you can return to the current state if the restore result is not what you expected.",
+    "preRestoreBackupCreated": "Pre-restore backup created",
+    "preflightTitle": "Restore Preflight",
+    "estimatedRestoreSize": "Estimated restore size",
+    "freeSpace": "Free disk space",
+    "blockingIssuesTitle": "Blocking issues",
+    "warningsTitle": "Warnings",
+    "preflightClear": "No blocking issues were found.",
+    "restoreNow": "Restore Now",
+    "failureTitle": "Backup action needs attention",
+    "pathLabel": "Path",
     "deleteConfirm": "Delete \"{{name}}\"?",
     "schedule": {
       "whileRunning": "Every few minutes while running",
@@ -172,6 +190,10 @@
     "trigger": {
       "manual": "Manual",
       "scheduled": "Scheduled"
+    },
+    "kind": {
+      "regular": "Regular",
+      "preRestore": "Pre-Restore"
     }
   },
   "onboarding": {

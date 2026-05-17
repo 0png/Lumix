@@ -148,11 +148,29 @@
     "createNow": "立即備份",
     "retention": "Lumix 會自動刪除較舊備份，只保留最近 3 份。",
     "recent": "最近備份",
+    "regularSection": "一般備份",
+    "preRestoreSection": "還原前備份",
     "empty": "尚無備份",
+    "preRestoreEmpty": "尚無還原前備份",
     "open": "開啟",
     "restore": "還原",
     "restoreLocked": "還原備份前請先停止伺服器。",
     "restoreConfirm": "確定要還原「{{name}}」嗎？目前伺服器檔案會被此備份覆蓋。",
+    "restoreDialogTitle": "還原備份",
+    "restoreDialogDescription": "先檢查還原條件，再決定是否要覆蓋目前伺服器檔案。",
+    "restoreDestructiveNotice": "還原會覆蓋目前的世界資料、server.properties，以及相關管理設定檔。建議保留還原前備份。",
+    "createPreRestoreBackup": "先建立還原前備份",
+    "createPreRestoreBackupDescription": "預設開啟。若還原結果不如預期，仍可回到目前狀態。",
+    "preRestoreBackupCreated": "已建立還原前備份",
+    "preflightTitle": "還原前檢查",
+    "estimatedRestoreSize": "預估還原大小",
+    "freeSpace": "可用磁碟空間",
+    "blockingIssuesTitle": "必須先處理的問題",
+    "warningsTitle": "還原前提醒",
+    "preflightClear": "沒有發現阻擋還原的問題。",
+    "restoreNow": "確認還原",
+    "failureTitle": "備份操作需要處理",
+    "pathLabel": "路徑",
     "deleteConfirm": "確定要刪除「{{name}}」嗎？",
     "schedule": {
       "whileRunning": "伺服器運行中每幾分鐘",
@@ -172,6 +190,10 @@
     "trigger": {
       "manual": "手動",
       "scheduled": "自動"
+    },
+    "kind": {
+      "regular": "一般",
+      "preRestore": "還原前"
     }
   },
   "onboarding": {

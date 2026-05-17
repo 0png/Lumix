@@ -25,6 +25,7 @@ export const ServerChannels = {
   // Backups
   LIST_BACKUPS: 'server:list-backups',
   CREATE_BACKUP: 'server:create-backup',
+  GET_RESTORE_BACKUP_PREFLIGHT: 'server:get-restore-backup-preflight',
   RESTORE_BACKUP: 'server:restore-backup',
   DELETE_BACKUP: 'server:delete-backup',
   UPDATE_BACKUP_SETTINGS: 'server:update-backup-settings',
@@ -60,6 +61,7 @@ export function getAllServerChannels(): string[] {
     ServerChannels.PLAYER_ACTION,
     ServerChannels.LIST_BACKUPS,
     ServerChannels.CREATE_BACKUP,
+    ServerChannels.GET_RESTORE_BACKUP_PREFLIGHT,
     ServerChannels.RESTORE_BACKUP,
     ServerChannels.DELETE_BACKUP,
     ServerChannels.UPDATE_BACKUP_SETTINGS,

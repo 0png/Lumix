@@ -39,7 +39,7 @@ interface ServerDetailProps {
   onStart?: () => void;
   onStop?: () => void;
   onDelete?: () => void;
-  onUpdate?: (updates: Partial<ServerInstance>) => void;
+  onUpdate?: (updates: Partial<ServerInstance>) => Promise<ServerInstance | null | void> | ServerInstance | null | void;
   onUpdateOnboardingState?: (updates: Partial<ServerInstance>) => Promise<void> | void;
   onOpenFolder?: () => void;
   onOpenSettings?: () => void;

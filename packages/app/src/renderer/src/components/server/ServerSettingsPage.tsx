@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Archive, Clock3, FolderOpen, Loader2, MemoryStick, RotateCcw, Save, ServerCog, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Archive, Clock3, FolderOpen, Loader2, MemoryStick, RotateCcw, Save, ServerCog, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +15,15 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { normalizeBackupSettings } from '../../../../shared/backup-utils';
-import type { BackupInfoDto, BackupSettings, ServerPropertyValue } from '../../../../shared/ipc-types';
+import type {
+  BackupInfoDto,
+  BackupOperationFailure,
+  BackupPreflightResult,
+  BackupSettings,
+  IpcResult,
+  RestoreBackupResult,
+  ServerPropertyValue,
+} from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
 
 type PropertyKind = 'boolean' | 'number' | 'text' | 'select';
@@ -33,7 +43,7 @@ interface PropertyMeta {
 interface ServerSettingsPageProps {
   server: ServerInstance;
   onBack?: () => void;
-  onUpdate?: (updates: Partial<ServerInstance>) => Promise<void> | void;
+  onUpdate?: (updates: Partial<ServerInstance>) => Promise<ServerInstance | null | void> | ServerInstance | null | void;
   initialSection?: 'basic' | 'gameplay' | 'network' | 'backup';
 }
 
@@ -111,6 +121,20 @@ function formatDateTime(value?: string): string {
   return new Date(value).toLocaleString();
 }
 
+function extractBackupFailure(result: IpcResult<unknown>): BackupOperationFailure | null {
+  const details = result.errorDetails?.details as { backupFailure?: BackupOperationFailure } | undefined;
+  return details?.backupFailure ?? null;
+}
+
+function buildFallbackFailure(message: string): BackupOperationFailure {
+  return {
+    code: 'UNKNOWN',
+    context: 'restore',
+    message,
+    suggestedAction: undefined,
+  };
+}
+
 function buildDefaultProperties(): Record<string, ServerPropertyValue> {
   return PROPERTY_META.reduce<Record<string, ServerPropertyValue>>((acc, meta) => {
     acc[meta.key] = meta.defaultValue;
@@ -143,6 +167,13 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isBackupBusy, setIsBackupBusy] = useState(false);
+  const [backupFailure, setBackupFailure] = useState<BackupOperationFailure | null>(null);
+  const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupInfoDto | null>(null);
+  const [restorePreflight, setRestorePreflight] = useState<BackupPreflightResult | null>(null);
+  const [restoreFailure, setRestoreFailure] = useState<BackupOperationFailure | null>(null);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
+  const [isRestorePreflightLoading, setIsRestorePreflightLoading] = useState(false);
+  const [createPreRestoreBackup, setCreatePreRestoreBackup] = useState(true);
   const basicSectionRef = useRef<HTMLDivElement | null>(null);
   const gameplaySectionRef = useRef<HTMLDivElement | null>(null);
   const networkSectionRef = useRef<HTMLDivElement | null>(null);
@@ -228,7 +259,16 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       ramMax !== server.ramMax ||
       JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings) ||
       (hasServerProperties && PROPERTY_META.some((meta) => properties[meta.key] !== initialProperties[meta.key])),
-    [backupSettings, initialBackupSettings, initialProperties, properties, ramMax, server.name, server.ramMax, serverName]
+    [backupSettings, hasServerProperties, initialBackupSettings, initialProperties, properties, ramMax, server.name, server.ramMax, serverName]
+  );
+
+  const regularBackups = useMemo(
+    () => backups.filter((backup) => backup.kind !== 'pre-restore'),
+    [backups]
+  );
+  const preRestoreBackups = useMemo(
+    () => backups.filter((backup) => backup.kind === 'pre-restore'),
+    [backups]
   );
 
   const updateProperty = (key: string, value: ServerPropertyValue) => {
@@ -264,17 +304,16 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       }
 
       if (JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings)) {
-        const result = await window.electronAPI.server.updateBackupSettings({
-          serverId: server.id,
-          settings: backupSettings,
-        });
+        const updatedServer = onUpdate
+          ? await onUpdate({ backupSettings })
+          : null;
 
-        if (!result.success || !result.data) {
+        if (!updatedServer) {
           toast.error(t('toast.backupSettingsSaveFailed'));
           return;
         }
 
-        const savedSettings = normalizeBackupSettings(result.data.backupSettings);
+        const savedSettings = normalizeBackupSettings(updatedServer.backupSettings);
         setBackupSettings(savedSettings);
         setInitialBackupSettings(savedSettings);
       }
@@ -293,9 +332,11 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
 
   const handleCreateBackup = async () => {
     setIsBackupBusy(true);
+    setBackupFailure(null);
     try {
       const result = await window.electronAPI.server.createBackup({ serverId: server.id, trigger: 'manual' });
       if (!result.success) {
+        setBackupFailure(extractBackupFailure(result) ?? buildFallbackFailure(result.error || t('toast.backupCreateFailed')));
         toast.error(t('toast.backupCreateFailed'));
         return;
       }
@@ -306,17 +347,54 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
     }
   };
 
-  const handleRestoreBackup = async (backup: BackupInfoDto) => {
-    if (!window.confirm(t('backup.restoreConfirm', { name: backup.name }))) return;
-    setIsBackupBusy(true);
+  const openRestoreDialog = async (backup: BackupInfoDto) => {
+    setSelectedBackupForRestore(backup);
+    setIsRestoreDialogOpen(true);
+    setRestoreFailure(null);
+    setRestorePreflight(null);
+    setCreatePreRestoreBackup(true);
+    setIsRestorePreflightLoading(true);
     try {
-      const result = await window.electronAPI.server.restoreBackup({ serverId: server.id, backupId: backup.id });
-      if (!result.success) {
+      const result = await window.electronAPI.server.getRestoreBackupPreflight({
+        serverId: server.id,
+        backupId: backup.id,
+      });
+      if (!result.success || !result.data) {
+        setRestoreFailure(extractBackupFailure(result) ?? buildFallbackFailure(result.error || t('toast.backupRestoreFailed')));
+        return;
+      }
+      setRestorePreflight(result.data);
+    } finally {
+      setIsRestorePreflightLoading(false);
+    }
+  };
+
+  const handleRestoreBackup = async () => {
+    if (!selectedBackupForRestore) return;
+    setIsBackupBusy(true);
+    setBackupFailure(null);
+    setRestoreFailure(null);
+    try {
+      const result = await window.electronAPI.server.restoreBackup({
+        serverId: server.id,
+        backupId: selectedBackupForRestore.id,
+        createPreRestoreBackup,
+      });
+      if (!result.success || !result.data) {
+        const failure = extractBackupFailure(result) ?? buildFallbackFailure(result.error || t('toast.backupRestoreFailed'));
+        setBackupFailure(failure);
+        setRestoreFailure(failure);
         toast.error(t('toast.backupRestoreFailed'));
         return;
       }
+      const restoreResult = result.data as RestoreBackupResult;
       toast.success(t('toast.backupRestored'));
+      if (restoreResult.preRestoreBackupId) {
+        toast.message(t('backup.preRestoreBackupCreated'));
+      }
       await loadBackups();
+      setIsRestoreDialogOpen(false);
+      setSelectedBackupForRestore(null);
     } finally {
       setIsBackupBusy(false);
     }
@@ -337,6 +415,79 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       setIsBackupBusy(false);
     }
   };
+
+  const renderBackupList = (
+    sectionBackups: BackupInfoDto[],
+    title: string,
+    counterText: string,
+    emptyText: string
+  ) => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-sm font-medium">{title}</Label>
+        <span className="text-xs text-muted-foreground">{counterText}</span>
+      </div>
+      {sectionBackups.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border/70 bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
+          {emptyText}
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {sectionBackups.map((backup) => (
+            <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/45 p-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium">{backup.name}</p>
+                  <Badge variant="outline" className="h-5 text-[10px]">
+                    {t(`backup.kind.${backup.kind === 'pre-restore' ? 'preRestore' : 'regular'}`)}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatDateTime(backup.createdAt)} · {formatBackupSize(backup.sizeBytes)} · {t(`backup.trigger.${backup.trigger}`)}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">{backup.path}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.electronAPI.app.openFolder(backup.path)}
+                  disabled={isBackupBusy}
+                  className="h-8 text-xs"
+                >
+                  <FolderOpen className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  {t('backup.open')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openRestoreDialog(backup)}
+                  disabled={isBackupBusy}
+                  className="h-8 text-xs"
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  {t('backup.restore')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteBackup(backup)}
+                  disabled={isBackupBusy}
+                  className="h-8 text-xs text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  {t('common.delete')}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   const renderControl = (meta: PropertyMeta) => {
     const value = properties[meta.key] ?? meta.defaultValue;
@@ -499,6 +650,26 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-4 pt-1">
+          {backupFailure && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">{t('backup.failureTitle')}</p>
+                  <p className="text-foreground/90">{backupFailure.message}</p>
+                  {backupFailure.suggestedAction && (
+                    <p className="text-xs text-muted-foreground">{backupFailure.suggestedAction}</p>
+                  )}
+                  {backupFailure.path && (
+                    <p className="break-all text-xs text-muted-foreground">
+                      {t('backup.pathLabel')}: {backupFailure.path}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
             <div className="rounded-lg border border-border/60 bg-card/45 p-3">
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -644,63 +815,18 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-sm font-medium">{t('backup.recent')}</Label>
-              <span className="text-xs text-muted-foreground">{backups.length}/3</span>
-            </div>
-            {backups.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border/70 bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
-                {t('backup.empty')}
-              </div>
-            ) : (
-              <div className="grid gap-2">
-                {backups.map((backup) => (
-                  <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/45 p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{backup.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(backup.createdAt)} · {formatBackupSize(backup.sizeBytes)} · {t(`backup.trigger.${backup.trigger}`)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.electronAPI.app.openFolder(backup.path)}
-                        disabled={isBackupBusy}
-                        className="h-8 text-xs"
-                      >
-                        <FolderOpen className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                        {t('backup.open')}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRestoreBackup(backup)}
-                        disabled={isBackupBusy || isRunning}
-                        className="h-8 text-xs"
-                      >
-                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                        {t('backup.restore')}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteBackup(backup)}
-                        disabled={isBackupBusy}
-                        className="h-8 text-xs text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                        {t('common.delete')}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="space-y-4">
+            {renderBackupList(
+              regularBackups,
+              t('backup.regularSection'),
+              `${regularBackups.length}/3`,
+              t('backup.empty')
+            )}
+            {renderBackupList(
+              preRestoreBackups,
+              t('backup.preRestoreSection'),
+              `${preRestoreBackups.length}/3`,
+              t('backup.preRestoreEmpty')
             )}
             {isRunning && (
               <p className="text-xs text-muted-foreground">{t('backup.restoreLocked')}</p>
@@ -709,6 +835,145 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         </CardContent>
         </Card>
       </div>
+
+      <Dialog
+        open={isRestoreDialogOpen}
+        onOpenChange={(open) => {
+          setIsRestoreDialogOpen(open);
+          if (!open) {
+            setSelectedBackupForRestore(null);
+            setRestoreFailure(null);
+            setRestorePreflight(null);
+            setCreatePreRestoreBackup(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[92vw] sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{t('backup.restoreDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('backup.restoreDialogDescription')}</DialogDescription>
+          </DialogHeader>
+
+          {selectedBackupForRestore && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border/60 bg-card/45 p-4">
+                <p className="text-sm font-medium">{selectedBackupForRestore.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatDateTime(selectedBackupForRestore.createdAt)} · {formatBackupSize(selectedBackupForRestore.sizeBytes)} · {t(`backup.trigger.${selectedBackupForRestore.trigger}`)}
+                </p>
+                <p className="mt-2 break-all text-xs text-muted-foreground">
+                  {t('backup.pathLabel')}: {selectedBackupForRestore.path}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+                {t('backup.restoreDestructiveNotice')}
+              </div>
+
+              <label
+                htmlFor="pre-restore-backup"
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/60 p-4 transition-colors hover:bg-muted/20"
+              >
+                <Checkbox
+                  id="pre-restore-backup"
+                  checked={createPreRestoreBackup}
+                  onCheckedChange={(checked) => setCreatePreRestoreBackup(checked === true)}
+                />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">{t('backup.createPreRestoreBackup')}</p>
+                  <p className="text-xs text-muted-foreground">{t('backup.createPreRestoreBackupDescription')}</p>
+                </div>
+              </label>
+
+              <div className="rounded-lg border border-border/60 bg-card/45 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-medium">{t('backup.preflightTitle')}</p>
+                </div>
+
+                {isRestorePreflightLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    {t('common.loading')}
+                  </div>
+                ) : restoreFailure ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-medium text-foreground">{restoreFailure.message}</p>
+                    {restoreFailure.suggestedAction && (
+                      <p className="text-xs text-muted-foreground">{restoreFailure.suggestedAction}</p>
+                    )}
+                  </div>
+                ) : restorePreflight ? (
+                  <div className="space-y-3 text-sm">
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <div className="rounded-md bg-secondary/30 px-3 py-2 text-xs text-muted-foreground">
+                        {t('backup.estimatedRestoreSize')}: {formatBackupSize(restorePreflight.estimatedRestoreBytes ?? 0)}
+                      </div>
+                      <div className="rounded-md bg-secondary/30 px-3 py-2 text-xs text-muted-foreground">
+                        {t('backup.freeSpace')}: {restorePreflight.freeSpaceBytes !== undefined ? formatBackupSize(restorePreflight.freeSpaceBytes) : '-'}
+                      </div>
+                    </div>
+
+                    {restorePreflight.blockingIssues.length > 0 && (
+                      <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-3">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-destructive">{t('backup.blockingIssuesTitle')}</p>
+                        <div className="space-y-2">
+                          {restorePreflight.blockingIssues.map((issue) => (
+                            <div key={`${issue.code}-${issue.message}`} className="text-sm">
+                              <p className="font-medium text-foreground">{issue.message}</p>
+                              {issue.suggestedAction && (
+                                <p className="text-xs text-muted-foreground">{issue.suggestedAction}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {restorePreflight.warnings.length > 0 && (
+                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">{t('backup.warningsTitle')}</p>
+                        <div className="space-y-1">
+                          {restorePreflight.warnings.map((warning) => (
+                            <p key={warning} className="text-sm text-foreground">{warning}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {restorePreflight.blockingIssues.length === 0 && restorePreflight.warnings.length === 0 && (
+                      <p className="text-xs text-muted-foreground">{t('backup.preflightClear')}</p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsRestoreDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRestoreBackup}
+              disabled={
+                isBackupBusy ||
+                isRestorePreflightLoading ||
+                !selectedBackupForRestore ||
+                restorePreflight?.canRun === false
+              }
+            >
+              {isBackupBusy ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              )}
+              {t('backup.restoreNow')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="space-y-4">
         {!hasServerProperties && (

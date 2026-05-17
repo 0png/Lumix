@@ -261,6 +261,7 @@ function AppContent() {
     if (result) {
       toast.success(t('toast.settingsSaved'));
     }
+    return result;
   }, [selectedServerId, updateServer, t]);
 
   const handleUpdateServerSilently = useCallback(async (updates: Partial<ServerInstance>) => {

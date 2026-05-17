@@ -22,10 +22,14 @@ import type {
   PlayerActionRequest,
   PlayerDto,
   BackupInfoDto,
+  BackupPreflightResult,
   CreateBackupRequest,
+  GetRestorePreflightRequest,
   RestoreBackupRequest,
+  RestoreBackupResult,
   UpdateBackupSettingsRequest,
 } from '../../shared/ipc-types';
+import { parseIpcError, type IpcError } from '../../shared/ipc-types';
 
 // ============================================================================
 // Module State
@@ -257,7 +261,19 @@ function registerHandlers(): void {
         const backup = await serverManager!.createBackup(data.serverId, data.trigger);
         return { success: true, data: backup };
       } catch (error) {
-        return { success: false, error: formatError(error) };
+        return createErrorResult(error);
+      }
+    }
+  );
+
+  ipcMain.handle(
+    ServerChannels.GET_RESTORE_BACKUP_PREFLIGHT,
+    async (_, data: GetRestorePreflightRequest): Promise<IpcResult<BackupPreflightResult>> => {
+      try {
+        const preflight = await serverManager!.getRestoreBackupPreflight(data);
+        return { success: true, data: preflight };
+      } catch (error) {
+        return createErrorResult(error);
       }
     }
   );
@@ -265,12 +281,12 @@ function registerHandlers(): void {
   // RESTORE_BACKUP - 還原指定備份
   ipcMain.handle(
     ServerChannels.RESTORE_BACKUP,
-    async (_, data: RestoreBackupRequest): Promise<IpcResult<void>> => {
+    async (_, data: RestoreBackupRequest): Promise<IpcResult<RestoreBackupResult>> => {
       try {
-        await serverManager!.restoreBackup(data);
-        return { success: true };
+        const result = await serverManager!.restoreBackup(data);
+        return { success: true, data: result };
       } catch (error) {
-        return { success: false, error: formatError(error) };
+        return createErrorResult(error);
       }
     }
   );
@@ -397,4 +413,29 @@ function formatError(error: unknown): string {
     return error.message;
   }
   return String(error);
+}
+
+function extractErrorDetails(error: unknown): IpcError | undefined {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'ipcError' in error &&
+    (error as { ipcError?: IpcError }).ipcError
+  ) {
+    return (error as { ipcError: IpcError }).ipcError;
+  }
+
+  if (error instanceof Error) {
+    return parseIpcError(error.message);
+  }
+
+  return undefined;
+}
+
+function createErrorResult<T = void>(error: unknown): IpcResult<T> {
+  return {
+    success: false,
+    error: formatError(error),
+    errorDetails: extractErrorDetails(error),
+  };
 }
