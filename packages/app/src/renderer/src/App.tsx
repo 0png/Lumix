@@ -1,6 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from '@/components/ui/sonner';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useTheme } from '@/contexts/theme-context';
 import { MainLayout } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
@@ -25,6 +34,9 @@ import { toast } from '@/lib/toast';
 import '@/i18n';
 
 type ViewType = 'servers' | 'server-settings' | 'settings' | 'about';
+type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
+const POST_CREATE_ONBOARDING_PROMPT_KEY = 'lumix.postCreateOnboardingPrompt.enabled';
+const HIDDEN_ONBOARDING_SERVER_IDS_KEY = 'lumix.postCreateOnboarding.hiddenServerIds';
 
 function isFullscreenLike(): boolean {
   const widthDelta = Math.abs(window.screen.availWidth - window.innerWidth);
@@ -41,10 +53,12 @@ function toServerInstance(dto: {
   origin: 'managed' | 'imported';
   coreType: string;
   mcVersion: string;
+  javaPath?: string;
   status: string;
   ramMax: number;
   isReady?: boolean;
   backupSettings?: ServerInstance['backupSettings'];
+  onboardingState?: ServerInstance['onboardingState'];
 }): ServerInstance {
   return {
     id: dto.id,
@@ -52,10 +66,12 @@ function toServerInstance(dto: {
     origin: dto.origin,
     coreType: dto.coreType as ServerInstance['coreType'],
     mcVersion: dto.mcVersion,
+    javaPath: dto.javaPath,
     status: dto.status as ServerInstance['status'],
     ramMax: dto.ramMax,
     isReady: dto.isReady,
     backupSettings: dto.backupSettings,
+    onboardingState: dto.onboardingState,
   };
 }
 
@@ -88,6 +104,11 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
   const [isConsoleFullscreen, setIsConsoleFullscreen] = useState(false);
+  const [pendingOnboardingServerId, setPendingOnboardingServerId] = useState<string | null>(null);
+  const [pendingOnboardingPromptServerId, setPendingOnboardingPromptServerId] = useState<string | null>(null);
+  const [shouldPromptPostCreateOnboarding, setShouldPromptPostCreateOnboarding] = useState(true);
+  const [hiddenOnboardingServerIds, setHiddenOnboardingServerIds] = useState<string[]>([]);
+  const [serverSettingsSection, setServerSettingsSection] = useState<ServerSettingsSection>('basic');
   const [useCreateServerModal, setUseCreateServerModal] = useState(() => isFullscreenLike());
   const [activeCreateServerPresentation, setActiveCreateServerPresentation] = useState<'modal' | 'overlay'>(
     () => (isFullscreenLike() ? 'modal' : 'overlay')
@@ -143,13 +164,24 @@ function AppContent() {
       }
 
       if (server) {
+        setSelectedServerId(server.id);
+        setCurrentView('servers');
+        if (shouldPromptPostCreateOnboarding) {
+          setPendingOnboardingPromptServerId(server.id);
+        } else {
+          setHiddenOnboardingServerIds((current) => {
+            const next = current.includes(server.id) ? current : [...current, server.id];
+            window.localStorage.setItem(HIDDEN_ONBOARDING_SERVER_IDS_KEY, JSON.stringify(next));
+            return next;
+          });
+        }
         toast.success(t('toast.serverReady'));
       }
       return null;
     } finally {
       setIsCreating(false);
     }
-  }, [createServer, t]);
+  }, [createServer, shouldPromptPostCreateOnboarding, t]);
 
   const handleImportServer = useCallback(async (data: {
     directory: string;
@@ -229,10 +261,17 @@ function AppContent() {
     }
   }, [selectedServerId, updateServer, t]);
 
+  const handleUpdateServerSilently = useCallback(async (updates: Partial<ServerInstance>) => {
+    if (!selectedServerId) return;
+    await updateServer({ id: selectedServerId, ...updates });
+  }, [selectedServerId, updateServer]);
+
   const handleSelectServer = useCallback((id: string) => {
     setSelectedServerId(id);
     setCurrentView('servers');
     setIsConsoleFullscreen(false);
+    setPendingOnboardingServerId(null);
+    setPendingOnboardingPromptServerId(null);
   }, []);
 
   const handleBackToServers = useCallback(() => {
@@ -244,6 +283,13 @@ function AppContent() {
     setSelectedServerId(undefined);
     setCurrentView('servers');
     setIsConsoleFullscreen(false);
+    setPendingOnboardingServerId(null);
+    setPendingOnboardingPromptServerId(null);
+  }, []);
+
+  const handleOpenServerSettingsSection = useCallback((section: ServerSettingsSection) => {
+    setServerSettingsSection(section);
+    setCurrentView('server-settings');
   }, []);
 
   const handleOpenFolder = useCallback(async (directory: string) => {
@@ -265,6 +311,25 @@ function AppContent() {
     // 這個功能暫時不實作
     toast.info(t('toast.javaCannotRemove'));
   }, [t]);
+
+  useEffect(() => {
+    const storedPreference = window.localStorage.getItem(POST_CREATE_ONBOARDING_PROMPT_KEY);
+    if (storedPreference === 'false') {
+      setShouldPromptPostCreateOnboarding(false);
+    }
+
+    const hiddenServerIds = window.localStorage.getItem(HIDDEN_ONBOARDING_SERVER_IDS_KEY);
+    if (!hiddenServerIds) return;
+
+    try {
+      const parsed = JSON.parse(hiddenServerIds);
+      if (Array.isArray(parsed)) {
+        setHiddenOnboardingServerIds(parsed.filter((value): value is string => typeof value === 'string'));
+      }
+    } catch {
+      window.localStorage.removeItem(HIDDEN_ONBOARDING_SERVER_IDS_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -290,6 +355,40 @@ function AppContent() {
   const handleOpenImportServer = useCallback(() => {
     setShowImportDialog(true);
   }, []);
+
+  const handleConfirmPostCreateOnboarding = useCallback(() => {
+    if (!pendingOnboardingPromptServerId) return;
+    setPendingOnboardingServerId(pendingOnboardingPromptServerId);
+    setPendingOnboardingPromptServerId(null);
+  }, [pendingOnboardingPromptServerId]);
+
+  const handleDisablePostCreateOnboardingPrompt = useCallback(() => {
+    if (pendingOnboardingPromptServerId) {
+      setHiddenOnboardingServerIds((current) => {
+        const next = current.includes(pendingOnboardingPromptServerId)
+          ? current
+          : [...current, pendingOnboardingPromptServerId];
+        window.localStorage.setItem(HIDDEN_ONBOARDING_SERVER_IDS_KEY, JSON.stringify(next));
+        return next;
+      });
+    }
+    window.localStorage.setItem(POST_CREATE_ONBOARDING_PROMPT_KEY, 'false');
+    setShouldPromptPostCreateOnboarding(false);
+    setPendingOnboardingPromptServerId(null);
+  }, [pendingOnboardingPromptServerId]);
+
+  const handleClosePostCreateOnboardingPrompt = useCallback(() => {
+    if (pendingOnboardingPromptServerId) {
+      setHiddenOnboardingServerIds((current) => {
+        const next = current.includes(pendingOnboardingPromptServerId)
+          ? current
+          : [...current, pendingOnboardingPromptServerId];
+        window.localStorage.setItem(HIDDEN_ONBOARDING_SERVER_IDS_KEY, JSON.stringify(next));
+        return next;
+      });
+    }
+    setPendingOnboardingPromptServerId(null);
+  }, [pendingOnboardingPromptServerId]);
 
   const renderContent = () => {
     if (loading) {
@@ -319,6 +418,7 @@ function AppContent() {
               server={selectedServer}
               onBack={() => setCurrentView('servers')}
               onUpdate={handleUpdateServer}
+              initialSection={serverSettingsSection}
             />
           );
         }
@@ -340,7 +440,17 @@ function AppContent() {
                     onUpdate={handleUpdateServer}
                     directory={selectedServerDto?.directory}
                     onOpenFolder={() => selectedServerDto && handleOpenFolder(selectedServerDto.directory)}
-                    onOpenSettings={() => setCurrentView('server-settings')}
+                    onOpenSettings={() => handleOpenServerSettingsSection('basic')}
+                    onOpenSettingsSection={handleOpenServerSettingsSection}
+                    onUpdateOnboardingState={handleUpdateServerSilently}
+                    showOnboardingEntry={
+                      shouldPromptPostCreateOnboarding &&
+                      !hiddenOnboardingServerIds.includes(selectedServer.id)
+                    }
+                    autoOpenOnboarding={pendingOnboardingServerId === selectedServer.id}
+                    onOnboardingAutoOpened={() => setPendingOnboardingServerId((current) => (
+                      current === selectedServer.id ? null : current
+                    ))}
                   />
                 )}
                 {selectedServer.status === 'running' && (
@@ -435,6 +545,27 @@ function AppContent() {
         onDetect={async (directory) => detectImportCandidate({ directory })}
         onImport={handleImportServer}
       />
+
+      <Dialog open={Boolean(pendingOnboardingPromptServerId)} onOpenChange={(open) => {
+        if (!open) {
+          handleClosePostCreateOnboardingPrompt();
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('onboardingPrompt.title')}</DialogTitle>
+            <DialogDescription>{t('onboardingPrompt.description')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button variant="outline" onClick={handleDisablePostCreateOnboardingPrompt}>
+              {t('onboardingPrompt.neverAskAgain')}
+            </Button>
+            <Button onClick={handleConfirmPostCreateOnboarding}>
+              {t('onboardingPrompt.open')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Toaster position="bottom-right" theme={theme} />
       <DownloadProgressToast servers={servers} downloadProgress={downloadProgress} />

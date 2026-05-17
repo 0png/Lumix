@@ -159,4 +159,25 @@ describe('ServerManager import flow', () => {
     expect(processManager.spawned[0]?.jarPath).toBe(path.resolve(jarPath));
     expect(processManager.spawned[0]?.workingDir).toBe(path.resolve(externalDir));
   });
+
+  it('starts managed servers with a relative launch jar path inside the server directory', async () => {
+    const created = await manager.createServer({
+      name: 'Managed Server',
+      coreType: 'vanilla',
+      mcVersion: '1.20.6',
+      javaPath: 'java',
+    });
+
+    await fs.writeFile(path.join(created.directory, 'server.jar'), '');
+
+    Object.assign(
+      manager as unknown as { validateJava: (javaPath: string) => Promise<boolean> },
+      { validateJava: async () => true }
+    );
+
+    await manager.startServer(created.id);
+
+    expect(processManager.spawned[0]?.jarPath).toBe(path.join(created.directory, 'server.jar'));
+    expect(processManager.spawned[0]?.workingDir).toBe(created.directory);
+  });
 });

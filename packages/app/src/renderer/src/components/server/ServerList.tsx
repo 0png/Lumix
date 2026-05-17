@@ -28,10 +28,12 @@ export interface ServerInstance {
   origin: ServerOrigin;
   coreType: CoreType;
   mcVersion: string;
+  javaPath?: string;
   status: ServerStatus;
   ramMax: number;
   isReady?: boolean;
   backupSettings?: import('../../../../shared/ipc-types').BackupSettings;
+  onboardingState?: import('../../../../shared/ipc-types').OnboardingState;
 }
 
 interface ServerListProps {

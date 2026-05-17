@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Archive, Clock3, FolderOpen, Loader2, MemoryStick, RotateCcw, Save, ServerCog, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ interface ServerSettingsPageProps {
   server: ServerInstance;
   onBack?: () => void;
   onUpdate?: (updates: Partial<ServerInstance>) => Promise<void> | void;
+  initialSection?: 'basic' | 'gameplay' | 'network' | 'backup';
 }
 
 const PROPERTY_META: PropertyMeta[] = [
@@ -123,7 +124,7 @@ function SettingsSkeleton() {
   );
 }
 
-export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsPageProps) {
+export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 'basic' }: ServerSettingsPageProps) {
   const { t } = useTranslation();
   const [serverName, setServerName] = useState(server.name);
   const [ramMax, setRamMax] = useState(server.ramMax);
@@ -135,6 +136,10 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isBackupBusy, setIsBackupBusy] = useState(false);
+  const basicSectionRef = useRef<HTMLDivElement | null>(null);
+  const gameplaySectionRef = useRef<HTMLDivElement | null>(null);
+  const networkSectionRef = useRef<HTMLDivElement | null>(null);
+  const backupSectionRef = useRef<HTMLDivElement | null>(null);
 
   const isRunning = server.status === 'running';
 
@@ -185,6 +190,24 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
       toast.error(t('toast.backupsLoadFailed'));
     });
   }, [loadBackups, server.id, t]);
+
+  useEffect(() => {
+    const sectionRefs = {
+      basic: basicSectionRef,
+      gameplay: gameplaySectionRef,
+      network: networkSectionRef,
+      backup: backupSectionRef,
+    } as const;
+
+    const target = sectionRefs[initialSection].current;
+    if (!target) return;
+
+    const timeout = window.setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+
+    return () => window.clearTimeout(timeout);
+  }, [initialSection, server.id]);
 
   const isDirty = useMemo(
     () =>
@@ -417,42 +440,45 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
         </div>
       )}
 
-      <Card className="glass">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-sm">{t('server.basicSettings')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 pt-1">
-          <div className="space-y-2">
-            <Label htmlFor="server-name" className="text-xs text-muted-foreground">{t('server.name')}</Label>
-            <Input
-              id="server-name"
-              value={serverName}
-              onChange={(event) => setServerName(event.target.value)}
-              disabled={isRunning}
-              className="h-9"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">{t('server.ram')}</Label>
-              <span className="flex items-center gap-1 text-xs font-medium tabular-nums">
-                <MemoryStick className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                {ramMax} MB
-              </span>
+      <div ref={basicSectionRef}>
+        <Card className="glass">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm">{t('server.basicSettings')}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 pt-1">
+            <div className="space-y-2">
+              <Label htmlFor="server-name" className="text-xs text-muted-foreground">{t('server.name')}</Label>
+              <Input
+                id="server-name"
+                value={serverName}
+                onChange={(event) => setServerName(event.target.value)}
+                disabled={isRunning}
+                className="h-9"
+              />
             </div>
-            <Slider
-              value={[ramMax]}
-              onValueChange={(values) => values[0] !== undefined && setRamMax(values[0])}
-              min={512}
-              max={16384}
-              step={512}
-              disabled={isRunning}
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">{t('server.ram')}</Label>
+                <span className="flex items-center gap-1 text-xs font-medium tabular-nums">
+                  <MemoryStick className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                  {ramMax} MB
+                </span>
+              </div>
+              <Slider
+                value={[ramMax]}
+                onValueChange={(values) => values[0] !== undefined && setRamMax(values[0])}
+                min={512}
+                max={16384}
+                step={512}
+                disabled={isRunning}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card className="glass">
+      <div ref={backupSectionRef}>
+        <Card className="glass">
         <CardHeader className="p-4 pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
             <Archive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -668,7 +694,8 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
             )}
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       <div className="space-y-4">
         {isLoading ? (
@@ -679,7 +706,11 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
           </Card>
         ) : (
           SECTION_ORDER.map((section) => (
-            <Card key={section} className="glass">
+            <div
+              key={section}
+              ref={section === 'gameplay' ? gameplaySectionRef : section === 'network' ? networkSectionRef : null}
+            >
+            <Card className="glass">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm">{t(`serverProperties.sections.${section}`)}</CardTitle>
               </CardHeader>
@@ -704,6 +735,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate }: ServerSettingsP
                 </div>
               </CardContent>
             </Card>
+            </div>
           ))
         )}
       </div>

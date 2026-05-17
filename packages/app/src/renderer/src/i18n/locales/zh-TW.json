@@ -172,6 +172,92 @@
       "scheduled": "自動"
     }
   },
+  "onboarding": {
+    "title": "Next Steps",
+    "description": "伺服器已建立完成。接下來用這份清單快速確認資料夾、設定、連線資訊與第一份備份。",
+    "dismissedDescription": "你已關閉首次導覽，但仍可隨時重新打開，完成剩餘的伺服器準備步驟。",
+    "completedDescription": "這台伺服器的首次建立導覽已完成。",
+    "progress": "已完成 {{completed}} / {{total}}",
+    "done": "已完成",
+    "reopen": "重新開啟 Next Steps",
+    "continue": "繼續設定",
+    "viewChecklist": "查看完整清單",
+    "modalTitle": "{{server}} 的首次啟動清單",
+    "dismiss": "先關閉導覽",
+    "markComplete": "標記完成",
+    "state": {
+      "completed": "已完成",
+      "blocked": "已阻擋",
+      "recommended": "建議先做",
+      "ready": "可稍後處理"
+    },
+    "quickActions": {
+      "folder": {
+        "label": "開啟資料夾",
+        "description": "先確認伺服器目錄、核心檔案與輸出位置。"
+      },
+      "settings": {
+        "label": "檢查設定",
+        "description": "快速查看記憶體、Java 與重要 server.properties。"
+      },
+      "start": {
+        "label": "直接啟動",
+        "description": "伺服器已就緒時，可直接從這裡啟動。"
+      }
+    },
+    "connection": {
+      "title": "連線資訊",
+      "description": "這是 Phase 2 的輕量版連線說明，只提供目前已知的本機資訊與誠實提示。",
+      "localhost": "本機地址",
+      "sameDevice": "同一台電腦測試時，直接使用 `localhost` 搭配目前連接埠即可。",
+      "sameNetwork": "同一區域網路的玩家通常需要你的區網 IP 與相同連接埠；這部分會在後續 Phase 3 補更完整資訊。",
+      "wan": "外網連線通常仍需要路由器做 port forwarding。Lumix 目前不會假裝能自動完成這件事。",
+      "phaseNote": "完整的 LAN / WAN 診斷不在這次 Phase 2 範圍內。"
+    },
+    "steps": {
+      "review-folder-core": {
+        "title": "檢查伺服器資料夾與核心",
+        "description": "先確認伺服器目錄位置，以及核心下載是否如預期。",
+        "action": "開啟伺服器資料夾"
+      },
+      "review-memory-java": {
+        "title": "檢查記憶體與 Java",
+        "description": "查看目前 RAM 配置與 Java 路徑是否符合預期。",
+        "action": "開啟基本設定",
+        "blockedReason": "目前沒有可用的 Java 路徑，先補好 Java 後再檢查這一步。"
+      },
+      "review-properties": {
+        "title": "開啟 server.properties 重要設定",
+        "description": "優先確認遊戲規則與網路設定，避免第一次啟動後還要回頭修正。",
+        "openGameplay": "打開遊戲規則",
+        "openNetwork": "打開網路設定"
+      },
+      "review-connection": {
+        "title": "查看連線資訊",
+        "description": "先確認 `localhost` 連線方式，以及 Lumix 對 LAN / WAN 的說明邊界。",
+        "action": "打開連線說明",
+        "blockedReason": "目前讀不到 `server-port`，請先確認 server.properties 已生成。"
+      },
+      "start-server": {
+        "title": "啟動伺服器",
+        "description": "確認伺服器可以正常啟動；成功進入運行中後，此步驟會自動完成。",
+        "action": "啟動伺服器",
+        "blockedReason": "伺服器核心仍在準備中，下載完成後才能啟動。"
+      },
+      "create-backup": {
+        "title": "建立第一份備份",
+        "description": "這是選配步驟，但建議在第一次大改設定或開服前先留一份還原點。",
+        "action": "立即建立備份",
+        "openSettings": "打開備份設定"
+      }
+    }
+  },
+  "onboardingPrompt": {
+    "title": "要查看建立後教學嗎？",
+    "description": "Lumix 可以帶你走一次新伺服器的首次設定流程，包含資料夾、設定、連線說明與第一份備份。",
+    "open": "查看教學",
+    "neverAskAgain": "以後不要再問"
+  },
   "players": {
     "title": "玩家管理",
     "description": "查看已知與在線玩家，並快速執行 OP、封禁、踢出與白名單操作。",

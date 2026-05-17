@@ -7,3 +7,5 @@ export { PlayerManagement } from './PlayerManagement';
 export { CreateServerDialog, type CreateServerData } from './CreateServerDialog';
 export { ImportServerDialog } from './ImportServerDialog';
 export { DownloadProgressToast } from './DownloadProgressToast';
+export { ServerFirstRunChecklist } from './ServerFirstRunChecklist';
+export { ServerQuickActions } from './ServerQuickActions';

@@ -5,7 +5,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { BackupSettings, CoreType, ServerOrigin, ServerProperties } from '../../shared/ipc-types';
+import type { BackupSettings, CoreType, OnboardingState, ServerOrigin, ServerProperties } from '../../shared/ipc-types';
 
 // ============================================================================
 // Types
@@ -26,6 +26,7 @@ export interface ServerMetadata {
   lastStartedAt?: string;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+  onboardingState?: OnboardingState;
 }
 
 export interface RunBatConfig {

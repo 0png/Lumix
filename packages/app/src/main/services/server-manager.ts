@@ -269,6 +269,7 @@ export class ServerManager extends EventEmitter {
       launchJarPath: request.launchJarPath ?? server.launchJarPath,
       eulaAccepted: request.eulaAccepted ?? server.eulaAccepted,
       backupSettings,
+      onboardingState: request.onboardingState ?? server.onboardingState,
     };
 
     await this.persistServerUpdate(updatedServer);
@@ -387,7 +388,7 @@ export class ServerManager extends EventEmitter {
       )));
     }
 
-    const jarPath = server.launchJarPath || path.join(server.directory, 'server.jar');
+    const jarPath = this.resolveLaunchJarPath(server);
     
     // 檢查是否為新版 Forge
     let forgeArgsFile: string | undefined;
@@ -983,6 +984,16 @@ export class ServerManager extends EventEmitter {
     );
   }
 
+  private resolveLaunchJarPath(server: ServerInstanceDto): string {
+    if (!server.launchJarPath) {
+      return path.join(server.directory, 'server.jar');
+    }
+
+    return path.isAbsolute(server.launchJarPath)
+      ? server.launchJarPath
+      : path.join(server.directory, server.launchJarPath);
+  }
+
   private buildMetadata(id: string, name: string, request: CreateServerRequest): ServerMetadata {
     return {
       id,
@@ -998,6 +1009,9 @@ export class ServerManager extends EventEmitter {
       createdAt: new Date().toISOString(),
       eulaAccepted: true,
       backupSettings: { ...DEFAULT_BACKUP_SETTINGS },
+      onboardingState: {
+        completedSteps: [],
+      },
     };
   }
 
@@ -1055,6 +1069,7 @@ export class ServerManager extends EventEmitter {
       lastStartedAt: metadata.lastStartedAt,
       eulaAccepted: metadata.eulaAccepted,
       backupSettings: normalizeBackupSettings(metadata.backupSettings),
+      onboardingState: metadata.onboardingState,
     };
   }
 
@@ -1076,6 +1091,7 @@ export class ServerManager extends EventEmitter {
       lastStartedAt: record.lastStartedAt,
       eulaAccepted: record.eulaAccepted,
       backupSettings: normalizeBackupSettings(record.backupSettings),
+      onboardingState: record.onboardingState,
     };
   }
 
@@ -1095,6 +1111,7 @@ export class ServerManager extends EventEmitter {
       lastStartedAt: server.lastStartedAt,
       eulaAccepted: server.eulaAccepted,
       backupSettings: server.backupSettings,
+      onboardingState: server.onboardingState,
     };
   }
 
@@ -1115,6 +1132,7 @@ export class ServerManager extends EventEmitter {
       lastStartedAt: server.lastStartedAt,
       eulaAccepted: server.eulaAccepted,
       backupSettings: server.backupSettings,
+      onboardingState: server.onboardingState,
     };
   }
 

@@ -11,6 +11,13 @@ export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type LogLevel = 'info' | 'warn' | 'error';
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'zh-TW' | 'en';
+export type OnboardingStepId =
+  | 'review-folder-core'
+  | 'review-memory-java'
+  | 'review-properties'
+  | 'review-connection'
+  | 'start-server'
+  | 'create-backup';
 
 export interface DownloadProgress {
   downloaded: number;
@@ -115,6 +122,11 @@ export interface IpcResult<T = void> {
   errorDetails?: IpcError;
 }
 
+export interface OnboardingState {
+  dismissedAt?: string;
+  completedSteps: OnboardingStepId[];
+}
+
 // ============================================================================
 // Server Types
 // ============================================================================
@@ -137,6 +149,7 @@ export interface ServerInstanceDto {
   isReady?: boolean; // server.jar 是否已下載完成
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+  onboardingState?: OnboardingState;
 }
 
 export interface CreateServerRequest {
@@ -159,6 +172,7 @@ export interface UpdateServerRequest {
   launchJarPath?: string;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+  onboardingState?: OnboardingState;
 }
 
 export interface DetectImportCandidateRequest {

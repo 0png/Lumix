@@ -28,6 +28,9 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { ServerInstance, ServerStatus } from './ServerList';
+import { ServerFirstRunChecklist } from './ServerFirstRunChecklist';
+
+type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
 
 interface ServerDetailProps {
   server: ServerInstance;
@@ -37,8 +40,13 @@ interface ServerDetailProps {
   onStop?: () => void;
   onDelete?: () => void;
   onUpdate?: (updates: Partial<ServerInstance>) => void;
+  onUpdateOnboardingState?: (updates: Partial<ServerInstance>) => Promise<void> | void;
   onOpenFolder?: () => void;
   onOpenSettings?: () => void;
+  onOpenSettingsSection?: (section: ServerSettingsSection) => void;
+  showOnboardingEntry?: boolean;
+  autoOpenOnboarding?: boolean;
+  onOnboardingAutoOpened?: () => void;
 }
 
 /**
@@ -80,8 +88,13 @@ export function ServerDetail({
   onStop,
   onDelete,
   onUpdate,
+  onUpdateOnboardingState,
   onOpenFolder,
   onOpenSettings,
+  onOpenSettingsSection,
+  showOnboardingEntry = true,
+  autoOpenOnboarding = false,
+  onOnboardingAutoOpened,
 }: ServerDetailProps) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -220,6 +233,18 @@ export function ServerDetail({
       </div>
 
       <Separator />
+
+      {showOnboardingEntry ? (
+        <ServerFirstRunChecklist
+          server={server}
+          autoOpen={autoOpenOnboarding}
+          onAutoOpenHandled={onOnboardingAutoOpened}
+          onOpenFolder={onOpenFolder}
+          onOpenSettingsSection={(section) => onOpenSettingsSection?.(section)}
+          onStart={onStart}
+          onUpdateOnboardingState={(onboardingState) => onUpdateOnboardingState?.({ onboardingState })}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 items-stretch gap-3 lg:gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
         <Card className="glass overflow-hidden">
