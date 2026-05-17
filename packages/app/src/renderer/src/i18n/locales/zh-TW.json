@@ -127,7 +127,62 @@
     "openServerSettings": "開啟完整設定",
     "serverPropertiesPending": "server.properties 尚未生成。請先成功啟動一次伺服器，之後再回來調整遊戲規則、世界與網路設定。",
     "consoleFullscreen": "全螢幕",
-    "consoleExitFullscreen": "關閉全螢幕"
+    "consoleExitFullscreen": "關閉全螢幕",
+    "connection": {
+      "title": "連線資訊與診斷",
+      "copy": "複製",
+      "refresh": "重新整理",
+      "statusTitle": "目前狀態",
+      "bindingTitle": "綁定位址",
+      "firewallTitle": "防火牆提示",
+      "diagnosticsTitle": "診斷結果",
+      "running": "伺服器目前運行中。",
+      "stopped": "伺服器目前未運行。",
+      "listening": "Lumix 偵測到本機已有程式在這個 Minecraft 連接埠上接受連線。",
+      "notListening": "Lumix 目前沒有偵測到本機在這個 Minecraft 連接埠上接受連線。",
+      "boundToSpecificIp": "server.properties 目前綁定到 `{{ip}}`，這可能影響 localhost 或區網連線方式。",
+      "boundToAllInterfaces": "server.properties 沒有指定 `server-ip`，通常代表會綁定所有可用介面。",
+      "lastChecked": "上次檢查：{{value}}",
+      "local": {
+        "title": "同一台電腦",
+        "description": "在這台 Windows 電腦上測試時，直接使用 `localhost` 搭配目前連接埠。"
+      },
+      "lan": {
+        "title": "同一個區網",
+        "description": "同一個 LAN 內的玩家通常需要這個區網 IP 與相同連接埠。",
+        "unavailable": "Lumix 這次找不到可用的區網 IPv4，所以暫時無法提供可分享的 LAN 位址。"
+      },
+      "wan": {
+        "title": "外網 / WAN",
+        "description": "這裡只提供 public IP 參考。外網連線通常仍需要路由器做 port forwarding，Lumix 無法自動設定路由器。"
+      },
+      "help": {
+        "sameDevice": "同機測試：用 `localhost:<port>`。",
+        "sameNetwork": "同網路分享：用 `LAN-IP:<port>`。",
+        "wan": "外網分享：通常仍需要 port forwarding，Lumix 只能協助你釐清問題，不能保證外網可達。"
+      },
+      "firewall": {
+        "unknown": "目前沒有可用的防火牆資訊。",
+        "allowed": "Lumix 有找到允許這個 TCP 連接埠的 Windows inbound 規則。",
+        "blocked": "Windows 防火牆看起來可能正在阻擋這個連接埠。",
+        "warning": "Lumix 無法確認 Windows 防火牆是否已放行這個連接埠，請手動檢查。"
+      },
+      "level": {
+        "info": "資訊",
+        "warn": "提醒",
+        "error": "問題"
+      },
+      "diagnostics": {
+        "SERVER_NOT_RUNNING": { "title": "伺服器尚未啟動" },
+        "PORT_NOT_LISTENING": { "title": "連接埠尚未開始接受連線" },
+        "LAN_IP_UNAVAILABLE": { "title": "找不到區網位址" },
+        "SERVER_IP_BOUND": { "title": "伺服器綁定了特定位址" },
+        "WAN_REQUIRES_PORT_FORWARDING": { "title": "外網通常仍需要 port forwarding" },
+        "PUBLIC_IP_UNAVAILABLE": { "title": "目前無法取得 public IP" },
+        "CGNAT_SUSPECTED": { "title": "可能受到 CGNAT 或 ISP 限制" },
+        "FIREWALL_MAY_BLOCK": { "title": "Windows 防火牆可能仍會阻擋" }
+      }
+    }
   },
   "backup": {
     "title": "伺服器備份",
@@ -231,7 +286,7 @@
     },
     "connection": {
       "title": "連線資訊",
-      "description": "這是 Phase 2 的輕量版連線說明，只提供目前已知的本機資訊與誠實提示。",
+      "description": "這裡會顯示與伺服器詳情頁相同的連線資訊與診斷結果。",
       "localhost": "本機地址",
       "sameDevice": "同一台電腦測試時，直接使用 `localhost` 搭配目前連接埠即可。",
       "sameNetwork": "同一區域網路的玩家通常需要你的區網 IP 與相同連接埠；這部分會在後續 Phase 3 補更完整資訊。",
@@ -259,8 +314,8 @@
       },
       "review-connection": {
         "title": "查看連線資訊",
-        "description": "先確認 `localhost` 連線方式，以及 Lumix 對 LAN / WAN 的說明邊界。",
-        "action": "打開連線說明",
+        "description": "確認 local、LAN、WAN 三種情境的地址與診斷資訊。",
+        "action": "打開連線資訊",
         "blockedReason": "目前讀不到 `server-port`，請先確認 server.properties 已生成。"
       },
       "start-server": {
@@ -566,7 +621,10 @@
     "backupDeleteFailed": "刪除備份失敗",
     "detectingJava": "正在偵測系統 Java...",
     "javaDetected": "偵測到 {{count}} 個 Java 安裝",
-    "javaCannotRemove": "系統偵測的 Java 無法手動移除"
+    "javaCannotRemove": "系統偵測的 Java 無法手動移除",
+    "connectionInfoLoadFailed": "載入連線資訊失敗",
+    "connectionAddressCopied": "連線地址已複製",
+    "connectionAddressCopyFailed": "複製連線地址失敗"
   },
   "about": {
     "title": "關於",

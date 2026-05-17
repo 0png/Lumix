@@ -31,6 +31,7 @@ export const ServerChannels = {
   UPDATE_BACKUP_SETTINGS: 'server:update-backup-settings',
   
   // Server properties
+  GET_CONNECTION_INFO: 'server:get-connection-info',
   GET_PROPERTIES: 'server:get-properties',
   GET_PROPERTIES_RAW: 'server:get-properties-raw',
   UPDATE_PROPERTIES: 'server:update-properties',
@@ -65,6 +66,7 @@ export function getAllServerChannels(): string[] {
     ServerChannels.RESTORE_BACKUP,
     ServerChannels.DELETE_BACKUP,
     ServerChannels.UPDATE_BACKUP_SETTINGS,
+    ServerChannels.GET_CONNECTION_INFO,
     ServerChannels.GET_PROPERTIES,
     ServerChannels.GET_PROPERTIES_RAW,
     ServerChannels.UPDATE_PROPERTIES,

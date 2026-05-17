@@ -17,6 +17,7 @@ import type {
   ServerStatusEvent,
   ServerLogEvent,
   ServerReadyEvent,
+  ConnectionInfoDto,
   ServerProperties,
   UpdateServerPropertiesRequest,
   PlayerActionRequest,
@@ -318,6 +319,18 @@ function registerHandlers(): void {
   );
 
   // GET_PROPERTIES - 取得伺服器屬性
+  ipcMain.handle(
+    ServerChannels.GET_CONNECTION_INFO,
+    async (_, id: string): Promise<IpcResult<ConnectionInfoDto>> => {
+      try {
+        const connectionInfo = await serverManager!.getConnectionInfo(id);
+        return { success: true, data: connectionInfo };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
   ipcMain.handle(
     ServerChannels.GET_PROPERTIES,
     async (_, id: string): Promise<IpcResult<ServerProperties>> => {

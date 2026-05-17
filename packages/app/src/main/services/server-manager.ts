@@ -9,6 +9,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import { FileManager, ServerMetadata } from './file-manager';
+import { ConnectionDiagnosticsService } from './connection-diagnostics';
 import { ImportRegistry, type ImportedServerRecord } from './import-registry';
 import { ImportScanner } from './import-scanner';
 import { ProcessManager, ProcessConfig } from './process-manager';
@@ -34,6 +35,7 @@ import type {
   ServerLogEvent,
   LogLevel,
   ServerProperties,
+  ConnectionInfoDto,
   PlayerActionRequest,
   PlayerDto,
   BackupInfoDto,
@@ -104,6 +106,7 @@ export class ServerManager extends EventEmitter {
   private importRegistry: ImportRegistry;
   private importScanner: ImportScanner;
   private processManager: ProcessManager;
+  private connectionDiagnostics: ConnectionDiagnosticsService;
   private servers: Map<string, ServerInstanceDto> = new Map();
   private defaultJavaPath: string;
   private stopTimeouts: Map<string, NodeJS.Timeout> = new Map();
@@ -118,6 +121,7 @@ export class ServerManager extends EventEmitter {
     this.importRegistry = config.importRegistry;
     this.importScanner = config.importScanner;
     this.processManager = config.processManager;
+    this.connectionDiagnostics = new ConnectionDiagnosticsService();
     this.defaultJavaPath = config.defaultJavaPath || 'java';
     this.setupProcessManagerListeners();
   }
@@ -1024,6 +1028,31 @@ export class ServerManager extends EventEmitter {
       )));
     }
     return this.fileManager.readServerPropertiesRaw(server.directory);
+  }
+
+  async getConnectionInfo(id: string): Promise<ConnectionInfoDto> {
+    const server = this.servers.get(id);
+    if (!server) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+
+    const refreshed = await this.refreshServerDerivedState(server);
+    this.servers.set(id, refreshed);
+
+    const rawProperties = refreshed.hasServerProperties
+      ? await this.fileManager.readServerPropertiesRaw(refreshed.directory)
+      : {};
+
+    return this.connectionDiagnostics.getConnectionInfo({
+      serverId: refreshed.id,
+      status: refreshed.status,
+      hasServerProperties: refreshed.hasServerProperties === true,
+      serverPortRaw: rawProperties['server-port'],
+      serverIpRaw: rawProperties['server-ip'],
+    });
   }
 
   async updateServerProperties(

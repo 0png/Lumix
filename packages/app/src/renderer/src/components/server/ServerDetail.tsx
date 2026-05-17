@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { ServerInstance, ServerStatus } from './ServerList';
+import { ConnectionInfoCard } from './ConnectionInfoCard';
 import { ServerFirstRunChecklist } from './ServerFirstRunChecklist';
 
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
@@ -247,7 +248,7 @@ export function ServerDetail({
         />
       ) : null}
 
-      <div className="grid grid-cols-1 items-stretch gap-3 lg:gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+      <div className="space-y-3 lg:space-y-4">
         <Card className="glass overflow-hidden">
           <CardContent className="p-0">
             <div className="bg-gradient-subtle p-4 lg:p-5">
@@ -316,8 +317,8 @@ export function ServerDetail({
           </CardContent>
         </Card>
 
-        <div className="h-full">
-          <Card className="glass flex h-full flex-col">
+        <div className="grid grid-cols-1 gap-3 lg:gap-4 xl:grid-cols-2">
+          <Card className="glass flex flex-col">
             <CardHeader className="p-4 pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -368,6 +369,11 @@ export function ServerDetail({
               </Button>
             </CardContent>
           </Card>
+          <ConnectionInfoCard
+            serverId={server.id}
+            serverStatus={server.status}
+            hasServerProperties={hasServerProperties}
+          />
         </div>
       </div>
 

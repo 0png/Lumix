@@ -25,6 +25,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { BackupInfoDto, OnboardingState, OnboardingStepId } from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
+import { ConnectionInfoCard } from './ConnectionInfoCard';
 import { ServerQuickActions } from './ServerQuickActions';
 
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
@@ -524,21 +525,17 @@ export function ServerFirstRunChecklist({
       </Dialog>
 
       <Dialog open={isConnectionHelpOpen} onOpenChange={setIsConnectionHelpOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{t('onboarding.connection.title')}</DialogTitle>
             <DialogDescription>{t('onboarding.connection.description')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <div className="rounded-lg border border-border/60 bg-card/50 p-3">
-              <p className="text-xs text-muted-foreground">{t('onboarding.connection.localhost')}</p>
-              <p className="mt-1 font-mono">localhost:{port ?? '—'}</p>
-            </div>
-            <p>{t('onboarding.connection.sameDevice')}</p>
-            <p>{t('onboarding.connection.sameNetwork')}</p>
-            <p>{t('onboarding.connection.wan')}</p>
-            <p className="text-xs text-muted-foreground">{t('onboarding.connection.phaseNote')}</p>
-          </div>
+          <ConnectionInfoCard
+            serverId={server.id}
+            serverStatus={server.status}
+            hasServerProperties={server.hasServerProperties === true}
+            embedded
+          />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsConnectionHelpOpen(false)}>
               {t('common.close')}

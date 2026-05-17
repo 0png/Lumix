@@ -127,7 +127,62 @@
     "openServerSettings": "Open Full Settings",
     "serverPropertiesPending": "server.properties has not been generated yet. Start the server successfully once, then return here to edit gameplay, world, and network settings.",
     "consoleFullscreen": "Fullscreen",
-    "consoleExitFullscreen": "Exit Fullscreen"
+    "consoleExitFullscreen": "Exit Fullscreen",
+    "connection": {
+      "title": "Connection Info & Diagnostics",
+      "copy": "Copy",
+      "refresh": "Refresh",
+      "statusTitle": "Current state",
+      "bindingTitle": "Binding",
+      "firewallTitle": "Firewall hint",
+      "diagnosticsTitle": "Diagnostics",
+      "running": "The server is currently running.",
+      "stopped": "The server is currently stopped.",
+      "listening": "Lumix detected a local process listening on this Minecraft port.",
+      "notListening": "Lumix did not detect a local listener on this Minecraft port yet.",
+      "boundToSpecificIp": "server.properties is currently bound to `{{ip}}`, which may affect localhost or LAN connection behavior.",
+      "boundToAllInterfaces": "server.properties does not set `server-ip`, which usually means it can bind to all available interfaces.",
+      "lastChecked": "Last checked: {{value}}",
+      "local": {
+        "title": "Same PC",
+        "description": "When testing on this Windows PC, use `localhost` with the current port."
+      },
+      "lan": {
+        "title": "Same LAN",
+        "description": "Players on the same network usually need this LAN IP and the same port.",
+        "unavailable": "Lumix could not find a usable LAN IPv4 this time, so no shareable LAN address is available yet."
+      },
+      "wan": {
+        "title": "WAN / External",
+        "description": "This only shows the public IP as a reference. External access usually still requires router port forwarding, and Lumix cannot configure the router automatically."
+      },
+      "help": {
+        "sameDevice": "Same device testing: use `localhost:<port>`.",
+        "sameNetwork": "Same network sharing: use `LAN-IP:<port>`.",
+        "wan": "External sharing: port forwarding is usually still required, and Lumix can only help diagnose the setup rather than guarantee WAN reachability."
+      },
+      "firewall": {
+        "unknown": "No firewall hint is currently available.",
+        "allowed": "Lumix found a Windows inbound rule that allows this TCP port.",
+        "blocked": "Windows Firewall appears likely to block this port.",
+        "warning": "Lumix could not confirm that Windows Firewall allows this port. Check the inbound rules manually."
+      },
+      "level": {
+        "info": "Info",
+        "warn": "Warning",
+        "error": "Issue"
+      },
+      "diagnostics": {
+        "SERVER_NOT_RUNNING": { "title": "Server not running" },
+        "PORT_NOT_LISTENING": { "title": "Port is not listening yet" },
+        "LAN_IP_UNAVAILABLE": { "title": "LAN address unavailable" },
+        "SERVER_IP_BOUND": { "title": "Server is bound to a specific IP" },
+        "WAN_REQUIRES_PORT_FORWARDING": { "title": "WAN usually still needs port forwarding" },
+        "PUBLIC_IP_UNAVAILABLE": { "title": "Public IP unavailable right now" },
+        "CGNAT_SUSPECTED": { "title": "CGNAT or ISP limits may apply" },
+        "FIREWALL_MAY_BLOCK": { "title": "Windows Firewall may still block access" }
+      }
+    }
   },
   "backup": {
     "title": "Server Backups",
@@ -231,7 +286,7 @@
     },
     "connection": {
       "title": "Connection Info",
-      "description": "This Phase 2 view is intentionally lightweight. It only shows currently known local info and honest guidance.",
+      "description": "This view shows the same connection info and diagnostics as the main server detail page.",
       "localhost": "Local address",
       "sameDevice": "For testing on the same PC, use `localhost` with the current port.",
       "sameNetwork": "Players on the same network usually need your LAN IP and the same port. More complete LAN details will land in Phase 3.",
@@ -259,8 +314,8 @@
       },
       "review-connection": {
         "title": "Review connection info",
-        "description": "Confirm the `localhost` connection flow and Lumix's current LAN / WAN guidance limits.",
-        "action": "Open connection notes",
+        "description": "Review local, LAN, and WAN addresses together with the current diagnostics.",
+        "action": "Open connection info",
         "blockedReason": "The current `server-port` could not be read yet. Confirm server.properties exists first."
       },
       "start-server": {
@@ -566,7 +621,10 @@
     "backupDeleteFailed": "Failed to delete backup",
     "detectingJava": "Detecting system Java...",
     "javaDetected": "Detected {{count}} Java installation(s)",
-    "javaCannotRemove": "System-detected Java cannot be manually removed"
+    "javaCannotRemove": "System-detected Java cannot be manually removed",
+    "connectionInfoLoadFailed": "Failed to load connection info",
+    "connectionAddressCopied": "Connection address copied",
+    "connectionAddressCopyFailed": "Failed to copy connection address"
   },
   "about": {
     "title": "About",

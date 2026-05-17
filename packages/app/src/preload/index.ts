@@ -22,6 +22,7 @@ import type {
   ServerStatusEvent,
   ServerLogEvent,
   ServerReadyEvent,
+  ConnectionInfoDto,
   ServerProperties,
   UpdateServerPropertiesRequest,
   PlayerActionRequest,
@@ -113,6 +114,9 @@ const electronAPI = {
 
     updateBackupSettings: (data: UpdateBackupSettingsRequest): Promise<IpcResult<ServerInstanceDto>> =>
       ipcRenderer.invoke(ServerChannels.UPDATE_BACKUP_SETTINGS, data),
+
+    getConnectionInfo: (id: string): Promise<IpcResult<ConnectionInfoDto>> =>
+      ipcRenderer.invoke(ServerChannels.GET_CONNECTION_INFO, id),
 
     getProperties: (id: string): Promise<IpcResult<ServerProperties>> =>
       ipcRenderer.invoke(ServerChannels.GET_PROPERTIES, id),

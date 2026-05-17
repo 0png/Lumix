@@ -11,6 +11,16 @@ export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type LogLevel = 'info' | 'warn' | 'error';
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'zh-TW' | 'en';
+export type ConnectionDiagnosticLevel = 'info' | 'warn' | 'error';
+export type ConnectionDiagnosticCode =
+  | 'SERVER_NOT_RUNNING'
+  | 'PORT_NOT_LISTENING'
+  | 'LAN_IP_UNAVAILABLE'
+  | 'SERVER_IP_BOUND'
+  | 'WAN_REQUIRES_PORT_FORWARDING'
+  | 'PUBLIC_IP_UNAVAILABLE'
+  | 'CGNAT_SUSPECTED'
+  | 'FIREWALL_MAY_BLOCK';
 export type OnboardingStepId =
   | 'review-folder-core'
   | 'review-memory-java'
@@ -253,6 +263,27 @@ export interface PlayerActionRequest {
   serverId: string;
   playerName: string;
   action: PlayerActionType;
+}
+
+export interface ConnectionDiagnostic {
+  level: ConnectionDiagnosticLevel;
+  code: ConnectionDiagnosticCode;
+  message: string;
+}
+
+export interface ConnectionInfoDto {
+  serverId: string;
+  port?: number;
+  serverIp?: string;
+  localhostAddress?: string;
+  lanAddress?: string;
+  publicIp?: string;
+  isRunning: boolean;
+  isListeningOnPort: boolean;
+  diagnostics: ConnectionDiagnostic[];
+  checkedAt: string;
+  hasServerProperties: boolean;
+  firewallStatus: 'unknown' | 'allowed' | 'blocked' | 'warning';
 }
 
 // ============================================================================
