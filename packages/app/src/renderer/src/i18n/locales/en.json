@@ -123,7 +123,9 @@
     "storage": "Storage",
     "storageUnavailable": "Folder path is unavailable",
     "settingsPreviewDescription": "Common server.properties options now live on a dedicated page, covering gameplay, world generation, network, and performance.",
+    "settingsPreviewPendingDescription": "Only basic settings and backups are available right now. server.properties is generated after the first successful server start, so advanced gameplay and network settings appear later.",
     "openServerSettings": "Open Full Settings",
+    "serverPropertiesPending": "server.properties has not been generated yet. Start the server successfully once, then return here to edit gameplay, world, and network settings.",
     "consoleFullscreen": "Fullscreen",
     "consoleExitFullscreen": "Exit Fullscreen"
   },
@@ -228,9 +230,10 @@
       },
       "review-properties": {
         "title": "Open essential server.properties",
-        "description": "Check gameplay and network settings now so you do not have to correct them after first launch.",
+        "description": "Review gameplay and network settings after the first launch, because server.properties is generated at that point.",
         "openGameplay": "Open gameplay settings",
-        "openNetwork": "Open network settings"
+        "openNetwork": "Open network settings",
+        "blockedReason": "server.properties is not available yet. Start the server successfully once first."
       },
       "review-connection": {
         "title": "Review connection info",

@@ -123,7 +123,9 @@
     "storage": "資料位置",
     "storageUnavailable": "尚未取得資料夾路徑",
     "settingsPreviewDescription": "常用 server.properties 已集中到獨立頁面，包含遊戲規則、世界生成、網路與進階效能。",
+    "settingsPreviewPendingDescription": "目前只能調整基本設定與備份。server.properties 會在第一次成功啟動伺服器後生成，之後才會顯示遊戲規則與網路等進階設定。",
     "openServerSettings": "開啟完整設定",
+    "serverPropertiesPending": "server.properties 尚未生成。請先成功啟動一次伺服器，之後再回來調整遊戲規則、世界與網路設定。",
     "consoleFullscreen": "全螢幕",
     "consoleExitFullscreen": "關閉全螢幕"
   },
@@ -228,9 +230,10 @@
       },
       "review-properties": {
         "title": "開啟 server.properties 重要設定",
-        "description": "優先確認遊戲規則與網路設定，避免第一次啟動後還要回頭修正。",
+        "description": "第一次啟動後再確認遊戲規則與網路設定，因為 server.properties 會在那之後才生成。",
         "openGameplay": "打開遊戲規則",
-        "openNetwork": "打開網路設定"
+        "openNetwork": "打開網路設定",
+        "blockedReason": "server.properties 尚未生成，請先成功啟動一次伺服器。"
       },
       "review-connection": {
         "title": "查看連線資訊",

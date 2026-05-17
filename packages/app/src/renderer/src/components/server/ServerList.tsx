@@ -32,6 +32,7 @@ export interface ServerInstance {
   status: ServerStatus;
   ramMax: number;
   isReady?: boolean;
+  hasServerProperties?: boolean;
   backupSettings?: import('../../../../shared/ipc-types').BackupSettings;
   onboardingState?: import('../../../../shared/ipc-types').OnboardingState;
 }

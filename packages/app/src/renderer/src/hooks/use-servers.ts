@@ -295,6 +295,25 @@ export function useServers(): UseServersReturn {
     };
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.server.onReady((event) => {
+      window.electronAPI.server.getById(event.serverId).then((result) => {
+        if (!result.success || !result.data) return;
+        const nextServer = result.data;
+
+        setServers((prev) => prev.map((server) => (
+          server.id === event.serverId
+            ? { ...server, ...nextServer, isReady: nextServer.isReady ?? true }
+            : server
+        )));
+      }).catch(() => {});
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   // 訂閱下載進度事件
   useEffect(() => {
     const unsubscribe = window.electronAPI.download.onProgress((event) => {

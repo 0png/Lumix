@@ -57,6 +57,7 @@ function toServerInstance(dto: {
   status: string;
   ramMax: number;
   isReady?: boolean;
+  hasServerProperties?: boolean;
   backupSettings?: ServerInstance['backupSettings'];
   onboardingState?: ServerInstance['onboardingState'];
 }): ServerInstance {
@@ -70,6 +71,7 @@ function toServerInstance(dto: {
     status: dto.status as ServerInstance['status'],
     ramMax: dto.ramMax,
     isReady: dto.isReady,
+    hasServerProperties: dto.hasServerProperties,
     backupSettings: dto.backupSettings,
     onboardingState: dto.onboardingState,
   };

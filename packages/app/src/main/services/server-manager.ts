@@ -100,11 +100,24 @@ export class ServerManager extends EventEmitter {
   // ==========================================================================
 
   async getAllServers(): Promise<ServerInstanceDto[]> {
-    return Array.from(this.servers.values());
+    const servers = await Promise.all(
+      Array.from(this.servers.values()).map((server) => this.refreshServerDerivedState(server))
+    );
+
+    servers.forEach((server) => {
+      this.servers.set(server.id, server);
+    });
+
+    return servers;
   }
 
   async getServerById(id: string): Promise<ServerInstanceDto | null> {
-    return this.servers.get(id) ?? null;
+    const server = this.servers.get(id);
+    if (!server) return null;
+
+    const refreshed = await this.refreshServerDerivedState(server);
+    this.servers.set(id, refreshed);
+    return refreshed;
   }
 
   async detectImportCandidate(request: DetectImportCandidateRequest): Promise<ImportCandidateDto> {
@@ -177,7 +190,7 @@ export class ServerManager extends EventEmitter {
 
     await this.importRegistry.save(metadata);
 
-    const server = this.createServerDtoFromImportedRecord(metadata);
+    const server = await this.refreshServerDerivedState(this.createServerDtoFromImportedRecord(metadata));
     this.servers.set(id, server);
     return server;
   }
@@ -222,8 +235,9 @@ export class ServerManager extends EventEmitter {
         eulaAccepted: metadata.eulaAccepted,
       };
 
-      this.servers.set(id, server);
-      return server;
+      const hydratedServer = await this.refreshServerDerivedState(server);
+      this.servers.set(id, hydratedServer);
+      return hydratedServer;
     } catch (error) {
       await this.fileManager.deleteServerDirectory(serverPath).catch(() => {});
       throw error;
@@ -273,9 +287,10 @@ export class ServerManager extends EventEmitter {
     };
 
     await this.persistServerUpdate(updatedServer);
-    this.servers.set(request.id, updatedServer);
+    const hydratedServer = await this.refreshServerDerivedState(updatedServer);
+    this.servers.set(request.id, hydratedServer);
     this.scheduleBackup(request.id);
-    return updatedServer;
+    return hydratedServer;
   }
 
   async deleteServer(id: string): Promise<void> {
@@ -969,6 +984,22 @@ export class ServerManager extends EventEmitter {
         }
       }, JAVA_VERIFY_TIMEOUT);
     });
+  }
+
+  private async refreshServerDerivedState(server: ServerInstanceDto): Promise<ServerInstanceDto> {
+    let hasServerProperties = false;
+
+    try {
+      await fs.access(path.join(server.directory, 'server.properties'));
+      hasServerProperties = true;
+    } catch {
+      hasServerProperties = false;
+    }
+
+    return {
+      ...server,
+      hasServerProperties,
+    };
   }
 
   private findServerByName(name: string, excludeId?: string): ServerInstanceDto | undefined {

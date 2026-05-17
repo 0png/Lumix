@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 
 interface QuickAction {
   id: string;
+  stepNumber: number;
   label: string;
   description: string;
   icon: ReactNode;
@@ -28,6 +29,9 @@ export function ServerQuickActions({ actions }: ServerQuickActionsProps) {
         >
           <span className="mt-0.5 shrink-0">{action.icon}</span>
           <span className="min-w-0">
+            <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Step {action.stepNumber}
+            </span>
             <span className="block text-sm font-medium">{action.label}</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">{action.description}</span>
           </span>

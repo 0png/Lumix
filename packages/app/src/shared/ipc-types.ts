@@ -147,6 +147,7 @@ export interface ServerInstanceDto {
   createdAt: string;
   lastStartedAt?: string;
   isReady?: boolean; // server.jar 是否已下載完成
+  hasServerProperties?: boolean;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
   onboardingState?: OnboardingState;

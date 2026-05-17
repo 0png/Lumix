@@ -111,6 +111,13 @@ function formatDateTime(value?: string): string {
   return new Date(value).toLocaleString();
 }
 
+function buildDefaultProperties(): Record<string, ServerPropertyValue> {
+  return PROPERTY_META.reduce<Record<string, ServerPropertyValue>>((acc, meta) => {
+    acc[meta.key] = meta.defaultValue;
+    return acc;
+  }, {});
+}
+
 function SettingsSkeleton() {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
@@ -142,6 +149,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
   const backupSectionRef = useRef<HTMLDivElement | null>(null);
 
   const isRunning = server.status === 'running';
+  const hasServerProperties = server.hasServerProperties === true;
 
   useEffect(() => {
     setServerName(server.name);
@@ -159,6 +167,14 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
   }, [server.id]);
 
   useEffect(() => {
+    if (!hasServerProperties) {
+      const next = buildDefaultProperties();
+      setProperties(next);
+      setInitialProperties(next);
+      setIsLoading(false);
+      return;
+    }
+
     const loadProperties = async () => {
       setIsLoading(true);
       try {
@@ -171,10 +187,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         setProperties(next);
         setInitialProperties(next);
       } catch {
-        const next = PROPERTY_META.reduce<Record<string, ServerPropertyValue>>((acc, meta) => {
-          acc[meta.key] = meta.defaultValue;
-          return acc;
-        }, {});
+        const next = buildDefaultProperties();
         setProperties(next);
         setInitialProperties(next);
       } finally {
@@ -183,7 +196,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
     };
 
     loadProperties();
-  }, [server.id]);
+  }, [hasServerProperties, server.id]);
 
   useEffect(() => {
     loadBackups().catch(() => {
@@ -214,7 +227,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       serverName !== server.name ||
       ramMax !== server.ramMax ||
       JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings) ||
-      PROPERTY_META.some((meta) => properties[meta.key] !== initialProperties[meta.key]),
+      (hasServerProperties && PROPERTY_META.some((meta) => properties[meta.key] !== initialProperties[meta.key])),
     [backupSettings, initialBackupSettings, initialProperties, properties, ramMax, server.name, server.ramMax, serverName]
   );
 
@@ -236,7 +249,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         return acc;
       }, {});
 
-      if (Object.keys(updates).length > 0) {
+      if (hasServerProperties && Object.keys(updates).length > 0) {
         const result = await window.electronAPI.server.updateProperties({
           id: server.id,
           properties: updates,
@@ -266,7 +279,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         setInitialBackupSettings(savedSettings);
       }
 
-      toast.success(t('toast.propertiesSaved'));
+      toast.success(t(hasServerProperties ? 'toast.propertiesSaved' : 'toast.settingsSaved'));
     } catch {
       toast.error(t('toast.propertiesSaveFailed'));
     } finally {
@@ -698,13 +711,21 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       </div>
 
       <div className="space-y-4">
+        {!hasServerProperties && (
+          <Card className="glass">
+            <CardContent className="p-4 text-sm text-muted-foreground">
+              {t('server.serverPropertiesPending')}
+            </CardContent>
+          </Card>
+        )}
+
         {isLoading ? (
           <Card className="glass">
             <CardContent className="p-4">
               <SettingsSkeleton />
             </CardContent>
           </Card>
-        ) : (
+        ) : hasServerProperties ? (
           SECTION_ORDER.map((section) => (
             <div
               key={section}
@@ -737,7 +758,8 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
             </Card>
             </div>
           ))
-        )}
+        ) : null
+        }
       </div>
 
       <Separator />

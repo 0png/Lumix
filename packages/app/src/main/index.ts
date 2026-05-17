@@ -11,6 +11,7 @@ import { getUpdateService } from './services/update-service';
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function getIconPath(): string {
   return join(__dirname, '../../resources/icon.png');
@@ -100,27 +101,36 @@ function createWindow(): BrowserWindow {
 // Application Lifecycle
 // ============================================================================
 
-app.whenReady().then(async () => {
-  electronApp.setAppUserModelId('com.lumix.launcher');
-
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window);
-  });
-
-  // 初始化所有 IPC handlers（包含 ServerManager 載入）
-  await initAllIpcHandlers();
-
-  createTray();
-  mainWindow = createWindow();
-
-  // 設定 UpdateService 的主視窗參考
-  const updateService = getUpdateService();
-  updateService.setMainWindow(mainWindow);
-
-  app.on('activate', function () {
+if (!hasSingleInstanceLock) {
+  isQuitting = true;
+  app.quit();
+} else {
+  app.on('second-instance', () => {
     showMainWindow();
   });
-});
+
+  app.whenReady().then(async () => {
+    electronApp.setAppUserModelId('com.lumix.launcher');
+
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window);
+    });
+
+    // 初始化所有 IPC handlers（包含 ServerManager 載入）
+    await initAllIpcHandlers();
+
+    createTray();
+    mainWindow = createWindow();
+
+    // 設定 UpdateService 的主視窗參考
+    const updateService = getUpdateService();
+    updateService.setMainWindow(mainWindow);
+
+    app.on('activate', function () {
+      showMainWindow();
+    });
+  });
+}
 
 app.on('window-all-closed', () => {
   if (isQuitting && process.platform !== 'darwin') {

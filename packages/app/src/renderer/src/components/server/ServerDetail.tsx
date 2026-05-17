@@ -105,6 +105,7 @@ export function ServerDetail({
   const isRunning = server.status === 'running';
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
   const isReady = server.isReady !== false;
+  const hasServerProperties = server.hasServerProperties === true;
   const readinessLabel = isReady ? t('server.ready') : t('server.downloading');
   const readinessDescription = isReady ? t('server.readyDescription') : t('server.downloadingDescription');
   const isImported = server.origin === 'imported';
@@ -326,27 +327,35 @@ export function ServerDetail({
             <CardContent className="flex flex-1 flex-col justify-between gap-4 p-4 pt-1">
               <div className="space-y-3">
                 <p className="text-xs leading-5 text-muted-foreground">
-                  {t('server.settingsPreviewDescription')}
+                  {hasServerProperties
+                    ? t('server.settingsPreviewDescription')
+                    : t('server.settingsPreviewPendingDescription')}
                 </p>
-                <div className="grid gap-2">
-                  {settingsSections.map((section) => (
-                    <div key={section.label} className="rounded-lg border border-border/60 bg-card/45 p-3">
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-xs font-medium">{section.label}</p>
-                        <span className="text-[10px] tabular-nums text-muted-foreground">
-                          {section.fields.length}
-                        </span>
+                {hasServerProperties ? (
+                  <div className="grid gap-2">
+                    {settingsSections.map((section) => (
+                      <div key={section.label} className="rounded-lg border border-border/60 bg-card/45 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium">{section.label}</p>
+                          <span className="text-[10px] tabular-nums text-muted-foreground">
+                            {section.fields.length}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {section.fields.map((key) => (
+                            <Badge key={key} variant="outline" className="text-[10px]">
+                              {key}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {section.fields.map((key) => (
-                          <Badge key={key} variant="outline" className="text-[10px]">
-                            {key}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border/60 bg-card/45 p-3 text-xs leading-5 text-muted-foreground">
+                    {t('server.serverPropertiesPending')}
+                  </div>
+                )}
               </div>
               <Button
                 variant="secondary"
