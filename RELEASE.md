@@ -62,7 +62,7 @@ Lumix 1.0.0 是一個 Windows-first 的 Minecraft 伺服器啟動與管理工具
 
 從 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
 
-- `Lumix Setup 1.0.0.exe`
+- `Lumix-Setup-1.0.0.exe`
 
 安裝完成後首次啟動，Lumix 會自動偵測系統 Java 並可立即建立或匯入伺服器。
 
@@ -100,4 +100,3 @@ Lumix 1.0.0 是一個 Windows-first 的 Minecraft 伺服器啟動與管理工具
 
 - License: MIT
 - Author: 0png
-

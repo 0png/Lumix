@@ -55,7 +55,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Lumix",
-      "artifactName": "Lumix Setup ${version}.${ext}"
+      "artifactName": "Lumix-Setup-${version}.${ext}"
     },
     "mac": {
       "icon": "resources/icon.png"

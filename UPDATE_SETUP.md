@@ -20,7 +20,7 @@ Lumix 使用 `electron-updater` 搭配 GitHub Releases 提供桌面版自動更�
 Windows 安裝程式會輸出為：
 
 ```text
-Lumix Setup <version>.exe
+Lumix-Setup-<version>.exe
 ```
 
 ## 發布前準備
@@ -73,8 +73,8 @@ packages/app/dist/
 
 至少應包含：
 
-- `Lumix Setup <version>.exe`
-- `Lumix Setup <version>.exe.blockmap`
+- `Lumix-Setup-<version>.exe`
+- `Lumix-Setup-<version>.exe.blockmap`
 - `latest.yml`
 
 ## 更新測試流程

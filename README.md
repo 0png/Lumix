@@ -38,7 +38,7 @@
 
 Download from [GitHub Releases](https://github.com/0png/Lumix/releases):
 
-- `Lumix Setup x.y.z.exe` - Windows installer
+- `Lumix-Setup-x.y.z.exe` - Windows installer
 
 ## Usage
 
@@ -126,7 +126,7 @@ Thanks to [Crafthead](https://crafthead.net/) for providing Minecraft avatar ren
 
 從 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
 
-- `Lumix Setup x.y.z.exe` - Windows 安裝版
+- `Lumix-Setup-x.y.z.exe` - Windows 安裝版
 
 ## 使用方式
 
