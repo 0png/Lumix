@@ -1,48 +1,39 @@
-# Lumix 1.1.1 Release Notes
+# Lumix 1.1.1
 
-**版本**: 1.1.1
+Lumix 1.1.1 是針對 Windows 安裝版的必要修復，解決 1.1.0 啟動時可能因遺失 runtime dependency 而立即退出的問題。
 
-**發布日期**: 2026-08-16
+> [!IMPORTANT]
+> **如果你已安裝 Lumix 1.1.0，請直接下載 1.1.1 安裝程式覆蓋安裝。**
+> 1.1.0 可能在啟動時顯示 `Cannot find module 'debug'`，因此無法使用應用程式內更新。正在使用 1.0.0 的使用者可透過應用程式內更新，或手動安裝此版本。
 
-**類型**: Hotfix Release
+## 下載
 
-## 重要修正
+**[下載 Lumix 1.1.1 for Windows →](https://github.com/0png/Lumix/releases/download/v1.1.1/Lumix-Setup-1.1.1.exe)**
 
-Lumix 1.1.1 修復 1.1.0 Windows 安裝版啟動時出現 `Cannot find module 'debug'`，導致 main process 無法啟動的問題。
+- Windows 10 / 11（x64）
+- 安裝程式：`Lumix-Setup-1.1.1.exe`
+- SHA-256：`18311e4653bcba65712d2f58c380902988a74568b94bbad5c387a42e6de34435`
 
-問題源自 `extract-zip` 被保留為 production external module，但 electron-builder 在 pnpm workspace 打包時只收錄套件本體，沒有一併收錄 `debug`、`yauzl` 等傳遞依賴。
+## 修正內容
 
-1.1.1 將 `extract-zip` 與其 runtime dependencies 直接 bundle 進 Electron main process，不再依賴安裝包內的傳遞 `node_modules` 結構。
+- 修復 1.1.0 Windows 安裝版因封裝時遺漏傳遞依賴，導致 Electron main process 無法啟動的問題。
+- 將壓縮檔解包所需的 runtime dependencies 直接 bundle 進 main process，避免安裝後受 `node_modules` 結構影響。
 
-## 防回歸措施
+## 可靠性改善
 
-- 新增 production main bundle 驗證腳本
-- 建置時若發現非 Electron／Node built-in 的外部 `require()`，會直接讓 build 失敗
-- 發布前直接啟動 `win-unpacked/Lumix.exe`，確認 main process 能持續運行
-- 核對安裝程式、blockmap 與 `latest.yml` 的版本和 digest
+- 新增 production main bundle 檢查；如果建置結果仍存在未預期的外部 runtime dependency，會在打包前直接失敗。
+- 新增 Windows 發布前啟動 smoke test，直接執行打包後的 Lumix，確認 main process 可正常持續運行。
+- 發布前重新核對安裝程式、blockmap、更新 metadata 與 SHA-256 digest。
 
-## 1.1 系列功能
+## 同時包含 Lumix 1.1 的新功能
 
-- NeoForge 與 Purpur 完整支援
-- Modrinth／CurseForge 模組包匯入
-- 伺服器儀表板、詳細資訊與連線診斷改版
-- 大型設定工作區 Modal 與 Linear-style 微動效
-- renderer 黑畫面防護與 view-level error recovery
+- NeoForge 與 Purpur 伺服器完整支援
+- Modrinth 與 CurseForge 伺服器模組包匯入
+- 全新的伺服器儀表板、詳細資訊與連線診斷
+- 大型設定工作區 Modal 與短促的介面微動效
+- 黑畫面防護與頁面層級錯誤復原
 
-## 安裝方式
+> [!NOTE]
+> Lumix 目前尚未提供程式碼簽章，Windows SmartScreen 可能顯示保護提示。請只從本 repo 的 GitHub Releases 下載，並可使用上方 SHA-256 驗證檔案。
 
-請勿使用 Lumix 1.1.0，改由 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
-
-- `Lumix-Setup-1.1.1.exe`
-
-已安裝 1.0.0 的使用者可透過應用程式內更新功能升級。1.1.0 因無法啟動，請直接執行 1.1.1 安裝程式覆蓋安裝。
-
-## 驗證摘要
-
-- `pnpm --filter @lumix/app typecheck`
-- `pnpm --filter @lumix/app lint`
-- `pnpm --filter @lumix/app test`
-- `pnpm --filter @lumix/app build`
-- `pnpm --filter @lumix/app build:win`
-- Production main bundle external dependency gate
-- Windows unpacked executable startup smoke test
+**[查看 v1.1.0...v1.1.1 完整變更](https://github.com/0png/Lumix/compare/v1.1.0...v1.1.1)**
