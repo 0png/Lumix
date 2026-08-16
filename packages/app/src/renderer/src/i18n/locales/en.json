@@ -35,6 +35,11 @@
     "maximize": "Maximize",
     "close": "Close window"
   },
+  "viewError": {
+    "title": "This page couldn't be displayed",
+    "description": "Lumix kept the rest of the app available. Return to the server list and try again.",
+    "backToDashboard": "Back to servers"
+  },
   "sidebar": {
     "servers": "Servers",
     "addServer": "Add Server",
@@ -766,7 +771,7 @@
     "tagline": "A desktop control center for Minecraft server setup, lifecycle management, downloads, and day-to-day maintenance.",
     "version": "Version",
     "maintainer": "Maintainer",
-    "releaseChannel": "Release Channel",
+    "releaseChannel": "Release source",
     "releaseChannelValue": "GitHub Releases",
     "license": "License",
     "runtime": "Runtime",

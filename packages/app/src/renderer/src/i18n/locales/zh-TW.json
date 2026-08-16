@@ -35,6 +35,11 @@
     "maximize": "最大化",
     "close": "關閉視窗"
   },
+  "viewError": {
+    "title": "此頁面暫時無法顯示",
+    "description": "Lumix 已保留其他操作，你可以返回伺服器列表後再試一次。",
+    "backToDashboard": "返回伺服器"
+  },
   "sidebar": {
     "servers": "伺服器",
     "addServer": "新增伺服器",
@@ -766,7 +771,7 @@
     "tagline": "為 Minecraft 伺服器建立、啟停、下載與日常維護設計的桌面控制台。",
     "version": "版本",
     "maintainer": "維護者",
-    "releaseChannel": "發行通道",
+    "releaseChannel": "發布來源",
     "releaseChannelValue": "GitHub Releases",
     "license": "授權",
     "runtime": "執行環境",

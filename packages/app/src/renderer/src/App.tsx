@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { useTheme } from '@/contexts/theme-context';
-import { MainLayout } from '@/components/layout';
+import { MainLayout, ViewErrorBoundary } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
 import { UpdateNotification } from '@/components/update/UpdateNotification';
 import {
@@ -567,7 +567,15 @@ function AppContent() {
       onSelectServer={handleSelectServer}
       currentView={currentView}
     >
-      {renderContent()}
+      <ViewErrorBoundary
+        key={`${currentView}:${selectedServerId ?? 'dashboard'}`}
+        title={t('viewError.title')}
+        description={t('viewError.description')}
+        actionLabel={t('viewError.backToDashboard')}
+        onReset={handleGoHome}
+      >
+        {renderContent()}
+      </ViewErrorBoundary>
 
       <AddServerDialog
         open={showAddServerDialog}

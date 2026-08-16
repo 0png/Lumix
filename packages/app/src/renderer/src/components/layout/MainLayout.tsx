@@ -3,7 +3,7 @@
  * 支援響應式設計：動態適應全螢幕和小視窗 (1000x650)
  */
 
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,6 +40,7 @@ export function MainLayout({
   currentView = 'servers',
 }: MainLayoutProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 1024);
+  const contentViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const collapseAtCompactWidth = () => {
@@ -69,6 +70,12 @@ export function MainLayout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar]);
 
+  // 各主視圖共用同一個 ScrollArea。切頁前重設位置，避免沿用長頁面的
+  // scrollTop 後，新頁面停在內容之外而呈現空白畫面。
+  useLayoutEffect(() => {
+    contentViewportRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [currentView, selectedServerId]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar
@@ -88,7 +95,7 @@ export function MainLayout({
           onToggleSidebar={toggleSidebar}
         />
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full" viewportRef={contentViewportRef}>
             <main className="p-4 lg:p-6">
               {children}
             </main>

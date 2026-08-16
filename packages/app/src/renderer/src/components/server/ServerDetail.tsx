@@ -39,7 +39,7 @@ import {
   WorkspaceDialogFooter,
   WorkspaceDialogHeader,
 } from '@/components/ui/workspace-dialog';
-import type { ServerInstance, ServerStatus } from './ServerList';
+import type { ServerInstance } from './ServerList';
 import { ConnectionInfoCard } from './ConnectionInfoCard';
 import { ServerFirstRunChecklist } from './ServerFirstRunChecklist';
 
@@ -62,51 +62,9 @@ interface ServerDetailProps {
   onOnboardingAutoOpened?: () => void;
 }
 
-function ServerTelemetry({ status }: { status: ServerStatus }) {
+function ServerTelemetry() {
   return (
-    <div className="server-telemetry" data-status={status} aria-hidden="true">
-      <svg viewBox="0 0 520 220" role="presentation">
-        <defs>
-          <linearGradient id="server-telemetry-fade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="currentColor" stopOpacity="0" />
-            <stop offset="0.2" stopColor="currentColor" stopOpacity="0.35" />
-            <stop offset="0.8" stopColor="currentColor" stopOpacity="0.35" />
-            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        <g className="server-telemetry-grid">
-          <path d="M20 42H500M20 92H500M20 142H500M20 192H500" />
-          <path d="M72 22V205M168 22V205M264 22V205M360 22V205M456 22V205" />
-        </g>
-
-        <g className="server-telemetry-layer" data-layer="stopped">
-          <path className="server-telemetry-line" d="M28 142H492" />
-          <circle cx="90" cy="142" r="3" />
-          <circle cx="264" cy="142" r="3" />
-          <circle cx="430" cy="142" r="3" />
-        </g>
-
-        <g className="server-telemetry-layer" data-layer="transitioning">
-          <path
-            className="server-telemetry-line"
-            d="M28 150C80 150 90 132 132 132S186 164 226 164 284 112 326 112 382 150 492 150"
-          />
-          <g className="server-telemetry-scanner">
-            <circle cx="54" cy="150" r="4" />
-            <circle cx="54" cy="150" r="11" className="server-telemetry-scanner-ring" />
-          </g>
-        </g>
-
-        <g className="server-telemetry-layer" data-layer="running">
-          <path
-            className="server-telemetry-line server-telemetry-line-active"
-            d="M28 150H96L116 150 132 124 152 178 174 82 198 150H254L274 150 290 132 310 166 330 112 352 150H492"
-          />
-          <circle className="server-telemetry-active-dot" cx="352" cy="150" r="4" />
-        </g>
-      </svg>
-    </div>
+    <div className="server-telemetry" aria-hidden="true" />
   );
 }
 
@@ -263,7 +221,7 @@ export function ServerDetail({
 
       <div className="server-bento-grid">
         <section className="server-bento-tile server-bento-hero xl:col-span-8" data-status={server.status}>
-          <ServerTelemetry status={server.status} />
+          <ServerTelemetry />
           <div className="relative z-10 flex min-h-[248px] max-w-md flex-col">
             <div className="flex flex-wrap items-center gap-2">
               <span className="server-runtime-pill" data-status={server.status} role="status">

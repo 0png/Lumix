@@ -589,11 +589,6 @@
   }
 }
 
-@keyframes server-telemetry-scan {
-  from { transform: translateX(0); }
-  to { transform: translateX(410px); }
-}
-
 @keyframes server-skeleton-pulse {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 0.82; }
@@ -606,8 +601,8 @@
     --server-bento-inset: 220 20% 97%;
     --server-bento-border: 220 15% 86%;
     --server-bento-shadow: 220 30% 20%;
-    --server-bento-telemetry: 220 8% 47%;
-    --server-bento-grid-line: 220 12% 68%;
+    --server-bento-gradient-start: 220 8% 68%;
+    --server-bento-gradient-end: 0 0% 94%;
     --server-bento-enter: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -617,8 +612,8 @@
     --server-bento-inset: 240 7% 8.5%;
     --server-bento-border: 240 6% 15.5%;
     --server-bento-shadow: 0 0% 0%;
-    --server-bento-telemetry: 0 0% 46%;
-    --server-bento-grid-line: 0 0% 34%;
+    --server-bento-gradient-start: 220 7% 72%;
+    --server-bento-gradient-end: 0 0% 100%;
   }
 
   .server-bento-grid {
@@ -897,77 +892,16 @@
   .server-telemetry {
     position: absolute;
     z-index: -1;
-    top: 12px;
-    right: -26px;
-    width: min(64%, 560px);
-    color: hsl(var(--server-bento-telemetry));
-    opacity: 0.7;
+    inset: 0 0 0 auto;
+    width: min(62%, 560px);
+    background: linear-gradient(
+      132deg,
+      transparent 4%,
+      hsl(var(--server-bento-gradient-start) / 0.025) 38%,
+      hsl(var(--server-bento-gradient-start) / 0.07) 68%,
+      hsl(var(--server-bento-gradient-end) / 0.11) 100%
+    );
     pointer-events: none;
-    mask-image: linear-gradient(to right, transparent 0%, black 20%, black 82%, transparent 100%);
-  }
-
-  .server-telemetry svg {
-    display: block;
-    width: 100%;
-    height: auto;
-    overflow: visible;
-  }
-
-  .server-telemetry-grid path {
-    fill: none;
-    stroke: hsl(var(--server-bento-grid-line) / 0.14);
-    stroke-width: 1;
-  }
-
-  .server-telemetry-layer {
-    opacity: 0;
-    transform: translateY(3px);
-    transform-box: fill-box;
-    transform-origin: center;
-    transition:
-      opacity 150ms ease,
-      transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .server-telemetry-layer circle {
-    fill: currentColor;
-    opacity: 0.55;
-  }
-
-  .server-telemetry-line {
-    fill: none;
-    stroke: url(#server-telemetry-fade);
-    stroke-width: 1.5;
-  }
-
-  .server-telemetry-line-active {
-    stroke: hsl(142 64% 52% / 0.66);
-  }
-
-  .server-telemetry-active-dot {
-    fill: hsl(142 72% 52%) !important;
-    opacity: 1 !important;
-  }
-
-  .server-telemetry[data-status='stopped'] [data-layer='stopped'],
-  .server-telemetry[data-status='running'] [data-layer='running'],
-  .server-telemetry[data-status='starting'] [data-layer='transitioning'],
-  .server-telemetry[data-status='stopping'] [data-layer='transitioning'] {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .server-telemetry-scanner {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: server-telemetry-scan 1.7s linear infinite;
-  }
-
-  .server-telemetry-scanner-ring {
-    fill: none !important;
-    stroke: currentColor;
-    stroke-width: 1;
-    opacity: 0.18 !important;
   }
 
   .server-detail-menu[data-state='open'] { animation-duration: 190ms; }
@@ -998,7 +932,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .server-bento-grid,
-  .server-telemetry-scanner,
   .server-connection-skeleton > div {
     animation: none;
   }
@@ -1008,8 +941,7 @@
   .server-bento-pressable,
   .server-runtime-dot,
   .server-primary-action-content > span,
-  .server-copy-content > span,
-  .server-telemetry-layer {
+  .server-copy-content > span {
     transition: none;
   }
 
