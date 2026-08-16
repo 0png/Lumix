@@ -11,9 +11,21 @@
     "edit": "編輯",
     "settings": "設定",
     "search": "搜尋",
+    "unknown": "未知",
     "back": "返回",
     "yes": "是",
     "no": "否"
+  },
+  "modal": {
+    "about": "產品資訊",
+    "preferences": "工作區偏好",
+    "confirmAction": "確認操作",
+    "destructiveAction": "高風險操作",
+    "serverSettings": "伺服器設定",
+    "nextSteps": "下一步",
+    "restorePoint": "備份還原",
+    "firstRun": "首次啟動",
+    "connectionCheck": "連線檢查"
   },
   "header": {
     "title": "伺服器儀表板"
@@ -49,6 +61,11 @@
   "dashboard": {
     "description": "集中查看伺服器運行狀態、資源配置與需要處理的項目。",
     "serverList": "伺服器列表",
+    "searchPlaceholder": "搜尋名稱、版本或核心…",
+    "searchLabel": "搜尋伺服器",
+    "clearSearch": "清除搜尋",
+    "noSearchResults": "找不到符合的伺服器",
+    "noSearchResultsDescription": "沒有名稱、版本或核心符合「{{query}}」。",
     "emptyBadge": "開始建立你的第一個伺服器",
     "emptyDescription": "Lumix 會協助你選擇 Minecraft 版本、準備 Java 執行環境，並在建立完成後直接進入可管理的伺服器工作流。",
     "emptySteps": {
@@ -411,7 +428,31 @@
       "resource-pack-sha1": { "label": "資源包 SHA-1", "description": "資源包檔案校驗值，用於確認下載內容。" }
     }
   },
+  "addServerChoice": {
+    "eyebrow": "伺服器工作區",
+    "title": "你想從哪裡開始？",
+    "description": "選擇建立方式，Lumix 會帶你完成版本、執行環境與伺服器內容設定。",
+    "recommended": "一般使用",
+    "options": {
+      "standard": {
+        "title": "建立新伺服器",
+        "description": "從 Vanilla、Paper、Fabric 或 Forge 建立乾淨的伺服器。",
+        "action": "選擇核心與版本"
+      },
+      "modpack": {
+        "title": "從模組包建立",
+        "description": "匯入 .mrpack 或 .zip，自動安裝模組、設定與 Loader。",
+        "action": "選擇或拖入模組包"
+      },
+      "existing": {
+        "title": "匯入既有伺服器",
+        "description": "將已經存在的伺服器資料夾加入 Lumix 管理。",
+        "action": "掃描伺服器資料夾"
+      }
+    }
+  },
   "createServer": {
+    "eyebrow": "新伺服器工作區",
     "title": "建立新伺服器",
     "wizardDescription": "依序完成名稱、核心、記憶體、EULA 與建立前確認。",
     "progressLabel": "步驟 {{current}} / {{total}}",
@@ -508,6 +549,7 @@
     }
   },
   "serverImport": {
+    "eyebrow": "既有伺服器工作區",
     "title": "匯入既有伺服器",
     "importServer": "匯入伺服器",
     "selectDescription": "選擇一個既有 Minecraft 伺服器資料夾，Lumix 會先掃描內容並讓你確認匯入資訊。",
@@ -541,6 +583,73 @@
       "directoryRequired": "請先選擇要匯入的資料夾",
       "scanFailed": "掃描伺服器資料夾失敗",
       "duplicateName": "伺服器名稱已存在，請使用其他名稱"
+    }
+  },
+  "modpackImport": {
+    "eyebrow": "模組包工作區",
+    "title": "從模組包建立伺服器",
+    "importModpack": "匯入模組包",
+    "selectDescription": "選擇 Modrinth .mrpack 或 CurseForge .zip，Lumix 會解析版本、Loader、模組與設定內容。",
+    "reviewDescription": "確認模組包內容與資源配置，完成後會自動建立可管理的伺服器。",
+    "file": "模組包檔案",
+    "filePlaceholder": "選擇或貼上 .mrpack / .zip 路徑",
+    "browse": "瀏覽",
+    "dropzoneLabel": "選擇或拖入 Minecraft 模組包",
+    "dropTitle": "拖入 Minecraft 模組包",
+    "dropNow": "放開以選擇這個模組包",
+    "dropDescription": "或點擊此區域從電腦選擇檔案",
+    "dropHint": "支援 Modrinth 與 CurseForge 格式；解析前不會修改任何伺服器檔案。",
+    "changeFile": "點擊更換檔案",
+    "scan": "解析模組包",
+    "install": "建立伺服器",
+    "format": "模組包格式",
+    "loaderVersion": "Loader 版本",
+    "ram": "最大記憶體（MB）",
+    "unsupported": "不支援",
+    "warnings": "安裝提醒",
+    "ready": "模組包內容完整，可以建立伺服器。",
+    "allowIncomplete": "我了解部分 CurseForge 清單檔案不會自動下載，仍要使用壓縮檔內附內容建立。",
+    "acceptEula": "我已閱讀並接受 Minecraft EULA。",
+    "fileSummary": "將下載 {{downloadable}} 個檔案、載入 {{included}} 個內附檔案，並略過 {{clientOnly}} 個純客戶端檔案。",
+    "importSuccess": "模組包伺服器已建立完成",
+    "importedIncomplete": "伺服器已建立，但仍缺少 {{count}} 個 CurseForge 清單檔案",
+    "formats": {
+      "modrinth": "Modrinth",
+      "curseforge": "CurseForge"
+    },
+    "warningMessages": {
+      "unsupportedLoader": "目前尚未支援 {{loader}} 模組包。",
+      "missingLoader": "找不到 Fabric 或 Forge Loader 資訊。",
+      "clientOnlyFiles": "已辨識 {{count}} 個純客戶端檔案，建立伺服器時會自動略過。",
+      "reservedFiles": "已略過 {{count}} 個可能覆寫 Lumix 伺服器控制檔的項目。",
+      "curseForgeAuth": "清單中有 {{count}} 個 CurseForge 檔案需要 API 授權；目前只會載入壓縮檔內附內容。"
+    },
+    "content": {
+      "mods": "模組",
+      "configs": "設定",
+      "scripts": "腳本",
+      "resourcePacks": "資源包",
+      "other": "其他"
+    },
+    "progress": {
+      "preparing": "正在準備伺服器",
+      "server": "正在安裝伺服器 Loader",
+      "files": "正在下載模組與資源",
+      "overrides": "正在載入設定與覆寫內容",
+      "finalizing": "正在完成建立"
+    },
+    "errors": {
+      "selectFile": "無法開啟模組包選擇器",
+      "fileRequired": "請先選擇模組包檔案",
+      "unsupportedFile": "只支援 .mrpack 或 .zip 模組包檔案",
+      "scanFailed": "無法解析模組包",
+      "installFailed": "建立模組包伺服器失敗",
+      "duplicateName": "伺服器名稱已存在，請使用其他名稱",
+      "invalidArchive": "模組包檔案無效、損毀或超過安全限制",
+      "unsupportedFormat": "找不到支援的 Modrinth 或 CurseForge 模組包索引",
+      "unsupportedLoader": "目前只支援 Fabric 與 Forge 模組包",
+      "incomplete": "模組包仍有無法自動取得的必要檔案",
+      "noJava": "找不到適用於此 Minecraft 版本的 Java"
     }
   },
   "coreType": {
@@ -587,6 +696,9 @@
     "serverDeleted": "伺服器已刪除",
     "serverStarted": "伺服器已啟動",
     "serverStopped": "伺服器已停止",
+    "serverUnexpectedExit": "{{name}} 非預期退出",
+    "serverUnexpectedExitDescription": "程序已停止（exit code: {{code}}）。請檢查 logs/latest.log 了解原因。",
+    "openLatestLog": "開啟 latest.log",
     "settingsSaved": "設定已儲存",
     "error": "發生錯誤",
     "downloadStarted": "開始下載",

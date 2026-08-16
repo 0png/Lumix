@@ -62,6 +62,13 @@ export const IpcErrorCode = {
   DOWNLOAD_UNSUPPORTED_CORE: 'DOWNLOAD_UNSUPPORTED_CORE',
   DOWNLOAD_NETWORK_ERROR: 'DOWNLOAD_NETWORK_ERROR',
 
+  // 模組包相關錯誤
+  MODPACK_INVALID_ARCHIVE: 'MODPACK_INVALID_ARCHIVE',
+  MODPACK_UNSUPPORTED_FORMAT: 'MODPACK_UNSUPPORTED_FORMAT',
+  MODPACK_UNSUPPORTED_LOADER: 'MODPACK_UNSUPPORTED_LOADER',
+  MODPACK_INCOMPLETE: 'MODPACK_INCOMPLETE',
+  MODPACK_INSTALL_FAILED: 'MODPACK_INSTALL_FAILED',
+
   // 檔案系統錯誤
   FS_READ_ERROR: 'FS_READ_ERROR',
   FS_WRITE_ERROR: 'FS_WRITE_ERROR',
@@ -227,6 +234,10 @@ export interface ServerStatusEvent {
   serverId: string;
   status: ServerStatus;
   exitCode?: number;
+  unexpected?: boolean;
+  serverName?: string;
+  latestLogPath?: string;
+  serverDirectory?: string;
 }
 
 export interface LogEntryDto {
@@ -263,6 +274,78 @@ export interface PlayerActionRequest {
   serverId: string;
   playerName: string;
   action: PlayerActionType;
+}
+
+export type ModpackFormat = 'modrinth' | 'curseforge';
+
+export interface ModpackContentSummary {
+  mods: number;
+  configs: number;
+  scripts: number;
+  resourcePacks: number;
+  other: number;
+}
+
+export type ModpackWarningCode =
+  | 'unsupportedLoader'
+  | 'missingLoader'
+  | 'clientOnlyFiles'
+  | 'reservedFiles'
+  | 'curseForgeAuth';
+
+export interface ModpackWarning {
+  code: ModpackWarningCode;
+  count?: number;
+  loader?: string;
+}
+
+export interface ModpackCandidateDto {
+  archivePath: string;
+  format: ModpackFormat;
+  name: string;
+  version?: string;
+  mcVersion: string;
+  coreType?: Extract<CoreType, 'fabric' | 'forge'>;
+  loaderVersion?: string;
+  downloadableFiles: number;
+  includedFiles: number;
+  clientOnlyFiles: number;
+  unresolvedFiles: number;
+  content: ModpackContentSummary;
+  warnings: ModpackWarning[];
+  canInstall: boolean;
+}
+
+export interface ScanModpackRequest {
+  archivePath: string;
+}
+
+export interface ImportModpackRequest {
+  archivePath: string;
+  name: string;
+  eulaAccepted: boolean;
+  ramMin?: number;
+  ramMax?: number;
+  javaPath?: string;
+  allowIncomplete?: boolean;
+}
+
+export interface ImportModpackResult {
+  server: ServerInstanceDto;
+  warnings: ModpackWarning[];
+  installedFiles: number;
+  skippedClientOnlyFiles: number;
+  unresolvedFiles: number;
+}
+
+export type ModpackInstallStage = 'preparing' | 'server' | 'files' | 'overrides' | 'finalizing';
+
+export interface ModpackInstallProgressEvent {
+  stage: ModpackInstallStage;
+  completed: number;
+  total: number;
+  percentage: number;
+  message: string;
 }
 
 export interface ConnectionDiagnostic {

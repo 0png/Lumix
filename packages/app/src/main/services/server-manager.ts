@@ -577,6 +577,11 @@ export class ServerManager extends EventEmitter {
       )));
     }
 
+    const normalizedCommand = command.trim().replace(/^\//, '').toLowerCase();
+    if (normalizedCommand === 'stop') {
+      this.updateServerStatus(id, 'stopping');
+    }
+
     this.emitLogEntry(id, 'info', `> ${command}`);
   }
 
@@ -1088,7 +1093,9 @@ export class ServerManager extends EventEmitter {
 
     this.processManager.on('error', (serverId: string, error: Error) => {
       this.emitLogEntry(serverId, 'error', `程序錯誤: ${error.message}`);
-      this.updateServerStatus(serverId, 'stopped');
+      if (this.servers.get(serverId)?.status !== 'stopping') {
+        this.updateServerStatus(serverId, 'stopped');
+      }
     });
   }
 
@@ -1139,6 +1146,8 @@ export class ServerManager extends EventEmitter {
     const server = this.servers.get(serverId);
     if (!server) return;
 
+    const unexpected = server.status !== 'stopping';
+
     // 清除對應的 stop timeout，避免不必要的 forceKill
     const timeout = this.stopTimeouts.get(serverId);
     if (timeout) {
@@ -1156,12 +1165,22 @@ export class ServerManager extends EventEmitter {
       serverId,
       status: 'stopped',
       exitCode: code ?? undefined,
+      unexpected,
+      serverName: server.name,
+      latestLogPath: path.join(server.directory, 'logs', 'latest.log'),
+      serverDirectory: server.directory,
     };
 
     server.status = 'stopped';
     this.servers.set(serverId, server);
     this.emit('status-changed', event);
-    this.emitLogEntry(serverId, 'info', `伺服器已停止 (exit code: ${code ?? 'unknown'})`);
+    this.emitLogEntry(
+      serverId,
+      unexpected ? 'error' : 'info',
+      unexpected
+        ? `伺服器非預期退出 (exit code: ${code ?? 'unknown'})，請檢查 logs/latest.log`
+        : `伺服器已停止 (exit code: ${code ?? 'unknown'})`
+    );
   }
 
   private updateServerStatus(id: string, status: ServerStatus): void {

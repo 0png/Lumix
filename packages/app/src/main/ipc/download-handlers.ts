@@ -24,8 +24,8 @@ let downloadService: DownloadService | null = null;
 // Initialization
 // ============================================================================
 
-export function initDownloadHandlers(): void {
-  downloadService = new DownloadService();
+export function initDownloadHandlers(service: DownloadService = new DownloadService()): void {
+  downloadService = service;
   registerHandlers();
   setupEventForwarding();
 }

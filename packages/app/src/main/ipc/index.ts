@@ -9,12 +9,14 @@ import { initJavaHandlers } from './java-handlers';
 import { initDownloadHandlers } from './download-handlers';
 import { initSettingsHandlers } from './settings-handlers';
 import { initAppHandlers } from './app-handlers';
+import { initModpackHandlers, cleanupModpackHandlers } from './modpack-handlers';
 import { registerUpdateHandlers, removeUpdateHandlers } from './update-handlers';
 import { ServerManager } from '../services/server-manager';
 import { FileManager } from '../services/file-manager';
 import { ImportRegistry } from '../services/import-registry';
 import { ImportScanner } from '../services/import-scanner';
 import { ProcessManager } from '../services/process-manager';
+import { DownloadService } from '../services/download-service';
 
 // ============================================================================
 // Module State
@@ -33,6 +35,7 @@ export async function initAllIpcHandlers(): Promise<void> {
   const importRegistry = new ImportRegistry(dataPath);
   const importScanner = new ImportScanner();
   const processManager = new ProcessManager();
+  const downloadService = new DownloadService();
 
   serverManager = new ServerManager({
     fileManager,
@@ -47,8 +50,9 @@ export async function initAllIpcHandlers(): Promise<void> {
 
   // 初始化所有 IPC handlers
   initServerHandlers(serverManager);
+  initModpackHandlers(serverManager, downloadService);
   initJavaHandlers();
-  initDownloadHandlers();
+  initDownloadHandlers(downloadService);
   initSettingsHandlers();
   initAppHandlers();
   registerUpdateHandlers();
@@ -60,6 +64,7 @@ export async function initAllIpcHandlers(): Promise<void> {
 
 export function cleanupAllIpcHandlers(): void {
   cleanupServerHandlers();
+  cleanupModpackHandlers();
   removeUpdateHandlers();
 }
 

@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog } from '@/components/ui/dialog';
+import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -848,12 +849,16 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
           }
         }}
       >
-        <DialogContent className="max-w-[92vw] sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{t('backup.restoreDialogTitle')}</DialogTitle>
-            <DialogDescription>{t('backup.restoreDialogDescription')}</DialogDescription>
-          </DialogHeader>
+        <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-xl">
+          <WorkspaceDialogHeader
+            icon={RotateCcw}
+            eyebrow={t('modal.restorePoint')}
+            title={t('backup.restoreDialogTitle')}
+            description={t('backup.restoreDialogDescription')}
+            tone="destructive"
+          />
 
+          <WorkspaceDialogBody>
           {selectedBackupForRestore && (
             <div className="space-y-4">
               <div className="rounded-lg border border-border/60 bg-card/45 p-4">
@@ -949,8 +954,9 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
               </div>
             </div>
           )}
+          </WorkspaceDialogBody>
 
-          <DialogFooter className="gap-2">
+          <WorkspaceDialogFooter>
             <Button variant="outline" onClick={() => setIsRestoreDialogOpen(false)}>
               {t('common.cancel')}
             </Button>
@@ -971,8 +977,8 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
               )}
               {t('backup.restoreNow')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
 
       <div className="space-y-4">

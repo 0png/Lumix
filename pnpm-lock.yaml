@@ -65,6 +65,9 @@ importers:
       electron-updater:
         specifier: ^6.7.3
         version: 6.7.3
+      extract-zip:
+        specifier: ^2.0.1
+        version: 2.0.1
       i18next:
         specifier: ^23.7.16
         version: 23.16.8

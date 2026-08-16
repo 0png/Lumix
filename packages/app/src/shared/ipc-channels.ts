@@ -42,6 +42,16 @@ export const ServerChannels = {
   READY: 'server:ready', // 服務器成功啟動事件
 } as const;
 
+// ============================================================================
+// Modpack Import Channels
+// ============================================================================
+
+export const ModpackChannels = {
+  SCAN: 'modpack:scan',
+  IMPORT: 'modpack:import',
+  INSTALL_PROGRESS: 'modpack:install-progress',
+} as const;
+
 /**
  * 取得所有需要 ipcMain.handle 的 Server channels（不含 event channels）
  * 用於 cleanup 時移除 handlers
@@ -118,6 +128,7 @@ export const AppChannels = {
   GET_DATA_PATH: 'app:get-data-path',
   GET_SYSTEM_INFO: 'app:get-system-info',
   SELECT_DIRECTORY: 'app:select-directory',
+  SELECT_MODPACK_FILE: 'app:select-modpack-file',
   OPEN_FOLDER: 'app:open-folder',
   OPEN_EXTERNAL: 'app:open-external',
 } as const;
@@ -157,6 +168,7 @@ export const UpdateChannels = {
 
 export const IpcChannels = {
   Server: ServerChannels,
+  Modpack: ModpackChannels,
   Java: JavaChannels,
   Download: DownloadChannels,
   Settings: SettingsChannels,

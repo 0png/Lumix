@@ -4,6 +4,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import {
   ServerChannels,
+  ModpackChannels,
   JavaChannels,
   DownloadChannels,
   SettingsChannels,
@@ -50,6 +51,11 @@ import type {
   UpdateDownloadProgress,
   UpdateErrorEvent,
   UpdateDownloadedEvent,
+  ScanModpackRequest,
+  ModpackCandidateDto,
+  ImportModpackRequest,
+  ImportModpackResult,
+  ModpackInstallProgressEvent,
 } from '../shared/ipc-types';
 
 // ============================================================================
@@ -147,6 +153,23 @@ const electronAPI = {
   },
 
   // --------------------------------------------------------------------------
+  // Modpack Import
+  // --------------------------------------------------------------------------
+  modpack: {
+    scan: (data: ScanModpackRequest): Promise<IpcResult<ModpackCandidateDto>> =>
+      ipcRenderer.invoke(ModpackChannels.SCAN, data),
+
+    import: (data: ImportModpackRequest): Promise<IpcResult<ImportModpackResult>> =>
+      ipcRenderer.invoke(ModpackChannels.IMPORT, data),
+
+    onProgress: (callback: (event: ModpackInstallProgressEvent) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: ModpackInstallProgressEvent): void => callback(data);
+      ipcRenderer.on(ModpackChannels.INSTALL_PROGRESS, handler);
+      return () => ipcRenderer.removeListener(ModpackChannels.INSTALL_PROGRESS, handler);
+    },
+  },
+
+  // --------------------------------------------------------------------------
   // Java Management
   // --------------------------------------------------------------------------
   java: {
@@ -215,6 +238,9 @@ const electronAPI = {
 
     selectDirectory: (): Promise<IpcResult<string | null>> =>
       ipcRenderer.invoke(AppChannels.SELECT_DIRECTORY),
+
+    selectModpackFile: (): Promise<IpcResult<string | null>> =>
+      ipcRenderer.invoke(AppChannels.SELECT_MODPACK_FILE),
 
     openFolder: (path: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_FOLDER, path),

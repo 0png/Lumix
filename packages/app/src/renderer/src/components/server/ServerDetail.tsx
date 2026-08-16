@@ -20,12 +20,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
+import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { cn } from '@/lib/utils';
 import type { ServerInstance, ServerStatus } from './ServerList';
 import { ConnectionInfoCard } from './ConnectionInfoCard';
@@ -379,11 +375,9 @@ export function ServerDetail({
 
       {/* 編輯對話框 */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-[90vw] sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base lg:text-lg">{t('common.edit')} {server.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 lg:space-y-4 py-3 lg:py-4">
+        <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-md">
+          <WorkspaceDialogHeader icon={SlidersHorizontal} eyebrow={t('modal.serverSettings')} title={`${t('common.edit')} ${server.name}`} />
+          <WorkspaceDialogBody className="space-y-3 lg:space-y-4">
             <div className="space-y-1.5 lg:space-y-2">
               <Label htmlFor="edit-name" className="text-xs lg:text-sm">{t('server.name')}</Label>
               <Input
@@ -406,25 +400,25 @@ export function ServerDetail({
                 step={512}
               />
             </div>
-          </div>
-          <DialogFooter className="gap-2">
+          </WorkspaceDialogBody>
+          <WorkspaceDialogFooter>
             <Button variant="outline" onClick={handleCancel} className="h-8 lg:h-9 text-xs lg:text-sm">
               {t('common.cancel')}
             </Button>
             <Button onClick={handleSave} className="h-8 lg:h-9 text-xs lg:text-sm ripple">{t('common.save')}</Button>
-          </DialogFooter>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
 
       {/* 刪除確認對話框 - 加入警告文字 */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="max-w-[90vw] sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base lg:text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
-              {t('server.delete')}
-            </DialogTitle>
-            <DialogDescription asChild>
+        <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-md">
+          <WorkspaceDialogHeader
+            icon={AlertTriangle}
+            eyebrow={t('modal.destructiveAction')}
+            title={t('server.delete')}
+            tone="destructive"
+            description={
               <div className="text-xs lg:text-sm space-y-2 text-muted-foreground">
                 <p>{t('server.deleteConfirm', '確定要刪除此伺服器嗎？')}</p>
                 <p className="font-medium text-foreground">{t('server.name')}: {server.name}</p>
@@ -434,9 +428,9 @@ export function ServerDetail({
                     : t('server.deleteWarning', '此操作無法復原，所有伺服器資料將被永久刪除。')}
                 </p>
               </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
+            }
+          />
+          <WorkspaceDialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="h-8 lg:h-9 text-xs lg:text-sm">
               {t('common.cancel')}
             </Button>
@@ -450,8 +444,8 @@ export function ServerDetail({
             >
               {t('common.delete')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
     </div>
   );

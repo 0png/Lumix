@@ -4,7 +4,8 @@ import { AlertTriangle, CheckCircle2, FolderInput, HardDrive, Loader2 } from 'lu
 import type { CoreType, ImportCandidateDto, ImportServerRequest } from '../../../../shared/ipc-types';
 import type { CreateServerError } from '@/hooks/use-servers';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog } from '@/components/ui/dialog';
+import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -150,17 +151,16 @@ export function ImportServerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[92vw] sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FolderInput className="h-5 w-5" aria-hidden="true" />
-            {t('serverImport.title')}
-          </DialogTitle>
-          <DialogDescription>
-            {step === 'select' ? t('serverImport.selectDescription') : t('serverImport.reviewDescription')}
-          </DialogDescription>
-        </DialogHeader>
+      <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-3xl">
+        <WorkspaceDialogHeader
+          icon={FolderInput}
+          eyebrow={t('serverImport.eyebrow')}
+          title={t('serverImport.title')}
+          description={step === 'select' ? t('serverImport.selectDescription') : t('serverImport.reviewDescription')}
+          tone="amber"
+        />
 
+        <WorkspaceDialogBody>
         {step === 'select' ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -267,9 +267,10 @@ export function ImportServerDialog({
           </div>
         ) : null}
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+        </WorkspaceDialogBody>
 
-        <DialogFooter className="gap-2">
+        <WorkspaceDialogFooter>
           {step === 'review' ? (
             <Button variant="outline" onClick={() => setStep('select')} disabled={isSubmitting}>
               {t('common.back')}
@@ -289,8 +290,8 @@ export function ImportServerDialog({
               {t('serverImport.confirmImport')}
             </Button>
           )}
-        </DialogFooter>
-      </DialogContent>
+        </WorkspaceDialogFooter>
+      </WorkspaceDialogContent>
     </Dialog>
   );
 }

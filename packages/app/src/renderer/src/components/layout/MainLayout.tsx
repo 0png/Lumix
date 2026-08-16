@@ -3,8 +3,7 @@
  * 支援響應式設計：動態適應全螢幕和小視窗 (1000x650)
  */
 
-import { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,53 +39,66 @@ export function MainLayout({
   onOpenAbout,
   currentView = 'servers',
 }: MainLayoutProps) {
-  const { t } = useTranslation();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 1024);
 
-  const getTitle = () => {
-    switch (currentView) {
-      case 'servers':
-        return t('sidebar.servers');
-      case 'server-settings':
-        return t('server.settingsTitle');
-      case 'settings':
-        return t('settings.title');
-      case 'about':
-        return t('about.title');
-      default:
-        return '';
-    }
-  };
+  useEffect(() => {
+    const collapseAtCompactWidth = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+
+    collapseAtCompactWidth();
+    window.addEventListener('resize', collapseAtCompactWidth);
+    return () => window.removeEventListener('resize', collapseAtCompactWidth);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(previous => !previous);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+        event.preventDefault();
+        toggleSidebar();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSidebar]);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <TitleBar />
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar
-          servers={servers}
-          selectedServerId={selectedServerId}
-          onSelectServer={onSelectServer}
-          onGoHome={onGoHome}
-          onCreateServer={onCreateServer}
-          onOpenSettings={onOpenSettings}
-          onOpenAbout={onOpenAbout}
-          currentView={currentView}
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        servers={servers}
+        selectedServerId={selectedServerId}
+        onSelectServer={onSelectServer}
+        onGoHome={onGoHome}
+        onCreateServer={onCreateServer}
+        onOpenSettings={onOpenSettings}
+        onOpenAbout={onOpenAbout}
+        currentView={currentView}
+      />
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <TitleBar
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={toggleSidebar}
         />
-        <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-          {/* 標題區域 - 與 Sidebar Logo 區域對齊 */}
-          <header className="h-12 border-b border-border/50 flex items-center px-4 lg:px-6 shrink-0">
-            <h2 className="text-lg font-semibold truncate">{getTitle()}</h2>
-          </header>
-          <ScrollArea className="flex-1">
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
             <main className="p-4 lg:p-6">
               {children}
             </main>
           </ScrollArea>
+          {overlay ? (
+            <div className="absolute inset-0 z-40 bg-background">
+              {overlay}
+            </div>
+          ) : null}
         </div>
-        {overlay ? (
-          <div className="absolute inset-0 z-40 bg-background">
-            {overlay}
-          </div>
-        ) : null}
       </div>
     </div>
   );

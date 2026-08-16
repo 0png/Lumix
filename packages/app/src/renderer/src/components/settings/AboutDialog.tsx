@@ -5,13 +5,9 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, Github } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ExternalLink, Github, Info } from 'lucide-react';
+import { Dialog } from '@/components/ui/dialog';
+import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import appIcon from '@/assets/icon.png';
@@ -41,12 +37,10 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-base">{t('about.title')}</DialogTitle>
-        </DialogHeader>
+      <WorkspaceDialogContent className="sm:max-w-lg">
+        <WorkspaceDialogHeader icon={Info} eyebrow={t('modal.about')} title={t('about.title')} />
 
-        <div className="space-y-4">
+        <WorkspaceDialogBody className="space-y-4">
           <div className="rounded-lg border border-border/50 bg-gradient-subtle p-4">
             <div className="flex items-start gap-4">
               <img src={appIcon} alt="Lumix" className="h-14 w-14 shrink-0 rounded-xl shadow-sm" />
@@ -99,8 +93,8 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
               {t('about.submitFeedback')}
             </Button>
           </div>
-        </div>
-      </DialogContent>
+        </WorkspaceDialogBody>
+      </WorkspaceDialogContent>
     </Dialog>
   );
 }

@@ -4,6 +4,7 @@ import {
   Archive,
   CheckCircle2,
   CircleDashed,
+  ClipboardList,
   Compass,
   FolderOpen,
   Loader2,
@@ -17,11 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
+import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { BackupInfoDto, OnboardingState, OnboardingStepId } from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
@@ -375,13 +373,16 @@ export function ServerFirstRunChecklist({
       ) : null}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{t('onboarding.modalTitle', { server: server.name })}</DialogTitle>
-            <DialogDescription>{t('onboarding.description')}</DialogDescription>
-          </DialogHeader>
+        <WorkspaceDialogContent className="sm:max-w-3xl">
+          <WorkspaceDialogHeader
+            icon={ClipboardList}
+            eyebrow={t('modal.firstRun')}
+            title={t('onboarding.modalTitle', { server: server.name })}
+            description={t('onboarding.description')}
+          />
 
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <WorkspaceDialogBody className="p-0">
+          <ScrollArea className="max-h-[60vh] px-6 py-5 pr-8">
             <div className="space-y-3">
               {STEP_ORDER.map((stepId, index) => {
                 const step = stepStatuses[stepId];
@@ -509,8 +510,9 @@ export function ServerFirstRunChecklist({
               })}
             </div>
           </ScrollArea>
+          </WorkspaceDialogBody>
 
-          <div className="flex flex-wrap justify-end gap-2">
+          <WorkspaceDialogFooter className="flex-row flex-wrap justify-end">
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               {t('common.close')}
             </Button>
@@ -520,23 +522,27 @@ export function ServerFirstRunChecklist({
                 {t('onboarding.dismiss')}
               </Button>
             ) : null}
-          </div>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
 
       <Dialog open={isConnectionHelpOpen} onOpenChange={setIsConnectionHelpOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{t('onboarding.connection.title')}</DialogTitle>
-            <DialogDescription>{t('onboarding.connection.description')}</DialogDescription>
-          </DialogHeader>
+        <WorkspaceDialogContent className="sm:max-w-3xl">
+          <WorkspaceDialogHeader
+            icon={Compass}
+            eyebrow={t('modal.connectionCheck')}
+            title={t('onboarding.connection.title')}
+            description={t('onboarding.connection.description')}
+          />
+          <WorkspaceDialogBody>
           <ConnectionInfoCard
             serverId={server.id}
             serverStatus={server.status}
             hasServerProperties={server.hasServerProperties === true}
             embedded
           />
-          <div className="flex justify-end gap-2">
+          </WorkspaceDialogBody>
+          <WorkspaceDialogFooter className="flex-row justify-end">
             <Button variant="outline" onClick={() => setIsConnectionHelpOpen(false)}>
               {t('common.close')}
             </Button>
@@ -549,8 +555,8 @@ export function ServerFirstRunChecklist({
             >
               {t('onboarding.markComplete')}
             </Button>
-          </div>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
     </>
   );

@@ -26,6 +26,11 @@ interface PaperProjectResponse {
   versions: Record<string, string[]>;
 }
 
+export interface DownloadServerOptions {
+  loaderVersion?: string;
+  javaPath?: string;
+}
+
 interface PaperBuild {
   id: number;
   channel: string;
@@ -154,7 +159,8 @@ export class DownloadService extends EventEmitter {
     coreType: CoreType,
     mcVersion: string,
     targetDir: string,
-    serverId?: string
+    serverId?: string,
+    options: DownloadServerOptions = {}
   ): Promise<string> {
     const jarPath = path.join(targetDir, 'server.jar');
 
@@ -166,10 +172,10 @@ export class DownloadService extends EventEmitter {
         await this.downloadPaperServer(mcVersion, jarPath, serverId);
         break;
       case 'fabric':
-        await this.downloadFabricServer(mcVersion, jarPath, serverId);
+        await this.downloadFabricServer(mcVersion, jarPath, serverId, options.loaderVersion);
         break;
       case 'forge':
-        await this.downloadForgeServer(mcVersion, jarPath, serverId);
+        await this.downloadForgeServer(mcVersion, jarPath, serverId, options.loaderVersion, options.javaPath);
         break;
       case 'spigot':
         await this.downloadPaperServer(mcVersion, jarPath, serverId);
@@ -247,10 +253,13 @@ export class DownloadService extends EventEmitter {
   private async downloadFabricServer(
     mcVersion: string,
     jarPath: string,
-    serverId?: string
+    serverId?: string,
+    loaderVersion?: string
   ): Promise<void> {
     const loaders = await fetchJson<FabricLoaderVersion[]>(API_ENDPOINTS.FABRIC_LOADER);
-    const stableLoader = loaders.find((l) => l.stable);
+    const stableLoader = loaderVersion
+      ? loaders.find((loader) => loader.version === loaderVersion)
+      : loaders.find((loader) => loader.stable);
     if (!stableLoader) {
       throw new Error(formatIpcError(createIpcError(
         IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
@@ -274,15 +283,19 @@ export class DownloadService extends EventEmitter {
   private async downloadForgeServer(
     mcVersion: string,
     jarPath: string,
-    serverId?: string
+    serverId?: string,
+    requestedForgeVersion?: string,
+    javaPath?: string
   ): Promise<void> {
     // 從 promotions_slim.json 獲取 Forge 版本
-    const promos = await fetchJson<ForgePromotions>(API_ENDPOINTS.FORGE_PROMOTIONS);
-    
-    // 優先使用 recommended 版本，否則使用 latest
-    const recommendedKey = `${mcVersion}-recommended`;
-    const latestKey = `${mcVersion}-latest`;
-    const forgeVersion = promos.promos[recommendedKey] || promos.promos[latestKey];
+    let forgeVersion = requestedForgeVersion;
+    if (!forgeVersion) {
+      const promos = await fetchJson<ForgePromotions>(API_ENDPOINTS.FORGE_PROMOTIONS);
+      // 優先使用 recommended 版本，否則使用 latest
+      const recommendedKey = `${mcVersion}-recommended`;
+      const latestKey = `${mcVersion}-latest`;
+      forgeVersion = promos.promos[recommendedKey] || promos.promos[latestKey];
+    }
     
     if (!forgeVersion) {
       throw new Error(formatIpcError(createIpcError(
@@ -301,7 +314,7 @@ export class DownloadService extends EventEmitter {
 
     await this.downloadWithProgress(installerUrl, installerPath, 0, serverId);
 
-    await runForgeInstaller(installerPath, targetDir);
+    await runForgeInstaller(installerPath, targetDir, javaPath);
   }
 
   // ==========================================================================

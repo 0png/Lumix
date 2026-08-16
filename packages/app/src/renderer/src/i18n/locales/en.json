@@ -11,9 +11,21 @@
     "edit": "Edit",
     "settings": "Settings",
     "search": "Search",
+    "unknown": "unknown",
     "back": "Back",
     "yes": "Yes",
     "no": "No"
+  },
+  "modal": {
+    "about": "Product information",
+    "preferences": "Workspace preferences",
+    "confirmAction": "Confirm action",
+    "destructiveAction": "High-risk action",
+    "serverSettings": "Server settings",
+    "nextSteps": "Next steps",
+    "restorePoint": "Backup restore",
+    "firstRun": "First run",
+    "connectionCheck": "Connection check"
   },
   "header": {
     "title": "Server Dashboard"
@@ -49,6 +61,11 @@
   "dashboard": {
     "description": "Review server runtime state, resource allocation, and items that need attention in one place.",
     "serverList": "Server list",
+    "searchPlaceholder": "Search by name, version, or core…",
+    "searchLabel": "Search servers",
+    "clearSearch": "Clear search",
+    "noSearchResults": "No matching servers",
+    "noSearchResultsDescription": "No server name, version, or core matches \"{{query}}\".",
     "emptyBadge": "Create your first server",
     "emptyDescription": "Lumix helps you choose a Minecraft version, prepare the Java runtime, and move directly into a manageable server workflow after creation.",
     "emptySteps": {
@@ -411,7 +428,31 @@
       "resource-pack-sha1": { "label": "Resource Pack SHA-1", "description": "Checksum used to verify the downloaded resource pack." }
     }
   },
+  "addServerChoice": {
+    "eyebrow": "Server workspace",
+    "title": "Where would you like to start?",
+    "description": "Choose a setup path and Lumix will guide you through versions, runtime, and server content.",
+    "recommended": "Most common",
+    "options": {
+      "standard": {
+        "title": "Create a new server",
+        "description": "Start clean with Vanilla, Paper, Fabric, or Forge.",
+        "action": "Choose core and version"
+      },
+      "modpack": {
+        "title": "Build from a modpack",
+        "description": "Import a .mrpack or .zip and install its mods, configs, and loader automatically.",
+        "action": "Choose or drop a modpack"
+      },
+      "existing": {
+        "title": "Import an existing server",
+        "description": "Bring an existing server folder under Lumix management.",
+        "action": "Scan a server folder"
+      }
+    }
+  },
   "createServer": {
+    "eyebrow": "New server workspace",
     "title": "Create New Server",
     "wizardDescription": "Work through name, core, memory, EULA, and final review in sequence.",
     "progressLabel": "Step {{current}} / {{total}}",
@@ -508,6 +549,7 @@
     }
   },
   "serverImport": {
+    "eyebrow": "Existing server workspace",
     "title": "Import Existing Server",
     "importServer": "Import Server",
     "selectDescription": "Choose an existing Minecraft server folder. Lumix will scan it first and let you review the detected details.",
@@ -541,6 +583,73 @@
       "directoryRequired": "Choose a folder to import first",
       "scanFailed": "Failed to scan the server folder",
       "duplicateName": "A server with this name already exists"
+    }
+  },
+  "modpackImport": {
+    "eyebrow": "Modpack workspace",
+    "title": "Create Server from Modpack",
+    "importModpack": "Import Modpack",
+    "selectDescription": "Choose a Modrinth .mrpack or CurseForge .zip. Lumix will inspect its version, loader, mods, and configuration content.",
+    "reviewDescription": "Review the modpack contents and memory allocation, then create a managed server automatically.",
+    "file": "Modpack file",
+    "filePlaceholder": "Choose or paste a .mrpack / .zip path",
+    "browse": "Browse",
+    "dropzoneLabel": "Choose or drop a Minecraft modpack",
+    "dropTitle": "Drop a Minecraft modpack here",
+    "dropNow": "Release to select this modpack",
+    "dropDescription": "or click this area to choose a file from your computer",
+    "dropHint": "Supports Modrinth and CurseForge formats. No server files are changed during inspection.",
+    "changeFile": "Click to choose another file",
+    "scan": "Inspect Modpack",
+    "install": "Create Server",
+    "format": "Modpack format",
+    "loaderVersion": "Loader version",
+    "ram": "Maximum memory (MB)",
+    "unsupported": "Unsupported",
+    "warnings": "Installation notes",
+    "ready": "The modpack is complete and ready to install.",
+    "allowIncomplete": "I understand that some CurseForge manifest files cannot be downloaded automatically and want to continue with bundled content only.",
+    "acceptEula": "I have read and accept the Minecraft EULA.",
+    "fileSummary": "Lumix will download {{downloadable}} files, load {{included}} bundled files, and skip {{clientOnly}} client-only files.",
+    "importSuccess": "Modpack server created successfully",
+    "importedIncomplete": "Server created, but {{count}} CurseForge manifest files are still missing",
+    "formats": {
+      "modrinth": "Modrinth",
+      "curseforge": "CurseForge"
+    },
+    "warningMessages": {
+      "unsupportedLoader": "{{loader}} modpacks are not supported yet.",
+      "missingLoader": "No Fabric or Forge loader information was found.",
+      "clientOnlyFiles": "{{count}} client-only files were detected and will be skipped for the server.",
+      "reservedFiles": "{{count}} items that could overwrite Lumix server control files will be skipped.",
+      "curseForgeAuth": "{{count}} CurseForge manifest files require API authorization; only content bundled in the archive will be loaded."
+    },
+    "content": {
+      "mods": "Mods",
+      "configs": "Configs",
+      "scripts": "Scripts",
+      "resourcePacks": "Resource packs",
+      "other": "Other"
+    },
+    "progress": {
+      "preparing": "Preparing server",
+      "server": "Installing server loader",
+      "files": "Downloading mods and resources",
+      "overrides": "Loading configs and overrides",
+      "finalizing": "Finishing setup"
+    },
+    "errors": {
+      "selectFile": "Unable to open the modpack picker",
+      "fileRequired": "Choose a modpack file first",
+      "unsupportedFile": "Only .mrpack and .zip modpack files are supported",
+      "scanFailed": "Unable to inspect the modpack",
+      "installFailed": "Failed to create the modpack server",
+      "duplicateName": "A server with this name already exists",
+      "invalidArchive": "The modpack is invalid, damaged, or exceeds the safety limit",
+      "unsupportedFormat": "No supported Modrinth or CurseForge modpack index was found",
+      "unsupportedLoader": "Only Fabric and Forge modpacks are currently supported",
+      "incomplete": "The modpack still contains required files that cannot be retrieved automatically",
+      "noJava": "No Java installation compatible with this Minecraft version was found"
     }
   },
   "coreType": {
@@ -587,6 +696,9 @@
     "serverDeleted": "Server deleted",
     "serverStarted": "Server started",
     "serverStopped": "Server stopped",
+    "serverUnexpectedExit": "{{name}} exited unexpectedly",
+    "serverUnexpectedExitDescription": "The process stopped (exit code: {{code}}). Check logs/latest.log for details.",
+    "openLatestLog": "Open latest.log",
     "settingsSaved": "Settings saved",
     "error": "An error occurred",
     "downloadStarted": "Download started",

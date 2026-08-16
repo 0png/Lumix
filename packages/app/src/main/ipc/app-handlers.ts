@@ -37,7 +37,10 @@ function registerHandlers(): void {
   // 開啟資料夾
   ipcMain.handle(AppChannels.OPEN_FOLDER, async (_, path: string): Promise<IpcResult<void>> => {
     try {
-      await shell.openPath(path);
+      const error = await shell.openPath(path);
+      if (error) {
+        return { success: false, error };
+      }
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -73,6 +76,20 @@ function registerHandlers(): void {
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openDirectory'],
+      });
+      return { success: true, data: result.canceled ? null : (result.filePaths[0] ?? null) };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.handle(AppChannels.SELECT_MODPACK_FILE, async (): Promise<IpcResult<string | null>> => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+          { name: 'Minecraft Modpacks', extensions: ['mrpack', 'zip'] },
+        ],
       });
       return { success: true, data: result.canceled ? null : (result.filePaths[0] ?? null) };
     } catch (error) {

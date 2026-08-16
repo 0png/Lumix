@@ -12,12 +12,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
+import { WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { cn } from '@/lib/utils';
 
 export type LogLevel = 'info' | 'warn' | 'error';
@@ -457,25 +453,23 @@ export function ServerConsole({ logs, onClear, onSendCommand, isFullscreen, onTo
 
       {/* 清除確認對話框 */}
       <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-        <DialogContent className="max-w-[90vw] sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
-              {t('server.clearConsole', '清除控制台')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('server.clearConsoleConfirm', '確定要清除所有日誌嗎？此操作無法復原。')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
+        <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-sm">
+          <WorkspaceDialogHeader
+            icon={AlertCircle}
+            eyebrow={t('modal.confirmAction')}
+            title={t('server.clearConsole', '清除控制台')}
+            description={t('server.clearConsoleConfirm', '確定要清除所有日誌嗎？此操作無法復原。')}
+            tone="destructive"
+          />
+          <WorkspaceDialogFooter>
             <Button variant="outline" onClick={() => setShowClearDialog(false)}>
               {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleClear}>
               {t('common.delete')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
     </>
   );

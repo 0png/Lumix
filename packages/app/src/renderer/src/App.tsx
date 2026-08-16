@@ -1,15 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ClipboardCheck } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog } from '@/components/ui/dialog';
+import { WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { useTheme } from '@/contexts/theme-context';
 import { MainLayout } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
@@ -21,7 +17,9 @@ import {
   ServerConsole,
   PlayerManagement,
   CreateServerDialog,
+  AddServerDialog,
   ImportServerDialog,
+  ImportModpackDialog,
   DownloadProgressToast,
   type ServerInstance,
   type LogEntry,
@@ -88,6 +86,8 @@ function AppContent() {
     createServer,
     detectImportCandidate,
     importExistingServer,
+    scanModpack,
+    importModpack,
     updateServer,
     deleteServer,
     startServer,
@@ -102,7 +102,9 @@ function AppContent() {
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAddServerDialog, setShowAddServerDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showImportModpackDialog, setShowImportModpackDialog] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
   const [isConsoleFullscreen, setIsConsoleFullscreen] = useState(false);
@@ -299,6 +301,42 @@ function AppContent() {
     await window.electronAPI.app.openFolder(directory);
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.server.onStatusChanged((event) => {
+      if (!event.unexpected) return;
+
+      const openLatestLog = event.latestLogPath
+        ? {
+            label: t('toast.openLatestLog'),
+            onClick: () => {
+              void (async () => {
+                const result = await window.electronAPI.app.openFolder(event.latestLogPath!);
+                if (!result.success && event.serverDirectory) {
+                  await window.electronAPI.app.openFolder(event.serverDirectory);
+                }
+              })();
+            },
+          }
+        : undefined;
+
+      sonnerToast.error(
+        t('toast.serverUnexpectedExit', { name: event.serverName ?? t('server.name') }),
+        {
+          id: `server-unexpected-exit-${event.serverId}`,
+          description: t('toast.serverUnexpectedExitDescription', {
+            code: event.exitCode ?? t('common.unknown'),
+          }),
+          duration: 15000,
+          action: openLatestLog,
+        }
+      );
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [t]);
+
   const handleAddJavaPath = useCallback(async () => {
     toast.info(t('toast.detectingJava'));
     const detectedJava = await detectJava();
@@ -355,8 +393,16 @@ function AppContent() {
     setShowCreateDialog(true);
   }, [useCreateServerModal]);
 
+  const handleOpenAddServer = useCallback(() => {
+    setShowAddServerDialog(true);
+  }, []);
+
   const handleOpenImportServer = useCallback(() => {
     setShowImportDialog(true);
+  }, []);
+
+  const handleOpenImportModpack = useCallback(() => {
+    setShowImportModpackDialog(true);
   }, []);
 
   const handleConfirmPostCreateOnboarding = useCallback(() => {
@@ -481,8 +527,7 @@ function AppContent() {
                 onSelectServer={handleSelectServer}
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
-                onCreateServer={handleOpenCreateServer}
-                onImportServer={handleOpenImportServer}
+                onCreateServer={handleOpenAddServer}
                 onOpenSettings={() => setCurrentView('settings')}
                 javaInstallationsCount={javaInstallations.length}
                 downloadProgress={new Map(
@@ -521,7 +566,7 @@ function AppContent() {
       }
       servers={sidebarServers}
       onGoHome={handleGoHome}
-      onCreateServer={handleOpenCreateServer}
+      onCreateServer={handleOpenAddServer}
       onOpenSettings={() => setCurrentView('settings')}
       onOpenAbout={() => setCurrentView('about')}
       selectedServerId={selectedServerId}
@@ -529,6 +574,14 @@ function AppContent() {
       currentView={currentView}
     >
       {renderContent()}
+
+      <AddServerDialog
+        open={showAddServerDialog}
+        onOpenChange={setShowAddServerDialog}
+        onCreateStandard={handleOpenCreateServer}
+        onImportModpack={handleOpenImportModpack}
+        onImportExisting={handleOpenImportServer}
+      />
 
       {showCreateDialog && activeCreateServerPresentation === 'modal' ? (
         <CreateServerDialog
@@ -549,25 +602,44 @@ function AppContent() {
         onImport={handleImportServer}
       />
 
+      <ImportModpackDialog
+        open={showImportModpackDialog}
+        onOpenChange={setShowImportModpackDialog}
+        existingNames={servers.map((server) => server.name)}
+        onScan={(archivePath) => scanModpack({ archivePath })}
+        onImport={importModpack}
+        onImported={(result) => {
+          setSelectedServerId(result.server.id);
+          setCurrentView('servers');
+          if (result.unresolvedFiles > 0) {
+            toast.warning(t('modpackImport.importedIncomplete', { count: result.unresolvedFiles }));
+          } else {
+            toast.success(t('modpackImport.importSuccess'));
+          }
+        }}
+      />
+
       <Dialog open={Boolean(pendingOnboardingPromptServerId)} onOpenChange={(open) => {
         if (!open) {
           handleClosePostCreateOnboardingPrompt();
         }
       }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('onboardingPrompt.title')}</DialogTitle>
-            <DialogDescription>{t('onboardingPrompt.description')}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:justify-end">
+        <WorkspaceDialogContent className="sm:max-w-md">
+          <WorkspaceDialogHeader
+            icon={ClipboardCheck}
+            eyebrow={t('modal.nextSteps')}
+            title={t('onboardingPrompt.title')}
+            description={t('onboardingPrompt.description')}
+          />
+          <WorkspaceDialogFooter className="sm:justify-end">
             <Button variant="outline" onClick={handleDisablePostCreateOnboardingPrompt}>
               {t('onboardingPrompt.neverAskAgain')}
             </Button>
             <Button onClick={handleConfirmPostCreateOnboarding}>
               {t('onboardingPrompt.open')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </WorkspaceDialogFooter>
+        </WorkspaceDialogContent>
       </Dialog>
 
       <Toaster position="bottom-right" theme={theme} />

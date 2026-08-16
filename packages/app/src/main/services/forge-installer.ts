@@ -10,13 +10,13 @@ import { spawn } from 'child_process';
 /**
  * 執行 Forge installer 以 headless 模式安裝伺服器
  */
-export function runForgeInstaller(installerPath: string, targetDir: string): Promise<void> {
+export function runForgeInstaller(installerPath: string, targetDir: string, javaPath: string = 'java'): Promise<void> {
   return new Promise((resolve, reject) => {
     // Forge installer 使用 --installServer 參數進行無頭安裝
     // Windows 上路徑包含空格時，spawn 會自動處理引號
     const args = ['-jar', installerPath, '--installServer'];
 
-    const proc = spawn('java', args, {
+    const proc = spawn(javaPath, args, {
       cwd: targetDir,
       stdio: ['ignore', 'pipe', 'pipe'],
       // 移除 windowsVerbatimArguments，讓 Node.js 自動處理路徑引號

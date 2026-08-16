@@ -5,13 +5,9 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sun, Moon, Monitor, FolderOpen, Plus, Trash2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Sun, Moon, Monitor, FolderOpen, Plus, Trash2, Settings2 } from 'lucide-react';
+import { Dialog } from '@/components/ui/dialog';
+import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -101,12 +97,10 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[500px] overflow-y-auto">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-base">{t('settings.title')}</DialogTitle>
-        </DialogHeader>
+      <WorkspaceDialogContent className="max-h-[500px] sm:max-w-md">
+        <WorkspaceDialogHeader icon={Settings2} eyebrow={t('modal.preferences')} title={t('settings.title')} />
 
-        <div className="space-y-4">
+        <WorkspaceDialogBody className="space-y-4">
           <div className="space-y-3">
             <h3 className="text-xs font-medium text-muted-foreground">{t('settings.appearance')}</h3>
 
@@ -199,8 +193,8 @@ export function SettingsDialog({
               </div>
             )}
           </div>
-        </div>
-      </DialogContent>
+        </WorkspaceDialogBody>
+      </WorkspaceDialogContent>
     </Dialog>
   );
 }

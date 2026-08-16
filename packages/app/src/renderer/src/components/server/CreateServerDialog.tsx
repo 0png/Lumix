@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import {
   Dialog,
-  DialogContent,
 } from '@/components/ui/dialog';
+import { WorkspaceDialogContent } from '@/components/ui/workspace-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,8 @@ import type { CreateServerError } from '@/hooks/use-servers';
 import { IpcErrorCode, type SystemInfo } from '../../../../shared/ipc-types';
 
 const MOJANG_EULA_URL = 'https://aka.ms/MinecraftEULA';
+const DEFAULT_CORE_TYPE: CoreType = 'vanilla';
+const DEFAULT_RAM_MB = 2048;
 
 export interface CreateServerData {
   name: string;
@@ -134,9 +136,9 @@ export function CreateServerDialog({
   const { installations, getRequiredVersion, install, installProgress, selectForMc } = useJava();
   const [step, setStep] = useState<WizardStep>(0);
   const [name, setName] = useState('');
-  const [coreType, setCoreType] = useState<CoreType>('paper');
+  const [coreType, setCoreType] = useState<CoreType>(DEFAULT_CORE_TYPE);
   const [mcVersion, setMcVersion] = useState('');
-  const [ramMax, setRamMax] = useState(3072);
+  const [ramMax, setRamMax] = useState(DEFAULT_RAM_MB);
   const [versions, setVersions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -192,9 +194,9 @@ export function CreateServerDialog({
   const resetForm = useCallback(() => {
     setStep(0);
     setName('');
-    setCoreType('paper');
+    setCoreType(DEFAULT_CORE_TYPE);
     setMcVersion('');
-    setRamMax(3072);
+    setRamMax(DEFAULT_RAM_MB);
     setVersions([]);
     setLoading(false);
     setError(null);
@@ -713,8 +715,15 @@ export function CreateServerDialog({
         isOverlay ? 'grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[300px_minmax(0,1fr)] md:grid-rows-1' : 'max-h-[94vh] md:grid-cols-[260px_minmax(0,1fr)]'
       )}
     >
-      <aside className="modal-scrollbar max-h-[32vh] overflow-y-auto border-b border-border/60 bg-muted/20 p-4 pr-3 sm:p-5 md:max-h-none md:border-b-0 md:border-r md:p-6">
-        <div className="space-y-2 text-left">
+      <aside className="modal-scrollbar relative max-h-[32vh] overflow-x-hidden overflow-y-auto border-b border-border/60 bg-gradient-to-br from-primary/[0.08] via-muted/20 to-background p-4 pr-3 sm:p-5 md:max-h-none md:border-b-0 md:border-r md:p-6">
+        <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full border border-primary/10 bg-primary/[0.04]" />
+        <div className="relative space-y-2 text-left">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            </span>
+            {t('createServer.eyebrow')}
+          </div>
           <h1 className="text-lg font-semibold leading-none tracking-tight">{t('createServer.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('createServer.wizardDescription')}</p>
         </div>
@@ -768,8 +777,8 @@ export function CreateServerDialog({
         </div>
       </aside>
 
-      <section className="flex min-h-0 flex-col">
-        <div className="modal-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5 sm:py-6 md:px-6">
+      <section className="flex min-h-0 min-w-0 flex-col overflow-x-hidden">
+        <div className="modal-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 sm:px-5 sm:py-6 md:px-6">
           <div className={cn('mx-auto space-y-6', isOverlay ? 'max-w-4xl' : 'max-w-3xl')}>
             <div className="space-y-2">
               <Badge variant="secondary">{currentStepMeta.title}</Badge>
@@ -833,9 +842,9 @@ export function CreateServerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
-      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] overflow-hidden p-0 sm:max-w-5xl">
+      <WorkspaceDialogContent className="w-[calc(100vw-1rem)] sm:max-w-5xl">
         {shell}
-      </DialogContent>
+      </WorkspaceDialogContent>
     </Dialog>
   );
 }

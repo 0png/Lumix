@@ -14,6 +14,10 @@ import type {
   LogEntryDto,
   IpcErrorCodeType,
   DownloadProgress,
+  ScanModpackRequest,
+  ModpackCandidateDto,
+  ImportModpackRequest,
+  ImportModpackResult,
 } from '../../../shared/ipc-types';
 import { parseIpcError, IpcErrorCode } from '../../../shared/ipc-types';
 
@@ -34,6 +38,8 @@ interface UseServersReturn {
   createServer: (data: CreateServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
   detectImportCandidate: (data: DetectImportCandidateRequest) => Promise<ImportCandidateDto | null>;
   importExistingServer: (data: ImportServerRequest) => Promise<{ server: ServerInstanceDto | null; error: CreateServerError | null }>;
+  scanModpack: (data: ScanModpackRequest) => Promise<{ candidate: ModpackCandidateDto | null; error: CreateServerError | null }>;
+  importModpack: (data: ImportModpackRequest) => Promise<{ result: ImportModpackResult | null; error: CreateServerError | null }>;
   updateServer: (data: UpdateServerRequest) => Promise<ServerInstanceDto | null>;
   deleteServer: (id: string) => Promise<boolean>;
   startServer: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -253,6 +259,34 @@ export function useServers(): UseServersReturn {
     }
   }, []);
 
+  const scanModpack = useCallback(async (data: ScanModpackRequest): Promise<{ candidate: ModpackCandidateDto | null; error: CreateServerError | null }> => {
+    try {
+      const result = await window.electronAPI.modpack.scan(data);
+      if (result.success && result.data) return { candidate: result.data, error: null };
+      const parsed = parseIpcError(result.error || 'Failed to scan modpack');
+      return { candidate: null, error: { code: parsed.code, message: parsed.message } };
+    } catch (err) {
+      return { candidate: null, error: { code: IpcErrorCode.UNKNOWN_ERROR, message: String(err) } };
+    }
+  }, []);
+
+  const importModpack = useCallback(async (data: ImportModpackRequest): Promise<{ result: ImportModpackResult | null; error: CreateServerError | null }> => {
+    try {
+      const result = await window.electronAPI.modpack.import(data);
+      if (!result.success || !result.data) {
+        const parsed = parseIpcError(result.error || 'Failed to import modpack');
+        setError(result.error || parsed.message);
+        return { result: null, error: { code: parsed.code, message: parsed.message } };
+      }
+      setServers((previous) => [...previous, { ...result.data!.server, isReady: true }]);
+      return { result: result.data, error: null };
+    } catch (err) {
+      const message = String(err);
+      setError(message);
+      return { result: null, error: { code: IpcErrorCode.UNKNOWN_ERROR, message } };
+    }
+  }, []);
+
   // 訂閱狀態變更事件
   useEffect(() => {
     const unsubscribe = window.electronAPI.server.onStatusChanged((event: ServerStatusEvent) => {
@@ -343,6 +377,8 @@ export function useServers(): UseServersReturn {
     createServer,
     detectImportCandidate,
     importExistingServer,
+    scanModpack,
+    importModpack,
     updateServer,
     deleteServer,
     startServer,
