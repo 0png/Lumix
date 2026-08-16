@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-16
+
+### Fixed
+- Fixed the packaged Windows app failing at startup because `extract-zip` transitive dependencies were missing from `app.asar`
+- Bundled `extract-zip` into the main-process output so `debug`, `yauzl`, and related runtime modules are always available
+
+### Technical
+- Added a production bundle verification gate that rejects unexpected external `require()` calls before packaging
+- Verified the unpacked Windows executable starts successfully before publishing the hotfix
+
 ## [1.1.0] - 2026-08-16
 
 ### Added

@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['uuid', 'electron-updater'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['uuid', 'electron-updater', 'extract-zip'] })],
     build: {
       rollupOptions: {
         input: {
