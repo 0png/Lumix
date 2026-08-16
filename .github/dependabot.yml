@@ -9,10 +9,28 @@ updates:
       timezone: Asia/Taipei
     open-pull-requests-limit: 6
     groups:
-      production-dependencies:
+      production-minor-and-patch:
+        applies-to: version-updates
         dependency-type: production
-      development-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - electron-updater
+        update-types:
+          - minor
+          - patch
+      development-minor-and-patch:
+        applies-to: version-updates
         dependency-type: development
+        patterns:
+          - "*"
+        exclude-patterns:
+          - electron
+          - electron-builder
+          - electron-vite
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: github-actions
     directory: /
