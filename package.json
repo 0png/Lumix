@@ -22,7 +22,7 @@
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=22.0.0",
