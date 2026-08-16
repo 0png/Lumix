@@ -59,3 +59,6 @@ spec.md
 
 # Reference files (Lumix design language)
 /components/
+
+# Raw media captures (keep locally; publish optimized assets only)
+/docs/assets/*-raw.mp4
