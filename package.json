@@ -2,8 +2,16 @@
   "name": "lumix",
   "version": "1.1.1",
   "private": true,
-  "description": "A cross-platform Minecraft server launcher",
-  "author": "Lumix Team",
+  "description": "A Windows-first Minecraft server launcher",
+  "author": "0png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0png/Lumix.git"
+  },
+  "homepage": "https://github.com/0png/Lumix#readme",
+  "bugs": {
+    "url": "https://github.com/0png/Lumix/issues"
+  },
   "license": "MIT",
   "scripts": {
     "dev": "pnpm --filter @lumix/app dev",

@@ -33,6 +33,15 @@ pnpm-debug.log*
 # Test coverage
 coverage/
 
+# Tool caches and test artifacts
+.cache/
+.tmp/
+.eslintcache
+test-results/
+playwright-report/
+junit*.xml
+*.snap.actual
+
 # Electron
 release/
 
@@ -49,6 +58,9 @@ spec.md
 .ai-temp/
 .agent-cache/
 .shared
+/.agents/skills/
+/skills-lock.json
+/.codex/*.md
 
 # Workspace 設定（個人開發環境）
 *.code-workspace
@@ -61,4 +73,16 @@ spec.md
 /components/
 
 # Raw media captures (keep locally; publish optimized assets only)
-/docs/assets/*-raw.mp4
+/docs/assets/*-raw.*
+
+# Minecraft runtime files accidentally created at the repository root
+/eula.txt
+/server.properties
+/usercache.json
+/ops.json
+/whitelist.json
+/banned-players.json
+/banned-ips.json
+/world/
+/world_nether/
+/world_the_end/

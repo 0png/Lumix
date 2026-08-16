@@ -3,7 +3,7 @@
   "version": "1.1.1",
   "author": "0png",
   "private": true,
-  "description": "Lumix GUI - Electron + React application",
+  "description": "Lumix Minecraft Server Launcher for Windows",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
