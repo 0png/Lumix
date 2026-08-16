@@ -45,32 +45,12 @@ junit*.xml
 # Electron
 release/
 
-# Kiro - 完全忽略，不提交任何 .kiro 內容
-.kiro/
-.cursor/
-
-# AI Agent 生成的臨時檔案
-tests/auto_generated_tests/
-IMPLEMENTATION_PLAN.md
-review_todo.md
-spec.md
-*.auto-generated.*
-.ai-temp/
-.agent-cache/
-.shared
-/.agents/skills/
-/skills-lock.json
-/.codex/*.md
-
 # Workspace 設定（個人開發環境）
 *.code-workspace
 
 # Vite cache
 .vite/
 **/.vite/
-
-# Reference files (Lumix design language)
-/components/
 
 # Raw media captures (keep locally; publish optimized assets only)
 /docs/assets/*-raw.*
