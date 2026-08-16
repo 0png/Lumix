@@ -141,6 +141,7 @@ pnpm --filter @lumix/app build:win
 ## 致謝
 
 - [Crafthead](https://crafthead.net/) — Minecraft 玩家頭像渲染
+- [OpenScreen](https://github.com/siddharthvaddem/openscreen) — 用於錄製與製作 Lumix 操作示範
 - Paper、Purpur、Fabric、Forge、NeoForge 與 Minecraft 開源社群
 
 ## 授權與聲明

@@ -141,6 +141,7 @@ Built with Electron, Vite, React, TypeScript, Tailwind CSS, and Radix UI.
 ## Acknowledgements
 
 - [Crafthead](https://crafthead.net/) — Minecraft player avatar rendering
+- [OpenScreen](https://github.com/siddharthvaddem/openscreen) — Used to record and produce the Lumix product demo
 - The Paper, Purpur, Fabric, Forge, NeoForge, and wider Minecraft open-source communities
 
 ## License and disclaimer
