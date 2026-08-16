@@ -98,6 +98,30 @@ describe('ModpackService', () => {
     expect(candidate.content.configs).toBe(2);
   });
 
+  it('detects NeoForge Modrinth packs as installable', async () => {
+    const workspace = await createTemporaryDirectory();
+    const archivePath = path.join(workspace, 'neoforge.mrpack');
+    await writeStoredZip(archivePath, {
+      'modrinth.index.json': JSON.stringify({
+        formatVersion: 1,
+        game: 'minecraft',
+        versionId: '1.0.0',
+        name: 'NeoForge Pack',
+        dependencies: {
+          minecraft: '1.21.1',
+          neoforge: '21.1.171',
+        },
+        files: [],
+      }),
+    });
+
+    await expect(new ModpackService().scan(archivePath)).resolves.toMatchObject({
+      coreType: 'neoforge',
+      loaderVersion: '21.1.171',
+      canInstall: true,
+    });
+  });
+
   it('rejects paths that escape the server directory', () => {
     expect(() => resolveSafeDestination('C:\\servers\\example', '..\\other\\file.jar')).toThrow('不安全的路徑');
     expect(() => resolveSafeDestination('C:\\servers\\example', 'mods/safe.jar')).not.toThrow();

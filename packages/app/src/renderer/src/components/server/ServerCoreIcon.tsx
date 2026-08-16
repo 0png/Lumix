@@ -4,6 +4,8 @@ import minecraftIcon from '../../../../../resources/minecraft.png';
 import paperIcon from '../../../../../resources/PaperMC.png';
 import fabricIcon from '../../../../../resources/Fabric.png';
 import forgeIcon from '../../../../../resources/Forge.png';
+import neoForgeIcon from '../../../../../resources/NeoForge.png';
+import purpurIcon from '../../../../../resources/Purpur.svg';
 
 interface ServerCoreIconProps {
   coreType: CoreType;
@@ -14,9 +16,11 @@ interface ServerCoreIconProps {
 const CORE_ICON_SOURCES: Record<CoreType, string> = {
   vanilla: minecraftIcon,
   paper: paperIcon,
+  purpur: purpurIcon,
   spigot: paperIcon,
   fabric: fabricIcon,
   forge: forgeIcon,
+  neoforge: neoForgeIcon,
 };
 
 export function ServerCoreIcon({

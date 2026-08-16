@@ -5,7 +5,7 @@
 // Core Types (原本從 @lumix/core 匯入)
 // ============================================================================
 
-export type CoreType = 'vanilla' | 'paper' | 'spigot' | 'fabric' | 'forge';
+export type CoreType = 'vanilla' | 'paper' | 'purpur' | 'spigot' | 'fabric' | 'forge' | 'neoforge';
 export type ServerOrigin = 'managed' | 'imported';
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type LogLevel = 'info' | 'warn' | 'error';
@@ -160,6 +160,8 @@ export interface ServerInstanceDto {
   jvmArgs: string[];
   directory: string;
   launchJarPath?: string;
+  launchArgsFile?: string;
+  userJvmArgsFile?: string;
   status: ServerStatus;
   createdAt: string;
   lastStartedAt?: string;
@@ -188,6 +190,8 @@ export interface UpdateServerRequest {
   ramMax?: number;
   jvmArgs?: string[];
   launchJarPath?: string;
+  launchArgsFile?: string;
+  userJvmArgsFile?: string;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
   onboardingState?: OnboardingState;
@@ -204,6 +208,8 @@ export interface ImportCandidateDto {
   detectedMcVersion?: string;
   serverJarPath?: string;
   jarCandidates: string[];
+  launchArgsFile?: string;
+  userJvmArgsFile?: string;
   hasEula: boolean;
   eulaAccepted: boolean;
   hasServerProperties: boolean;
@@ -222,7 +228,9 @@ export interface ImportServerRequest {
   name: string;
   coreType: CoreType;
   mcVersion: string;
-  launchJarPath: string;
+  launchJarPath?: string;
+  launchArgsFile?: string;
+  userJvmArgsFile?: string;
   javaPath?: string;
   ramMin?: number;
   ramMax?: number;
@@ -305,7 +313,7 @@ export interface ModpackCandidateDto {
   name: string;
   version?: string;
   mcVersion: string;
-  coreType?: Extract<CoreType, 'fabric' | 'forge'>;
+  coreType?: Extract<CoreType, 'fabric' | 'forge' | 'neoforge'>;
   loaderVersion?: string;
   downloadableFiles: number;
   includedFiles: number;
@@ -501,6 +509,7 @@ export interface DownloadServerRequest {
   mcVersion: string;
   targetDir: string;
   serverId?: string;
+  javaPath?: string;
 }
 
 export interface DownloadProgressEvent {

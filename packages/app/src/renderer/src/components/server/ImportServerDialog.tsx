@@ -21,7 +21,7 @@ interface ImportServerDialogProps {
   onImport: (data: ImportServerRequest) => Promise<CreateServerError | null>;
 }
 
-const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
+const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'purpur', 'fabric', 'forge', 'neoforge'];
 
 type Step = 'select' | 'review';
 
@@ -40,7 +40,7 @@ export function ImportServerDialog({
   const [name, setName] = useState('');
   const [coreType, setCoreType] = useState<CoreType | ''>('');
   const [mcVersion, setMcVersion] = useState('');
-  const [launchJarPath, setLaunchJarPath] = useState('');
+  const [launchTarget, setLaunchTarget] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +53,7 @@ export function ImportServerDialog({
       setName('');
       setCoreType('');
       setMcVersion('');
-      setLaunchJarPath('');
+      setLaunchTarget('');
       setError(null);
       setIsScanning(false);
       setIsSubmitting(false);
@@ -65,7 +65,7 @@ export function ImportServerDialog({
     name.trim() &&
     coreType &&
     mcVersion.trim() &&
-    launchJarPath &&
+    launchTarget &&
     !existingNames.includes(name.trim())
   );
 
@@ -112,7 +112,15 @@ export function ImportServerDialog({
       setName(result.suggestedName);
       setCoreType(result.detectedCoreType ?? '');
       setMcVersion(result.detectedMcVersion ?? '');
-      setLaunchJarPath(result.serverJarPath ?? result.jarCandidates[0] ?? '');
+      setLaunchTarget(
+        result.launchArgsFile
+          ? `args:${result.launchArgsFile}`
+          : result.serverJarPath
+            ? `jar:${result.serverJarPath}`
+            : result.jarCandidates[0]
+              ? `jar:${result.jarCandidates[0]}`
+              : ''
+      );
       setStep('review');
     } finally {
       setIsScanning(false);
@@ -134,7 +142,9 @@ export function ImportServerDialog({
         name: name.trim(),
         coreType,
         mcVersion: mcVersion.trim(),
-        launchJarPath,
+        launchJarPath: launchTarget.startsWith('jar:') ? launchTarget.slice(4) : undefined,
+        launchArgsFile: launchTarget.startsWith('args:') ? launchTarget.slice(5) : undefined,
+        userJvmArgsFile: launchTarget.startsWith('args:') ? candidate.userJvmArgsFile : undefined,
         eulaAccepted: candidate.eulaAccepted,
       });
 
@@ -205,14 +215,19 @@ export function ImportServerDialog({
                 <Input id="import-mc-version" value={mcVersion} onChange={(event) => setMcVersion(event.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>{t('serverImport.review.launchJar')}</Label>
-                <Select value={launchJarPath} onValueChange={setLaunchJarPath}>
+                <Label>{t('serverImport.review.launchTarget')}</Label>
+                <Select value={launchTarget} onValueChange={setLaunchTarget}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('serverImport.review.selectJar')} />
+                    <SelectValue placeholder={t('serverImport.review.selectLaunchTarget')} />
                   </SelectTrigger>
                   <SelectContent>
+                    {candidate.launchArgsFile ? (
+                      <SelectItem value={`args:${candidate.launchArgsFile}`}>
+                        {t('serverImport.review.loaderArgs', { path: candidate.launchArgsFile })}
+                      </SelectItem>
+                    ) : null}
                     {candidate.jarCandidates.map((jarPath) => (
-                      <SelectItem key={jarPath} value={jarPath}>
+                      <SelectItem key={jarPath} value={`jar:${jarPath}`}>
                         {jarPath}
                       </SelectItem>
                     ))}

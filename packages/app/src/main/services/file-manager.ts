@@ -22,6 +22,8 @@ export interface ServerMetadata {
   jvmArgs: string[];
   javaPath?: string;
   launchJarPath?: string;
+  launchArgsFile?: string;
+  userJvmArgsFile?: string;
   createdAt: string;
   lastStartedAt?: string;
   eulaAccepted?: boolean;

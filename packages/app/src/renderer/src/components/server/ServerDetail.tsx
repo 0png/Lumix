@@ -1,28 +1,44 @@
 /**
- * ServerDetail 元件 - 伺服器詳細資訊
- * 設計語言與 Lumix 保持一致
- * 支援響應式設計、無障礙、Loading 狀態
+ * ServerDetail - Linear-inspired operational bento for a single server.
  */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  Play, Square, Trash2, Settings2, MemoryStick, 
-  ArrowLeft, FolderOpen, AlertTriangle, SlidersHorizontal,
-  Activity, Cpu, Database, Gauge, HardDrive, ShieldCheck
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowUpRight,
+  Cpu,
+  Database,
+  FolderOpen,
+  HardDrive,
+  Loader2,
+  MemoryStick,
+  MoreHorizontal,
+  Play,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Square,
+  Trash2,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-} from '@/components/ui/dialog';
-import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
-import { cn } from '@/lib/utils';
+  WorkspaceDialogBody,
+  WorkspaceDialogContent,
+  WorkspaceDialogFooter,
+  WorkspaceDialogHeader,
+} from '@/components/ui/workspace-dialog';
 import type { ServerInstance, ServerStatus } from './ServerList';
 import { ConnectionInfoCard } from './ConnectionInfoCard';
 import { ServerFirstRunChecklist } from './ServerFirstRunChecklist';
@@ -46,37 +62,54 @@ interface ServerDetailProps {
   onOnboardingAutoOpened?: () => void;
 }
 
-/**
- * 狀態徽章元件 - 帶光暈效果和無障礙支援
- */
-function StatusBadge({ status }: { status: ServerStatus }) {
-  const { t } = useTranslation();
-
-  const statusConfig = {
-    stopped: { color: 'bg-muted-foreground', label: t('server.stopped'), variant: 'ghost' as const },
-    starting: { color: 'status-glow-transitioning', label: t('server.starting'), variant: 'warning' as const },
-    running: { color: 'status-glow-running', label: t('server.running'), variant: 'success' as const },
-    stopping: { color: 'status-glow-transitioning', label: t('server.stopping'), variant: 'warning' as const },
-  };
-
-  const config = statusConfig[status];
-
+function ServerTelemetry({ status }: { status: ServerStatus }) {
   return (
-    <Badge 
-      variant={config.variant}
-      className="gap-1.5 px-2 lg:px-3 py-0.5 lg:py-1"
-      role="status"
-      aria-label={`${t('server.status')}: ${config.label}`}
-    >
-      <span className={cn('h-1.5 w-1.5 lg:h-2 lg:w-2 rounded-full transition-all duration-300', config.color)} aria-hidden="true" />
-      <span className="text-xs lg:text-sm font-medium">{config.label}</span>
-    </Badge>
+    <div className="server-telemetry" data-status={status} aria-hidden="true">
+      <svg viewBox="0 0 520 220" role="presentation">
+        <defs>
+          <linearGradient id="server-telemetry-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+            <stop offset="0.2" stopColor="currentColor" stopOpacity="0.35" />
+            <stop offset="0.8" stopColor="currentColor" stopOpacity="0.35" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        <g className="server-telemetry-grid">
+          <path d="M20 42H500M20 92H500M20 142H500M20 192H500" />
+          <path d="M72 22V205M168 22V205M264 22V205M360 22V205M456 22V205" />
+        </g>
+
+        <g className="server-telemetry-layer" data-layer="stopped">
+          <path className="server-telemetry-line" d="M28 142H492" />
+          <circle cx="90" cy="142" r="3" />
+          <circle cx="264" cy="142" r="3" />
+          <circle cx="430" cy="142" r="3" />
+        </g>
+
+        <g className="server-telemetry-layer" data-layer="transitioning">
+          <path
+            className="server-telemetry-line"
+            d="M28 150C80 150 90 132 132 132S186 164 226 164 284 112 326 112 382 150 492 150"
+          />
+          <g className="server-telemetry-scanner">
+            <circle cx="54" cy="150" r="4" />
+            <circle cx="54" cy="150" r="11" className="server-telemetry-scanner-ring" />
+          </g>
+        </g>
+
+        <g className="server-telemetry-layer" data-layer="running">
+          <path
+            className="server-telemetry-line server-telemetry-line-active"
+            d="M28 150H96L116 150 132 124 152 178 174 82 198 150H254L274 150 290 132 310 166 330 112 352 150H492"
+          />
+          <circle className="server-telemetry-active-dot" cx="352" cy="150" r="4" />
+        </g>
+      </svg>
+    </div>
   );
 }
 
-/**
- * 伺服器詳細資訊元件
- */
 export function ServerDetail({
   server,
   directory,
@@ -105,7 +138,19 @@ export function ServerDetail({
   const hasServerProperties = server.hasServerProperties === true;
   const readinessLabel = isReady ? t('server.ready') : t('server.downloading');
   const readinessDescription = isReady ? t('server.readyDescription') : t('server.downloadingDescription');
+  const runtimeDescription = isRunning
+    ? t('server.runtimeRunningDescription')
+    : isTransitioning
+      ? t('server.runtimeTransitionDescription')
+      : t('server.runtimeStoppedDescription');
   const isImported = server.origin === 'imported';
+  const primaryAction = isRunning
+    ? 'stop'
+    : isTransitioning
+      ? 'transition'
+      : isReady
+        ? 'start'
+        : 'download';
   const settingsSections = [
     {
       label: t('serverProperties.sections.gameplay'),
@@ -133,104 +178,76 @@ export function ServerDetail({
   };
 
   return (
-    <div className="space-y-3 lg:space-y-4 animate-fade-in">
-      {/* 返回按鈕 */}
+    <div className="server-detail-linear space-y-4">
       <Button
         variant="ghost"
         size="sm"
         onClick={onBack}
-        className="h-7 lg:h-8 text-xs lg:text-sm -ml-2 focus-ring"
+        className="server-bento-pressable -ml-2 h-8 text-xs text-muted-foreground hover:text-foreground lg:text-sm"
         aria-label={t('common.back')}
       >
-        <ArrowLeft className="mr-1 h-3 w-3 lg:h-4 lg:w-4" aria-hidden="true" />
+        <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
         {t('common.back')}
       </Button>
 
-      {/* 標題區域 */}
-      <div className="flex items-center justify-between gap-2">
+      <header className="flex flex-col gap-4 border-b border-border/45 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-lg lg:text-xl font-bold tracking-tight truncate">{server.name}</h2>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="outline" className="text-[10px] lg:text-xs">
+          <h2 className="truncate text-xl font-semibold tracking-[-0.025em] lg:text-2xl">{server.name}</h2>
+          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="rounded-md border border-border/60 bg-muted/30 px-2 py-0.5 font-medium text-foreground/80">
               {t(`coreType.${server.coreType}`)}
-            </Badge>
-            <span className="text-xs lg:text-sm text-muted-foreground">{server.mcVersion}</span>
+            </span>
+            <span className="tabular-nums">{server.mcVersion}</span>
           </div>
         </div>
-        <StatusBadge status={server.status} />
-      </div>
 
-      {/* 操作按鈕 */}
-      <div className="flex flex-wrap gap-1.5 lg:gap-2" role="toolbar" aria-label={t('server.actions', '伺服器操作')}>
-        {isRunning ? (
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={onStop} 
-            disabled={isTransitioning} 
-            className="h-8 text-xs ripple"
-            aria-label={t('server.stop')}
+        <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label={t('server.actions', '伺服器操作')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            disabled={isRunning}
+            className="server-bento-pressable h-8 border-border/60 bg-transparent text-xs"
+            aria-label={t('common.edit')}
           >
-            <Square className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            {t('server.stop')}
+            <Settings2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+            {t('common.edit')}
           </Button>
-        ) : (
-          <Button 
-            size="sm" 
-            onClick={onStart} 
-            disabled={isTransitioning || !isReady} 
-            className="h-8 text-xs ripple"
-            aria-label={!isReady ? t('server.downloading') : t('server.start')}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenFolder}
+            disabled={!onOpenFolder}
+            className="server-bento-pressable h-8 border-border/60 bg-transparent text-xs"
+            aria-label={t('server.openFolder')}
           >
-            <Play className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            {!isReady ? t('server.downloading') : t('server.start')}
+            <FolderOpen className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+            {t('server.openFolder')}
           </Button>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditing(true)}
-          disabled={isRunning}
-          className="h-8 text-xs"
-          aria-label={t('common.edit')}
-        >
-          <Settings2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-          {t('common.edit')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onOpenSettings}
-          className="h-8 text-xs"
-          aria-label={t('server.settingsTitle')}
-        >
-          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-          {t('server.settingsTitle')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onOpenFolder}
-          className="h-8 text-xs"
-          aria-label={t('server.openFolder')}
-        >
-          <FolderOpen className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-          {t('server.openFolder')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-destructive hover:text-destructive h-8 text-xs"
-          onClick={() => setShowDeleteDialog(true)}
-          disabled={isRunning}
-          aria-label={t('common.delete')}
-        >
-          <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-          {t('common.delete')}
-        </Button>
-      </div>
-
-      <Separator />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="server-bento-pressable h-8 w-8 border-border/60 bg-transparent"
+                aria-label={t('server.moreActions')}
+              >
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="server-detail-menu min-w-44">
+              <DropdownMenuItem
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                disabled={isRunning}
+                onSelect={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                {t('common.delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
 
       {showOnboardingEntry ? (
         <ServerFirstRunChecklist
@@ -244,153 +261,179 @@ export function ServerDetail({
         />
       ) : null}
 
-      <div className="space-y-3 lg:space-y-4">
-        <Card className="glass overflow-hidden">
-          <CardContent className="p-0">
-            <div className="bg-gradient-subtle p-4 lg:p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {t('server.overview')}
-                  </p>
-                  <h3 className="text-lg font-semibold">{t('server.launchPanel')}</h3>
-                  <p className="max-w-xl text-sm text-muted-foreground">{readinessDescription}</p>
-                </div>
-                <Badge variant={isReady ? 'success' : 'warning'} className="gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                  {readinessLabel}
-                </Badge>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
-                  <Activity className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <Label className="text-[10px] text-muted-foreground">{t('server.status')}</Label>
-                  <p className="mt-0.5 text-sm font-semibold">{t(`server.${server.status}`)}</p>
-                </div>
-                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
-                  <Cpu className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <Label className="text-[10px] text-muted-foreground">{t('server.coreType')}</Label>
-                  <p className="mt-0.5 text-sm font-semibold">{t(`coreType.${server.coreType}`)}</p>
-                </div>
-                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
-                  <Database className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <Label className="text-[10px] text-muted-foreground">{t('server.version')}</Label>
-                  <p className="mt-0.5 text-sm font-semibold">{server.mcVersion}</p>
-                </div>
-                <div className="rounded-lg border border-border/60 bg-card/55 p-3">
-                  <MemoryStick className="mb-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <Label className="text-[10px] text-muted-foreground">{t('server.ram')}</Label>
-                  <p className="mt-0.5 text-sm font-semibold tabular-nums">{server.ramMax} MB</p>
-                </div>
-              </div>
+      <div className="server-bento-grid">
+        <section className="server-bento-tile server-bento-hero xl:col-span-8" data-status={server.status}>
+          <ServerTelemetry status={server.status} />
+          <div className="relative z-10 flex min-h-[248px] max-w-md flex-col">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="server-runtime-pill" data-status={server.status} role="status">
+                <span className="server-runtime-dot" aria-hidden="true" />
+                {t(`server.${server.status}`)}
+              </span>
+              <span className="server-readiness-pill" data-ready={isReady}>
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                {readinessLabel}
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-4 lg:p-5">
-              <div className="rounded-lg border border-border/60 p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <Gauge className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <p className="text-sm font-medium">{t('server.runtimeState')}</p>
-                </div>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {isRunning
-                    ? t('server.runtimeRunningDescription')
-                    : isTransitioning
-                      ? t('server.runtimeTransitionDescription')
-                      : t('server.runtimeStoppedDescription')}
-                </p>
+            <div className="mt-auto pt-12">
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                {t('server.launchPanel')}
+              </p>
+              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.035em] lg:text-[2.35rem]">
+                {t(`server.${server.status}`)}
+              </h3>
+              <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+                {isReady ? runtimeDescription : readinessDescription}
+              </p>
+
+              <Button
+                variant={isRunning ? 'destructive' : 'default'}
+                onClick={isRunning ? onStop : onStart}
+                disabled={isTransitioning || (!isRunning && !isReady)}
+                className="server-primary-action server-bento-pressable mt-6 h-9 min-w-36 px-4 text-xs"
+                data-action={primaryAction}
+                aria-label={isRunning ? t('server.stop') : !isReady ? t('server.downloading') : t('server.start')}
+              >
+                <span className="server-primary-action-content">
+                  <span data-action-layer="start">
+                    <Play className="h-3.5 w-3.5" aria-hidden="true" />
+                    {t('server.start')}
+                  </span>
+                  <span data-action-layer="stop">
+                    <Square className="h-3.5 w-3.5" aria-hidden="true" />
+                    {t('server.stop')}
+                  </span>
+                  <span data-action-layer="transition">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                    {t(`server.${server.status}`)}
+                  </span>
+                  <span data-action-layer="download">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                    {t('server.downloading')}
+                  </span>
+                </span>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid gap-3 xl:col-span-4">
+          <section className="server-bento-tile server-bento-identity">
+            <div className="server-bento-heading">
+              <Cpu className="h-4 w-4" aria-hidden="true" />
+              <h3>{t('server.identity')}</h3>
+            </div>
+            <dl className="mt-5 divide-y divide-border/45">
+              <div className="server-identity-row">
+                <dt><Cpu className="h-3.5 w-3.5" aria-hidden="true" />{t('server.coreType')}</dt>
+                <dd>{t(`coreType.${server.coreType}`)}</dd>
               </div>
-              <div className="rounded-lg border border-border/60 p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <HardDrive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <p className="text-sm font-medium">{t('server.storage')}</p>
+              <div className="server-identity-row">
+                <dt><Database className="h-3.5 w-3.5" aria-hidden="true" />{t('server.version')}</dt>
+                <dd className="tabular-nums">{server.mcVersion}</dd>
+              </div>
+              <div className="server-identity-row">
+                <dt><MemoryStick className="h-3.5 w-3.5" aria-hidden="true" />{t('server.ram')}</dt>
+                <dd className="tabular-nums">{server.ramMax} MB</dd>
+              </div>
+            </dl>
+          </section>
+
+          <button
+            type="button"
+            onClick={onOpenFolder}
+            disabled={!onOpenFolder}
+            className="server-bento-tile server-bento-tile-interactive group text-left disabled:cursor-default disabled:opacity-65"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="server-bento-heading">
+                  <HardDrive className="h-4 w-4" aria-hidden="true" />
+                  <h3>{t('server.storage')}</h3>
                 </div>
-                <p className="truncate text-xs text-muted-foreground" title={directory}>
+                <p className="mt-4 truncate font-mono text-xs text-muted-foreground" title={directory}>
                   {directory || t('server.storageUnavailable')}
                 </p>
               </div>
+              <ArrowUpRight className="server-bento-arrow mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </div>
-          </CardContent>
-        </Card>
+          </button>
+        </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:gap-4 xl:grid-cols-2">
-          <Card className="glass flex flex-col">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                {t('server.settingsTitle')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col justify-between gap-4 p-4 pt-1">
-              <div className="space-y-3">
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {hasServerProperties
-                    ? t('server.settingsPreviewDescription')
-                    : t('server.settingsPreviewPendingDescription')}
-                </p>
-                {hasServerProperties ? (
-                  <div className="grid gap-2">
-                    {settingsSections.map((section) => (
-                      <div key={section.label} className="rounded-lg border border-border/60 bg-card/45 p-3">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium">{section.label}</p>
-                          <span className="text-[10px] tabular-nums text-muted-foreground">
-                            {section.fields.length}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {section.fields.map((key) => (
-                            <Badge key={key} variant="outline" className="text-[10px]">
-                              {key}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
+        <section className="server-bento-tile flex flex-col xl:col-span-5">
+          <div className="server-bento-heading">
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+            <h3>{t('server.settingsTitle')}</h3>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            {hasServerProperties
+              ? t('server.settingsPreviewDescription')
+              : t('server.settingsPreviewPendingDescription')}
+          </p>
+
+          {hasServerProperties ? (
+            <div className="mt-5 divide-y divide-border/45 border-y border-border/45">
+              {settingsSections.map((section) => (
+                <div key={section.label} className="server-settings-row">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-medium text-foreground/85">{section.label}</p>
+                    <span className="text-[10px] tabular-nums text-muted-foreground">{section.fields.length}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5">
+                    {section.fields.map((key) => (
+                      <span key={key} className="font-mono text-[10px] text-muted-foreground">{key}</span>
                     ))}
                   </div>
-                ) : (
-                  <div className="rounded-lg border border-border/60 bg-card/45 p-3 text-xs leading-5 text-muted-foreground">
-                    {t('server.serverPropertiesPending')}
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onOpenSettings}
-                className="w-full h-8 text-xs"
-              >
-                <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                {t('server.openServerSettings')}
-              </Button>
-            </CardContent>
-          </Card>
-          <ConnectionInfoCard
-            serverId={server.id}
-            serverStatus={server.status}
-            hasServerProperties={hasServerProperties}
-          />
-        </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="server-bento-note mt-5 text-xs leading-5 text-muted-foreground">
+              {t('server.serverPropertiesPending')}
+            </div>
+          )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onOpenSettings}
+            className="server-bento-link server-bento-pressable group mt-auto h-9 justify-between px-0 pt-5 text-xs"
+          >
+            <span>{t('server.openServerSettings')}</span>
+            <ArrowUpRight className="server-bento-arrow h-4 w-4" aria-hidden="true" />
+          </Button>
+        </section>
+
+        <ConnectionInfoCard
+          serverId={server.id}
+          serverStatus={server.status}
+          hasServerProperties={hasServerProperties}
+          appearance="bento"
+        />
       </div>
 
-      {/* 編輯對話框 */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-md">
-          <WorkspaceDialogHeader icon={SlidersHorizontal} eyebrow={t('modal.serverSettings')} title={`${t('common.edit')} ${server.name}`} />
+          <WorkspaceDialogHeader
+            icon={SlidersHorizontal}
+            eyebrow={t('modal.serverSettings')}
+            title={`${t('common.edit')} ${server.name}`}
+          />
           <WorkspaceDialogBody className="space-y-3 lg:space-y-4">
             <div className="space-y-1.5 lg:space-y-2">
               <Label htmlFor="edit-name" className="text-xs lg:text-sm">{t('server.name')}</Label>
               <Input
                 id="edit-name"
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="h-8 lg:h-9 text-xs lg:text-sm"
+                onChange={(event) => setEditName(event.target.value)}
+                className="h-8 text-xs lg:h-9 lg:text-sm"
               />
             </div>
             <div className="space-y-1.5 lg:space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs lg:text-sm">{t('createServer.maxRam')}</Label>
-                <span className="text-xs lg:text-sm text-muted-foreground">{editRamMax} MB</span>
+                <span className="text-xs text-muted-foreground lg:text-sm">{editRamMax} MB</span>
               </div>
               <Slider
                 value={[editRamMax]}
@@ -402,15 +445,14 @@ export function ServerDetail({
             </div>
           </WorkspaceDialogBody>
           <WorkspaceDialogFooter>
-            <Button variant="outline" onClick={handleCancel} className="h-8 lg:h-9 text-xs lg:text-sm">
+            <Button variant="outline" onClick={handleCancel} className="h-8 text-xs lg:h-9 lg:text-sm">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleSave} className="h-8 lg:h-9 text-xs lg:text-sm ripple">{t('common.save')}</Button>
+            <Button onClick={handleSave} className="h-8 text-xs lg:h-9 lg:text-sm">{t('common.save')}</Button>
           </WorkspaceDialogFooter>
         </WorkspaceDialogContent>
       </Dialog>
 
-      {/* 刪除確認對話框 - 加入警告文字 */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-md">
           <WorkspaceDialogHeader
@@ -419,7 +461,7 @@ export function ServerDetail({
             title={t('server.delete')}
             tone="destructive"
             description={
-              <div className="text-xs lg:text-sm space-y-2 text-muted-foreground">
+              <div className="space-y-2 text-xs text-muted-foreground lg:text-sm">
                 <p>{t('server.deleteConfirm', '確定要刪除此伺服器嗎？')}</p>
                 <p className="font-medium text-foreground">{t('server.name')}: {server.name}</p>
                 <p className="text-destructive">
@@ -431,7 +473,7 @@ export function ServerDetail({
             }
           />
           <WorkspaceDialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="h-8 lg:h-9 text-xs lg:text-sm">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="h-8 text-xs lg:h-9 lg:text-sm">
               {t('common.cancel')}
             </Button>
             <Button
@@ -440,7 +482,7 @@ export function ServerDetail({
                 onDelete?.();
                 setShowDeleteDialog(false);
               }}
-              className="h-8 lg:h-9 text-xs lg:text-sm ripple"
+              className="h-8 text-xs lg:h-9 lg:text-sm"
             >
               {t('common.delete')}
             </Button>

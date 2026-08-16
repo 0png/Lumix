@@ -50,6 +50,49 @@ describe('ImportScanner', () => {
     expect(candidate.hasModsFolder).toBe(true);
   });
 
+  it('detects Purpur even when a generic server.jar is also present', async () => {
+    const directory = await createTempDir('lumix-import-purpur-');
+    createdDirs.push(directory);
+    await fs.mkdir(path.join(directory, 'plugins'));
+    await fs.writeFile(path.join(directory, 'server.jar'), '');
+    await fs.writeFile(path.join(directory, 'purpur-1.21.1-2327.jar'), '');
+
+    const candidate = await new ImportScanner().scan(directory);
+
+    expect(candidate.detectedCoreType).toBe('purpur');
+    expect(candidate.detectedMcVersion).toBe('1.21.1');
+  });
+
+  it('detects NeoForge args-file servers without requiring a root jar', async () => {
+    const directory = await createTempDir('lumix-import-neoforge-');
+    createdDirs.push(directory);
+    const argsFile = path.join(
+      directory,
+      'libraries',
+      'net',
+      'neoforged',
+      'neoforge',
+      '21.1.171',
+      'win_args.txt'
+    );
+    await fs.mkdir(path.dirname(argsFile), { recursive: true });
+    await fs.writeFile(argsFile, '--launchTarget neoforgeserver\n');
+    await fs.writeFile(path.join(directory, 'user_jvm_args.txt'), '# custom JVM args\n');
+    await fs.writeFile(
+      path.join(directory, 'run.bat'),
+      '@echo off\r\njava @user_jvm_args.txt @libraries/net/neoforged/neoforge/21.1.171/win_args.txt %*\r\n'
+    );
+
+    const candidate = await new ImportScanner().scan(directory);
+
+    expect(candidate.detectedCoreType).toBe('neoforge');
+    expect(candidate.detectedMcVersion).toBe('1.21.1');
+    expect(candidate.serverJarPath).toBeUndefined();
+    expect(candidate.launchArgsFile).toBe(argsFile);
+    expect(candidate.userJvmArgsFile).toBe(path.join(directory, 'user_jvm_args.txt'));
+    expect(candidate.warnings.some((warning) => warning.includes('server jar'))).toBe(false);
+  });
+
   it('warns when no usable jar is present', async () => {
     const directory = await createTempDir('lumix-import-empty-');
     createdDirs.push(directory);

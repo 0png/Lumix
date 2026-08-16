@@ -1,16 +1,31 @@
 /**
- * Forge Installer
- * 處理 Forge 伺服器的安裝邏輯
+ * Mod Loader Installer
+ * 處理 Forge 與 NeoForge 伺服器的安裝邏輯
  */
 
 import { promises as fs } from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 
+export type InstallerLoaderType = 'forge' | 'neoforge';
+
 /**
  * 執行 Forge installer 以 headless 模式安裝伺服器
  */
 export function runForgeInstaller(installerPath: string, targetDir: string, javaPath: string = 'java'): Promise<void> {
+  return runModLoaderInstaller('forge', installerPath, targetDir, javaPath);
+}
+
+export function runNeoForgeInstaller(installerPath: string, targetDir: string, javaPath: string = 'java'): Promise<void> {
+  return runModLoaderInstaller('neoforge', installerPath, targetDir, javaPath);
+}
+
+function runModLoaderInstaller(
+  loader: InstallerLoaderType,
+  installerPath: string,
+  targetDir: string,
+  javaPath: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
     // Forge installer 使用 --installServer 參數進行無頭安裝
     // Windows 上路徑包含空格時，spawn 會自動處理引號
@@ -27,17 +42,17 @@ export function runForgeInstaller(installerPath: string, targetDir: string, java
     });
 
     proc.stderr?.on('data', (data: Buffer) => {
-      console.error('[ForgeInstaller]', data.toString().trim());
+      console.error(`[${loader === 'forge' ? 'Forge' : 'NeoForge'}Installer]`, data.toString().trim());
     });
 
     proc.on('close', async (code: number) => {
       if (code !== 0) {
-        reject(new Error(`FORGE_INSTALL_FAILED: Installer 退出碼 ${code}`));
+        reject(new Error(`${loader.toUpperCase()}_INSTALL_FAILED: Installer 退出碼 ${code}`));
         return;
       }
 
       try {
-        await setupForgeServerJar(targetDir, installerPath);
+        await setupLoaderServer(loader, targetDir, installerPath);
         resolve();
       } catch (err) {
         reject(err);
@@ -45,35 +60,38 @@ export function runForgeInstaller(installerPath: string, targetDir: string, java
     });
 
     proc.on('error', (err: Error) => {
-      reject(new Error(`FORGE_INSTALL_ERROR: ${err.message}`));
+      reject(new Error(`${loader.toUpperCase()}_INSTALL_ERROR: ${err.message}`));
     });
   });
 }
 
 /**
- * 安裝完成後設定 server.jar
- * Forge 安裝後會生成多個檔案，需要找到正確的啟動 jar
+ * 安裝完成後設定 Loader 啟動資訊。
  */
-async function setupForgeServerJar(targetDir: string, installerPath: string): Promise<void> {
+async function setupLoaderServer(
+  loader: InstallerLoaderType,
+  targetDir: string,
+  installerPath: string
+): Promise<void> {
   const files = await fs.readdir(targetDir);
 
   const serverJarPath = path.join(targetDir, 'server.jar');
 
   // 尋找 forge server jar（舊版 Forge）
-  const forgeJar = files.find(
+  const forgeJar = loader === 'forge' ? files.find(
     (f) =>
       f.startsWith('forge-') &&
       f.endsWith('.jar') &&
       !f.includes('installer') &&
       !f.includes('shim')
-  );
+  ) : undefined;
 
   if (forgeJar) {
     // 舊版 Forge：直接重命名
     await fs.rename(path.join(targetDir, forgeJar), serverJarPath);
   } else {
     // 新版 Forge (1.17+)：檢查是否有 run.bat/run.sh
-    await setupNewForgeServer(targetDir, serverJarPath, files);
+    await setupArgsFileServer(loader, targetDir, files);
   }
 
   // 清理 installer
@@ -81,18 +99,17 @@ async function setupForgeServerJar(targetDir: string, installerPath: string): Pr
 }
 
 /**
- * 設定新版 Forge (1.17+) 的 server.jar
- * 新版 Forge 需要特殊的啟動方式，我們建立一個 wrapper script
+ * 設定使用 args file 啟動的新版 Forge / NeoForge。
  */
-async function setupNewForgeServer(
+async function setupArgsFileServer(
+  loader: InstallerLoaderType,
   targetDir: string,
-  serverJarPath: string,
   files: string[]
 ): Promise<void> {
   const hasRunScript = files.some((f) => f === 'run.bat' || f === 'run.sh');
 
   if (!hasRunScript) {
-    throw new Error('FORGE_JAR_NOT_FOUND: 安裝後找不到 Forge jar');
+    throw new Error(`${loader.toUpperCase()}_ARGS_NOT_FOUND: 安裝後找不到 run.bat`);
   }
 
   // 新版 Forge 使用 run.bat/run.sh 啟動
@@ -103,7 +120,7 @@ async function setupNewForgeServer(
     .catch(() => false);
 
   if (!runBatExists) {
-    throw new Error('FORGE_JAR_NOT_FOUND: 找不到 run.bat');
+    throw new Error(`${loader.toUpperCase()}_ARGS_NOT_FOUND: 找不到 run.bat`);
   }
 
   const runBatContent = await fs.readFile(runBatPath, 'utf-8');
@@ -124,21 +141,18 @@ async function setupNewForgeServer(
     if (argsFileExists) {
       // 新版 Forge 由 args.txt 與 user_jvm_args.txt 驅動啟動流程。
       // 這裡只需要保存必要的啟動配置，實際啟動由 ServerManager 處理。
-      const forgeConfig = {
-        type: 'forge-new',
+      const loaderConfig = {
+        type: 'args-file',
+        loader,
         argsFile: argsMatch[0].replace('@', ''),
         userJvmArgsFile: 'user_jvm_args.txt',
       };
 
       await fs.writeFile(
-        path.join(targetDir, 'forge-config.json'),
-        JSON.stringify(forgeConfig, null, 2)
+        path.join(targetDir, 'loader-config.json'),
+        JSON.stringify(loaderConfig, null, 2)
       );
 
-      // 建立一個空的 server.jar 作為標記（實際啟動時會讀取 forge-config.json）
-      // 或者我們可以建立一個 dummy jar
-      // 暫時先複製 run.bat 的內容到一個可執行的腳本
-      
       // 建立 user_jvm_args.txt 如果不存在
       const userJvmArgsPath = path.join(targetDir, 'user_jvm_args.txt');
       const userJvmArgsExists = await fs
@@ -150,8 +164,7 @@ async function setupNewForgeServer(
         await fs.writeFile(userJvmArgsPath, '# Add custom JVM arguments here\n');
       }
 
-      // 新版 Forge 不需要 server.jar，ServerManager 會讀取 forge-config.json 來決定啟動方式
-      // 不建立假的 server.jar 以避免 Java 錯誤
+      // args file Loader 不需要 server.jar；ServerManager 會讀取 loader-config.json。
       return;
     }
   }
@@ -159,7 +172,7 @@ async function setupNewForgeServer(
   // 嘗試舊的方式：從 run.bat 中提取 @libraries 路徑
   const libMatch = runBatContent.match(/@libraries[^\s]+\.jar/);
   if (!libMatch) {
-    throw new Error('FORGE_JAR_NOT_FOUND: 無法解析 run.bat');
+    throw new Error(`${loader.toUpperCase()}_ARGS_NOT_FOUND: 無法解析 run.bat`);
   }
 
   const libJarPath = path.join(targetDir, libMatch[0].replace('@', ''));
@@ -169,9 +182,9 @@ async function setupNewForgeServer(
     .catch(() => false);
 
   if (!libJarExists) {
-    throw new Error('FORGE_JAR_NOT_FOUND: 找不到 Forge 啟動 jar');
+    throw new Error(`${loader.toUpperCase()}_ARGS_NOT_FOUND: 找不到 Loader 啟動 jar`);
   }
 
   // 複製 library jar 到 server.jar
-  await fs.copyFile(libJarPath, serverJarPath);
+  await fs.copyFile(libJarPath, path.join(targetDir, 'server.jar'));
 }

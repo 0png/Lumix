@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Full NeoForge server support, including official version discovery, installer-based setup, args-file startup, existing-server import, and NeoForge modpacks
+- Purpur server support through the official Purpur v2 API, including version discovery, latest-build downloads, import detection, and dedicated UI branding
+
+### Changed
+- Generalized modern Forge startup metadata into a shared loader args-file flow with legacy `forge-config.json` compatibility
+- Expanded server creation, import review, core icons, memory recommendations, and Traditional Chinese / English copy for NeoForge and Purpur
+
 ## [1.0.0] - 2026-05-17
 
 ### Added

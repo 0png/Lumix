@@ -56,7 +56,7 @@ interface CreateServerDialogProps {
 
 type WizardStep = 0 | 1 | 2 | 3 | 4;
 
-const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'fabric', 'forge'];
+const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'purpur', 'fabric', 'forge', 'neoforge'];
 
 function getInstallableJavaVersion(requiredJava: number): 8 | 17 | 21 | 25 {
   if (requiredJava >= 25) return 25;
@@ -104,12 +104,14 @@ function getRecommendedRamMb(coreType: CoreType, systemInfo: SystemInfo | null):
       base = 2048;
       break;
     case 'paper':
+    case 'purpur':
       base = 3072;
       break;
     case 'fabric':
       base = 4096;
       break;
     case 'forge':
+    case 'neoforge':
       base = 6144;
       break;
   }

@@ -17,7 +17,7 @@ const MAX_ARCHIVE_BYTES = 4 * 1024 * 1024 * 1024;
 const MAX_EXTRACTED_BYTES = 16 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_ENTRIES = 100_000;
 const PACK_ROOT_SEARCH_DEPTH = 2;
-const RESERVED_ROOT_FILES = new Set(['server.json', 'eula.txt', 'run.bat', 'forge-config.json']);
+const RESERVED_ROOT_FILES = new Set(['server.json', 'eula.txt', 'run.bat', 'forge-config.json', 'loader-config.json']);
 
 interface ModrinthFile {
   path: string;
@@ -325,19 +325,19 @@ export class ModpackService {
 }
 
 function detectModrinthLoader(dependencies: Record<string, string>): {
-  coreType?: Extract<CoreType, 'fabric' | 'forge'>;
+  coreType?: Extract<CoreType, 'fabric' | 'forge' | 'neoforge'>;
   version?: string;
   warning?: ModpackWarning;
 } {
   if (dependencies['fabric-loader']) return { coreType: 'fabric', version: dependencies['fabric-loader'] };
   if (dependencies.forge) return { coreType: 'forge', version: dependencies.forge };
-  if (dependencies.neoforge) return { version: dependencies.neoforge, warning: { code: 'unsupportedLoader', loader: 'NeoForge' } };
+  if (dependencies.neoforge) return { coreType: 'neoforge', version: dependencies.neoforge };
   if (dependencies['quilt-loader']) return { version: dependencies['quilt-loader'], warning: { code: 'unsupportedLoader', loader: 'Quilt' } };
   return { warning: { code: 'missingLoader' } };
 }
 
 function detectCurseForgeLoader(loaders: Array<{ id: string; primary?: boolean }>): {
-  coreType?: Extract<CoreType, 'fabric' | 'forge'>;
+  coreType?: Extract<CoreType, 'fabric' | 'forge' | 'neoforge'>;
   version?: string;
   warning?: ModpackWarning;
 } {
@@ -348,7 +348,7 @@ function detectCurseForgeLoader(loaders: Array<{ id: string; primary?: boolean }
   const version = separator >= 0 ? selected.id.slice(separator + 1) : undefined;
   if (name === 'fabric') return { coreType: 'fabric', version };
   if (name === 'forge') return { coreType: 'forge', version };
-  if (name === 'neoforge') return { version, warning: { code: 'unsupportedLoader', loader: 'NeoForge' } };
+  if (name === 'neoforge') return { coreType: 'neoforge', version };
   return { version, warning: { code: 'unsupportedLoader', loader: name } };
 }
 

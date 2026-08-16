@@ -103,6 +103,7 @@ export function useServers(): UseServersReturn {
         mcVersion: data.mcVersion,
         targetDir: server.directory,
         serverId: server.id,
+        javaPath: data.javaPath,
       });
 
       if (!downloadResult.success) {

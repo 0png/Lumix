@@ -29,6 +29,7 @@ import { SettingsView, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
 import { useJava } from '@/hooks/use-java';
 import { toast } from '@/lib/toast';
+import type { ImportServerRequest } from '../../shared/ipc-types';
 import '@/i18n';
 
 type ViewType = 'servers' | 'server-settings' | 'settings' | 'about';
@@ -187,14 +188,7 @@ function AppContent() {
     }
   }, [createServer, shouldPromptPostCreateOnboarding, t]);
 
-  const handleImportServer = useCallback(async (data: {
-    directory: string;
-    name: string;
-    coreType: ServerInstance['coreType'];
-    mcVersion: string;
-    launchJarPath: string;
-    eulaAccepted?: boolean;
-  }) => {
+  const handleImportServer = useCallback(async (data: ImportServerRequest) => {
     const { server, error } = await importExistingServer(data);
     if (error) {
       return error;

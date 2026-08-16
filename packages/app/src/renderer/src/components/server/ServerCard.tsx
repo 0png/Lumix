@@ -1,16 +1,14 @@
 /**
- * ServerCard 元件 - 伺服器卡片
- * 設計語言與 Lumix 保持一致
- * 支援響應式設計、無障礙、玻璃擬態效果
+ * ServerCard - 精準、低干擾的桌面伺服器控制卡片。
  */
 
 import { useTranslation } from 'react-i18next';
-import { Play, Square, MemoryStick, Download } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Download, MemoryStick, Play, Square } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { ServerCoreIcon } from './ServerCoreIcon';
 import type { ServerInstance, ServerStatus } from './ServerList';
 
 interface ServerCardProps {
@@ -23,60 +21,40 @@ interface ServerCardProps {
   downloadProgress?: number;
 }
 
-/**
- * 狀態指示器元件 - 帶光暈效果和無障礙支援
- */
+const STATUS_DOT_CLASSES: Record<ServerStatus, string> = {
+  stopped: 'bg-muted-foreground/55',
+  starting: 'bg-amber-500 animate-pulse',
+  running: 'bg-emerald-500 shadow-[0_0_0_3px_hsl(142_71%_45%/0.12)]',
+  stopping: 'bg-amber-500 animate-pulse',
+};
+
 function StatusIndicator({ status }: { status: ServerStatus }) {
   const { t } = useTranslation();
 
-  const statusConfig = {
-    stopped: { 
-      color: 'bg-muted-foreground', 
-      label: t('server.stopped'),
-      icon: '⏹',
-      badgeVariant: 'ghost' as const,
-    },
-    starting: { 
-      color: 'status-glow-transitioning', 
-      label: t('server.starting'),
-      icon: '⏳',
-      badgeVariant: 'warning' as const,
-    },
-    running: { 
-      color: 'status-glow-running', 
-      label: t('server.running'),
-      icon: '▶',
-      badgeVariant: 'success' as const,
-    },
-    stopping: { 
-      color: 'status-glow-transitioning', 
-      label: t('server.stopping'),
-      icon: '⏳',
-      badgeVariant: 'warning' as const,
-    },
-  };
-
-  const config = statusConfig[status];
-
   return (
-    <Badge 
-      variant={config.badgeVariant}
-      className="gap-1.5"
+    <div
+      className="flex shrink-0 items-center gap-2 pt-0.5 text-[11px] font-medium text-muted-foreground"
       role="status"
-      aria-label={`${t('server.status')}: ${config.label}`}
+      aria-label={`${t('server.status')}: ${t(`server.${status}`)}`}
     >
-      <span 
-        className={cn('h-2 w-2 rounded-full transition-all duration-300', config.color)} 
+      <span
+        className={cn(
+          'h-1.5 w-1.5 rounded-full motion-reduce:animate-none',
+          STATUS_DOT_CLASSES[status]
+        )}
         aria-hidden="true"
       />
-      <span className="text-xs">{config.label}</span>
-    </Badge>
+      <span>{t(`server.${status}`)}</span>
+    </div>
   );
 }
 
-/**
- * 伺服器卡片元件
- */
+function formatMemory(megabytes: number): string {
+  if (megabytes < 1024) return `${megabytes} MB`;
+  const gigabytes = megabytes / 1024;
+  return `${Number.isInteger(gigabytes) ? gigabytes : gigabytes.toFixed(1)} GB`;
+}
+
 export function ServerCard({
   server,
   isSelected,
@@ -90,9 +68,9 @@ export function ServerCard({
   const isTransitioning = server.status === 'starting' || server.status === 'stopping';
   const isReady = server.isReady !== false;
   const isDownloading = downloadProgress !== undefined && downloadProgress < 100;
+  const accessibleLabel = `${server.name} - ${t(`coreType.${server.coreType}`)} ${server.mcVersion}`;
 
-  const handleActionClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleActionClick = () => {
     if (isRunning) {
       onStop?.();
     } else if (server.status === 'stopped' && isReady) {
@@ -100,108 +78,96 @@ export function ServerCard({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect?.();
-    }
-  };
-
   return (
     <Card
       className={cn(
-        'cursor-pointer card-hover group relative overflow-hidden',
-        'glass border-border/50',
-        'hover:border-primary/30 hover:bg-accent/30',
-        'focus-ring',
-        isSelected && 'ring-2 ring-primary border-primary/50',
-        isRunning && 'border-green-500/30 hover:border-green-500/50',
-        'animate-fade-in-up'
+        'group/card relative min-h-[148px] overflow-hidden rounded-[14px] border border-border/65 bg-card/75',
+        'shadow-[inset_0_1px_0_hsl(var(--foreground)/0.04),0_1px_2px_hsl(0_0%_0%/0.06)]',
+        'transition-[border-color] duration-150 ease-in-out hover:border-border/90 motion-reduce:transition-none',
+        "before:pointer-events-none before:absolute before:inset-0 before:rounded-[13px] before:bg-[radial-gradient(100%_100%_at_50%_0%,hsl(var(--foreground)/0.055)_0%,hsl(var(--foreground)/0.012)_100%)] before:opacity-0 before:content-['']",
+        'before:transition-opacity before:duration-150 before:ease-in-out hover:before:opacity-100 motion-reduce:before:transition-none',
+        isSelected && 'border-primary/35 bg-primary/[0.035]'
       )}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-pressed={isSelected}
-      aria-label={`${server.name} - ${t(`coreType.${server.coreType}`)} ${server.mcVersion}`}
     >
-      {/* 頂部漸層裝飾 */}
-      <div 
-        className={cn(
-          'absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300',
-          'bg-gradient-to-r from-transparent via-primary/50 to-transparent',
-          isRunning && 'opacity-100 via-green-500/50'
-        )}
-        aria-hidden="true"
-      />
-      
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm font-medium truncate group-hover:text-primary transition-colors duration-200">
-            {server.name}
-          </CardTitle>
-          <StatusIndicator status={server.status} />
-        </div>
-      </CardHeader>
+      {isSelected ? (
+        <span className="absolute inset-y-3 left-0 w-0.5 rounded-r-full bg-primary/75" aria-hidden="true" />
+      ) : null}
 
-      <CardContent className="p-4 pt-0">
-        <div className="space-y-2.5">
-          {/* 伺服器資訊 */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="absolute inset-0 z-10 rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45"
+        aria-label={accessibleLabel}
+        aria-pressed={isSelected}
+      />
+
+      <div className="pointer-events-none relative z-20 flex min-h-[148px] flex-col p-4">
+        <div className="flex items-start gap-3">
+          <ServerCoreIcon
+            coreType={server.coreType}
+            className="h-10 w-10 shrink-0 rounded-[10px] border border-border/55 bg-background/65 shadow-[0_1px_2px_hsl(0_0%_0%/0.06)]"
+            imageClassName="h-7 w-7 opacity-90 saturate-[0.92] transition-[filter,opacity] duration-150 ease-in-out group-hover/card:opacity-100 group-hover/card:saturate-100 motion-reduce:transition-none"
+          />
+
+          <div className="min-w-0 flex-1 pt-0.5">
+            <h2 className="truncate text-[15px] font-semibold leading-5 tracking-[-0.012em] text-foreground/85 transition-colors duration-150 ease-in-out group-hover/card:text-foreground motion-reduce:transition-none">
+              {server.name}
+            </h2>
+            <p className="mt-0.5 truncate text-xs leading-5 text-muted-foreground">
               {t(`coreType.${server.coreType}`)}
-            </Badge>
-            <span className="text-muted-foreground/50">•</span>
-            <span>{server.mcVersion}</span>
+              <span className="px-1.5 text-muted-foreground/45" aria-hidden="true">·</span>
+              <span className="tabular-nums">{server.mcVersion}</span>
+            </p>
           </div>
 
-          {/* 下載進度條 */}
-          {isDownloading && (
-            <div className="space-y-1" role="progressbar" aria-valuenow={downloadProgress} aria-valuemin={0} aria-valuemax={100}>
-              <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Download className="h-3 w-3 animate-pulse" aria-hidden="true" />
-                  {t('server.downloading')}
-                </span>
-                <span className="text-muted-foreground tabular-nums">{Math.round(downloadProgress)}%</span>
-              </div>
-              <Progress value={downloadProgress} variant="default" className="h-1.5" />
-            </div>
-          )}
+          <StatusIndicator status={server.status} />
+        </div>
 
-          {/* 記憶體和操作按鈕 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MemoryStick className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{server.ramMax} MB</span>
+        {isDownloading ? (
+          <div
+            className="mt-auto space-y-2"
+            role="progressbar"
+            aria-valuenow={downloadProgress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Download className="h-3.5 w-3.5 animate-pulse motion-reduce:animate-none" aria-hidden="true" />
+                {t('server.downloading')}
+              </span>
+              <span className="font-medium tabular-nums text-foreground/70">{Math.round(downloadProgress)}%</span>
             </div>
+            <Progress value={downloadProgress} className="h-1" />
+          </div>
+        ) : (
+          <div className="mt-auto flex items-end justify-between gap-3 pt-6">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MemoryStick className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="font-medium tabular-nums text-foreground/65">{formatMemory(server.ramMax)}</span>
+            </div>
+
             <Button
               size="sm"
-              variant={isRunning ? 'destructive' : 'default'}
-              disabled={isTransitioning || (!isRunning && !isReady) || isDownloading}
+              variant={isRunning ? 'ghost' : 'default'}
+              disabled={isTransitioning || (!isRunning && !isReady)}
               onClick={handleActionClick}
               className={cn(
-                'h-7 text-xs px-3 transition-all duration-200 ripple',
-                !isRunning && !isTransitioning && 'hover:shadow-md hover:shadow-primary/20',
-                isRunning && 'hover:shadow-md hover:shadow-destructive/20'
+                'pointer-events-auto relative z-30 h-8 rounded-lg px-3 text-xs shadow-none transition-[background-color,color,transform] duration-150 ease-out active:translate-y-px motion-reduce:transform-none motion-reduce:transition-none',
+                isRunning && 'text-destructive hover:bg-destructive/10 hover:text-destructive'
               )}
               aria-label={isRunning ? t('server.stop') : t('server.start')}
             >
               {isRunning ? (
-                <>
-                  <Square className="mr-1 h-3 w-3" aria-hidden="true" />
-                  {t('server.stop')}
-                </>
+                <Square className="h-3 w-3" aria-hidden="true" />
               ) : (
-                <>
-                  <Play className="mr-1 h-3 w-3" aria-hidden="true" />
-                  {isDownloading ? t('server.downloading') : !isReady ? t('server.downloading') : t('server.start')}
-                </>
+                <Play className="h-3 w-3" aria-hidden="true" />
               )}
+              {isRunning ? t('server.stop') : !isReady ? t('server.downloading') : t('server.start')}
             </Button>
           </div>
-        </div>
-      </CardContent>
+        )}
+      </div>
     </Card>
   );
 }

@@ -164,7 +164,9 @@ export class ServerManager extends EventEmitter {
     const candidate = await this.importScanner.scan(request.directory);
     const trimmedName = request.name.trim();
     const resolvedDirectory = path.resolve(request.directory);
-    const resolvedJarPath = path.resolve(request.launchJarPath);
+    const resolvedJarPath = request.launchJarPath ? path.resolve(request.launchJarPath) : undefined;
+    const resolvedArgsFile = request.launchArgsFile ? path.resolve(request.launchArgsFile) : undefined;
+    const resolvedUserJvmArgsFile = request.userJvmArgsFile ? path.resolve(request.userJvmArgsFile) : undefined;
 
     if (!trimmedName) {
       throw new Error(formatIpcError(createIpcError(
@@ -194,10 +196,31 @@ export class ServerManager extends EventEmitter {
       )));
     }
 
-    if (!candidate.jarCandidates.includes(resolvedJarPath)) {
+    if (!resolvedJarPath && !resolvedArgsFile) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        '必須選擇啟動 jar 或 Loader args file'
+      )));
+    }
+
+    if (resolvedJarPath && !candidate.jarCandidates.includes(resolvedJarPath)) {
       throw new Error(formatIpcError(createIpcError(
         IpcErrorCode.VALIDATION_ERROR,
         '選擇的啟動 jar 不在匯入資料夾中'
+      )));
+    }
+
+    if (resolvedArgsFile && candidate.launchArgsFile !== resolvedArgsFile) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        '選擇的 Loader args file 不在匯入資料夾中'
+      )));
+    }
+
+    if (resolvedUserJvmArgsFile && candidate.userJvmArgsFile !== resolvedUserJvmArgsFile) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        '選擇的 JVM args file 不在匯入資料夾中'
       )));
     }
 
@@ -214,6 +237,8 @@ export class ServerManager extends EventEmitter {
       jvmArgs: request.jvmArgs ?? [],
       javaPath: request.javaPath,
       launchJarPath: resolvedJarPath,
+      launchArgsFile: resolvedArgsFile,
+      userJvmArgsFile: resolvedUserJvmArgsFile,
       createdAt: new Date().toISOString(),
       eulaAccepted: request.eulaAccepted ?? candidate.eulaAccepted,
       backupSettings: { ...DEFAULT_BACKUP_SETTINGS },
@@ -312,6 +337,8 @@ export class ServerManager extends EventEmitter {
       ramMax: request.ramMax ?? server.ramMax,
       jvmArgs: request.jvmArgs ?? server.jvmArgs,
       launchJarPath: request.launchJarPath ?? server.launchJarPath,
+      launchArgsFile: request.launchArgsFile ?? server.launchArgsFile,
+      userJvmArgsFile: request.userJvmArgsFile ?? server.userJvmArgsFile,
       eulaAccepted: request.eulaAccepted ?? server.eulaAccepted,
       backupSettings,
       onboardingState: request.onboardingState ?? server.onboardingState,
@@ -436,21 +463,10 @@ export class ServerManager extends EventEmitter {
 
     const jarPath = this.resolveLaunchJarPath(server);
     
-    // 檢查是否為新版 Forge
-    let forgeArgsFile: string | undefined;
-    const forgeConfigPath = path.join(server.directory, 'forge-config.json');
-    try {
-      const forgeConfigContent = await fs.readFile(forgeConfigPath, 'utf-8');
-      const forgeConfig = JSON.parse(forgeConfigContent);
-      if (forgeConfig.type === 'forge-new' && forgeConfig.argsFile) {
-        forgeArgsFile = forgeConfig.argsFile;
-      }
-    } catch {
-      // 不是新版 Forge，使用標準方式
-    }
+    const loaderLaunch = await this.resolveLoaderLaunch(server);
 
-    // 如果不是新版 Forge，檢查 server.jar 是否存在
-    if (!forgeArgsFile) {
+    // args-file Loader 不需要根目錄 server.jar。
+    if (!loaderLaunch) {
       try {
         await fs.access(jarPath);
       } catch {
@@ -487,14 +503,9 @@ export class ServerManager extends EventEmitter {
         ramMin: server.ramMin,
         ramMax: server.ramMax,
         jvmArgs: server.jvmArgs,
-        forgeArgsFile,
+        loaderArgsFile: loaderLaunch?.argsFile,
+        userJvmArgsFile: loaderLaunch?.userJvmArgsFile,
       };
-
-      // Debug log
-      this.emitLogEntry(id, 'info', `[DEBUG] Starting server with:`);
-      this.emitLogEntry(id, 'info', `[DEBUG] Java: ${effectiveJavaPath}`);
-      this.emitLogEntry(id, 'info', `[DEBUG] Working Dir: ${server.directory}`);
-      this.emitLogEntry(id, 'info', `[DEBUG] JAR: ${jarPath}`);
 
       // Debug log
       this.emitLogEntry(id, 'info', `[DEBUG] Starting server with:`);
@@ -1274,6 +1285,101 @@ export class ServerManager extends EventEmitter {
       : path.join(server.directory, server.launchJarPath);
   }
 
+  private async resolveLoaderLaunch(
+    server: ServerInstanceDto
+  ): Promise<{ argsFile: string; userJvmArgsFile?: string } | undefined> {
+    if (server.launchArgsFile) {
+      return this.validateLoaderLaunchPaths(
+        server.directory,
+        server.launchArgsFile,
+        server.userJvmArgsFile
+      );
+    }
+
+    const loaderConfig = await this.readJsonIfExists(path.join(server.directory, 'loader-config.json'));
+    if (loaderConfig?.type === 'args-file' && typeof loaderConfig.argsFile === 'string') {
+      return this.validateLoaderLaunchPaths(
+        server.directory,
+        loaderConfig.argsFile,
+        typeof loaderConfig.userJvmArgsFile === 'string' ? loaderConfig.userJvmArgsFile : undefined
+      );
+    }
+
+    const legacyForgeConfig = await this.readJsonIfExists(path.join(server.directory, 'forge-config.json'));
+    if (legacyForgeConfig?.type === 'forge-new' && typeof legacyForgeConfig.argsFile === 'string') {
+      return this.validateLoaderLaunchPaths(
+        server.directory,
+        legacyForgeConfig.argsFile,
+        typeof legacyForgeConfig.userJvmArgsFile === 'string'
+          ? legacyForgeConfig.userJvmArgsFile
+          : 'user_jvm_args.txt'
+      );
+    }
+
+    return undefined;
+  }
+
+  private async validateLoaderLaunchPaths(
+    serverDirectory: string,
+    argsFile: string,
+    userJvmArgsFile?: string
+  ): Promise<{ argsFile: string; userJvmArgsFile?: string }> {
+    const safeArgsFile = this.resolveContainedServerPath(serverDirectory, argsFile);
+    await this.assertLoaderFile(safeArgsFile);
+
+    let safeUserJvmArgsFile: string | undefined;
+    if (userJvmArgsFile) {
+      safeUserJvmArgsFile = this.resolveContainedServerPath(serverDirectory, userJvmArgsFile);
+      await this.assertLoaderFile(safeUserJvmArgsFile);
+    }
+
+    return {
+      argsFile: path.relative(serverDirectory, safeArgsFile),
+      userJvmArgsFile: safeUserJvmArgsFile
+        ? path.relative(serverDirectory, safeUserJvmArgsFile)
+        : undefined,
+    };
+  }
+
+  private async assertLoaderFile(filePath: string): Promise<void> {
+    const stat = await fs.stat(filePath);
+    if (!stat.isFile()) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        'Loader 啟動路徑不是檔案',
+        { path: filePath }
+      )));
+    }
+  }
+
+  private resolveContainedServerPath(serverDirectory: string, candidate: string): string {
+    const resolvedDirectory = path.resolve(serverDirectory);
+    const resolvedCandidate = path.isAbsolute(candidate)
+      ? path.resolve(candidate)
+      : path.resolve(resolvedDirectory, candidate);
+    const relative = path.relative(resolvedDirectory, resolvedCandidate);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.VALIDATION_ERROR,
+        'Loader 啟動檔案不在伺服器目錄內',
+        { path: candidate }
+      )));
+    }
+    return resolvedCandidate;
+  }
+
+  private async readJsonIfExists(filePath: string): Promise<Record<string, unknown> | undefined> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : undefined;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      if (error instanceof SyntaxError) return undefined;
+      throw error;
+    }
+  }
+
   private buildMetadata(id: string, name: string, request: CreateServerRequest): ServerMetadata {
     return {
       id,
@@ -1297,13 +1403,15 @@ export class ServerManager extends EventEmitter {
 
   private async writeServerFiles(serverPath: string, metadata: ServerMetadata): Promise<void> {
     await this.fileManager.writeEula(serverPath);
-    await this.fileManager.writeRunBat(serverPath, {
-      javaPath: metadata.javaPath || this.defaultJavaPath,
-      jarPath: metadata.launchJarPath,
-      ramMin: metadata.ramMin,
-      ramMax: metadata.ramMax,
-      jvmArgs: metadata.jvmArgs,
-    });
+    if (metadata.coreType !== 'forge' && metadata.coreType !== 'neoforge') {
+      await this.fileManager.writeRunBat(serverPath, {
+        javaPath: metadata.javaPath || this.defaultJavaPath,
+        jarPath: metadata.launchJarPath,
+        ramMin: metadata.ramMin,
+        ramMax: metadata.ramMax,
+        jvmArgs: metadata.jvmArgs,
+      });
+    }
     await this.fileManager.writeServerJson(serverPath, metadata);
   }
 
@@ -1315,13 +1423,16 @@ export class ServerManager extends EventEmitter {
 
     const metadata = this.toManagedMetadata(server);
     await this.fileManager.writeServerJson(server.directory, metadata);
-    await this.fileManager.writeRunBat(server.directory, {
-      javaPath: server.javaPath,
-      jarPath: server.launchJarPath,
-      ramMin: server.ramMin,
-      ramMax: server.ramMax,
-      jvmArgs: server.jvmArgs,
-    });
+    const loaderLaunch = await this.resolveLoaderLaunch(server);
+    if (!loaderLaunch) {
+      await this.fileManager.writeRunBat(server.directory, {
+        javaPath: server.javaPath,
+        jarPath: server.launchJarPath,
+        ramMin: server.ramMin,
+        ramMax: server.ramMax,
+        jvmArgs: server.jvmArgs,
+      });
+    }
   }
 
   private async updateLastStartedAt(id: string): Promise<void> {
@@ -1344,6 +1455,8 @@ export class ServerManager extends EventEmitter {
       jvmArgs: metadata.jvmArgs,
       directory,
       launchJarPath: metadata.launchJarPath,
+      launchArgsFile: metadata.launchArgsFile,
+      userJvmArgsFile: metadata.userJvmArgsFile,
       status: 'stopped',
       createdAt: metadata.createdAt,
       lastStartedAt: metadata.lastStartedAt,
@@ -1366,6 +1479,8 @@ export class ServerManager extends EventEmitter {
       jvmArgs: record.jvmArgs,
       directory: record.directory,
       launchJarPath: record.launchJarPath,
+      launchArgsFile: record.launchArgsFile,
+      userJvmArgsFile: record.userJvmArgsFile,
       status: 'stopped',
       createdAt: record.createdAt,
       lastStartedAt: record.lastStartedAt,
@@ -1387,6 +1502,8 @@ export class ServerManager extends EventEmitter {
       jvmArgs: server.jvmArgs,
       javaPath: server.javaPath,
       launchJarPath: server.launchJarPath,
+      launchArgsFile: server.launchArgsFile,
+      userJvmArgsFile: server.userJvmArgsFile,
       createdAt: server.createdAt,
       lastStartedAt: server.lastStartedAt,
       eulaAccepted: server.eulaAccepted,
@@ -1408,6 +1525,8 @@ export class ServerManager extends EventEmitter {
       jvmArgs: server.jvmArgs,
       javaPath: server.javaPath,
       launchJarPath: server.launchJarPath,
+      launchArgsFile: server.launchArgsFile,
+      userJvmArgsFile: server.userJvmArgsFile,
       createdAt: server.createdAt,
       lastStartedAt: server.lastStartedAt,
       eulaAccepted: server.eulaAccepted,

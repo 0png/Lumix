@@ -18,7 +18,8 @@ export interface ProcessConfig {
   ramMin: number;
   ramMax: number;
   jvmArgs: string[];
-  forgeArgsFile?: string; // 新版 Forge 的 args 檔案路徑
+  loaderArgsFile?: string;
+  userJvmArgsFile?: string;
 }
 
 export interface ProcessInfo {
@@ -189,16 +190,17 @@ export class ProcessManager extends EventEmitter {
    * 注意：不使用 shell: true，所以不需要手動加引號，spawn 會正確處理空格路徑
    */
   private buildJvmArgs(config: ProcessConfig): string[] {
-    // 新版 Forge 使用 @args.txt 方式啟動
-    if (config.forgeArgsFile) {
+    // 新版 Forge 與 NeoForge 使用 @args.txt 方式啟動
+    if (config.loaderArgsFile) {
       const args: string[] = [
         `-Xms${config.ramMin}M`,
         `-Xmx${config.ramMax}M`,
         ...config.jvmArgs,
-        '@user_jvm_args.txt',
-        `@${config.forgeArgsFile}`,
-        'nogui',
       ];
+      if (config.userJvmArgsFile) {
+        args.push(`@${config.userJvmArgsFile}`);
+      }
+      args.push(`@${config.loaderArgsFile}`, 'nogui');
       return args;
     }
 

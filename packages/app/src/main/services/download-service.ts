@@ -8,7 +8,7 @@ import path from 'path';
 import type { CoreType, DownloadProgress } from '../../shared/ipc-types';
 import { IpcErrorCode, formatIpcError, createIpcError } from '../../shared/ipc-types';
 import { fetchJson, downloadFile } from './http-client';
-import { runForgeInstaller } from './forge-installer';
+import { runForgeInstaller, runNeoForgeInstaller } from './forge-installer';
 
 // ============================================================================
 // Types
@@ -24,6 +24,14 @@ interface VersionManifest {
 
 interface PaperProjectResponse {
   versions: Record<string, string[]>;
+}
+
+interface PurpurProjectResponse {
+  versions: string[];
+}
+
+interface NeoForgeVersionsResponse {
+  versions: string[];
 }
 
 export interface DownloadServerOptions {
@@ -59,11 +67,14 @@ interface FabricInstallerVersion {
 const API_ENDPOINTS = {
   VANILLA_MANIFEST: 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json',
   PAPER_PROJECT: 'https://fill.papermc.io/v3/projects/paper',
+  PURPUR_PROJECT: 'https://api.purpurmc.org/v2/purpur',
   FABRIC_GAME: 'https://meta.fabricmc.net/v2/versions/game',
   FABRIC_LOADER: 'https://meta.fabricmc.net/v2/versions/loader',
   FABRIC_INSTALLER: 'https://meta.fabricmc.net/v2/versions/installer',
   FORGE_PROMOTIONS: 'https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json',
   FORGE_MAVEN: 'https://maven.minecraftforge.net/net/minecraftforge/forge',
+  NEOFORGE_VERSIONS: 'https://maven.neoforged.net/api/maven/versions/releases/net%2Fneoforged%2Fneoforge',
+  NEOFORGE_MAVEN: 'https://maven.neoforged.net/releases/net/neoforged/neoforge',
 } as const;
 
 interface ForgePromotions {
@@ -85,10 +96,14 @@ export class DownloadService extends EventEmitter {
         return this.fetchVanillaVersions();
       case 'paper':
         return this.fetchPaperVersions();
+      case 'purpur':
+        return this.fetchPurpurVersions();
       case 'fabric':
         return this.fetchFabricVersions();
       case 'forge':
         return this.fetchForgeVersions();
+      case 'neoforge':
+        return this.fetchNeoForgeVersions();
       case 'spigot':
         return this.fetchPaperVersions();
       default:
@@ -113,6 +128,11 @@ export class DownloadService extends EventEmitter {
       .sort((a, b) => this.compareVersions(b, a));
   }
 
+  private async fetchPurpurVersions(): Promise<string[]> {
+    const data = await fetchJson<PurpurProjectResponse>(API_ENDPOINTS.PURPUR_PROJECT);
+    return data.versions.sort((a, b) => this.compareVersions(b, a));
+  }
+
   private async fetchFabricVersions(): Promise<string[]> {
     const data = await fetchJson<FabricGameVersion[]>(API_ENDPOINTS.FABRIC_GAME);
     return data
@@ -134,6 +154,16 @@ export class DownloadService extends EventEmitter {
     // 排序版本（新版在前）
     return Array.from(versions)
       .sort((a, b) => this.compareVersions(b, a));
+  }
+
+  private async fetchNeoForgeVersions(): Promise<string[]> {
+    const data = await fetchJson<NeoForgeVersionsResponse>(API_ENDPOINTS.NEOFORGE_VERSIONS);
+    return Array.from(new Set(
+      data.versions
+        .filter(isSupportedNeoForgeRelease)
+        .map(getNeoForgeMinecraftVersion)
+        .filter((version): version is string => Boolean(version))
+    )).sort((a, b) => this.compareVersions(b, a));
   }
 
   /**
@@ -171,11 +201,17 @@ export class DownloadService extends EventEmitter {
       case 'paper':
         await this.downloadPaperServer(mcVersion, jarPath, serverId);
         break;
+      case 'purpur':
+        await this.downloadPurpurServer(mcVersion, jarPath, serverId);
+        break;
       case 'fabric':
         await this.downloadFabricServer(mcVersion, jarPath, serverId, options.loaderVersion);
         break;
       case 'forge':
         await this.downloadForgeServer(mcVersion, jarPath, serverId, options.loaderVersion, options.javaPath);
+        break;
+      case 'neoforge':
+        await this.downloadNeoForgeServer(mcVersion, jarPath, serverId, options.loaderVersion, options.javaPath);
         break;
       case 'spigot':
         await this.downloadPaperServer(mcVersion, jarPath, serverId);
@@ -250,6 +286,27 @@ export class DownloadService extends EventEmitter {
     await this.downloadWithProgress(download.url, jarPath, download.size || 0, serverId);
   }
 
+  private async downloadPurpurServer(
+    mcVersion: string,
+    jarPath: string,
+    serverId?: string
+  ): Promise<void> {
+    const project = await fetchJson<PurpurProjectResponse>(API_ENDPOINTS.PURPUR_PROJECT);
+    if (!project.versions.includes(mcVersion)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `Purpur ${mcVersion} 沒有可用版本`
+      )));
+    }
+
+    await this.downloadWithProgress(
+      `${API_ENDPOINTS.PURPUR_PROJECT}/${encodeURIComponent(mcVersion)}/latest/download`,
+      jarPath,
+      0,
+      serverId
+    );
+  }
+
   private async downloadFabricServer(
     mcVersion: string,
     jarPath: string,
@@ -317,6 +374,34 @@ export class DownloadService extends EventEmitter {
     await runForgeInstaller(installerPath, targetDir, javaPath);
   }
 
+  private async downloadNeoForgeServer(
+    mcVersion: string,
+    jarPath: string,
+    serverId?: string,
+    requestedNeoForgeVersion?: string,
+    javaPath?: string
+  ): Promise<void> {
+    let neoForgeVersion = requestedNeoForgeVersion;
+    if (!neoForgeVersion) {
+      const data = await fetchJson<NeoForgeVersionsResponse>(API_ENDPOINTS.NEOFORGE_VERSIONS);
+      neoForgeVersion = selectNeoForgeVersion(data.versions, mcVersion);
+    }
+
+    if (!neoForgeVersion || getNeoForgeMinecraftVersion(neoForgeVersion) !== normalizeMinecraftVersion(mcVersion)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.DOWNLOAD_VERSION_NOT_FOUND,
+        `NeoForge ${mcVersion} 沒有可用版本`
+      )));
+    }
+
+    const targetDir = path.dirname(jarPath);
+    const installerPath = path.join(targetDir, 'neoforge-installer.jar');
+    const installerUrl = `${API_ENDPOINTS.NEOFORGE_MAVEN}/${encodeURIComponent(neoForgeVersion)}/neoforge-${encodeURIComponent(neoForgeVersion)}-installer.jar`;
+
+    await this.downloadWithProgress(installerUrl, installerPath, 0, serverId);
+    await runNeoForgeInstaller(installerPath, targetDir, javaPath);
+  }
+
   // ==========================================================================
   // Utilities
   // ==========================================================================
@@ -345,4 +430,46 @@ export class DownloadService extends EventEmitter {
       }
     });
   }
+}
+
+export function getNeoForgeMinecraftVersion(neoForgeVersion: string): string | null {
+  if (neoForgeVersion.startsWith('0')) return null;
+  const match = neoForgeVersion.match(/^(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?/);
+  if (!match) return null;
+
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  const patch = Number(match[3]);
+  if (major >= 26) {
+    return patch === 0 ? `${major}.${minor}` : `${major}.${minor}.${patch}`;
+  }
+  return minor === 0 ? `1.${major}` : `1.${major}.${minor}`;
+}
+
+export function selectNeoForgeVersion(versions: string[], mcVersion: string): string | undefined {
+  const normalizedMcVersion = normalizeMinecraftVersion(mcVersion);
+  const candidates = versions.filter(
+    (version) => isSupportedNeoForgeRelease(version)
+      && getNeoForgeMinecraftVersion(version) === normalizedMcVersion
+  );
+  const stable = candidates.filter((version) => !version.includes('-'));
+  return [...(stable.length > 0 ? stable : candidates)].sort(compareNeoForgeVersions).at(-1);
+}
+
+function isSupportedNeoForgeRelease(version: string): boolean {
+  return !version.startsWith('0') && (!version.includes('-') || version.includes('-beta'));
+}
+
+function normalizeMinecraftVersion(version: string): string {
+  return version.replace(/\.0$/, '');
+}
+
+function compareNeoForgeVersions(a: string, b: string): number {
+  const partsA = a.match(/^\d+(?:\.\d+)*/)?.[0].split('.').map(Number) ?? [];
+  const partsB = b.match(/^\d+(?:\.\d+)*/)?.[0].split('.').map(Number) ?? [];
+  for (let index = 0; index < Math.max(partsA.length, partsB.length); index += 1) {
+    const difference = (partsA[index] ?? 0) - (partsB[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return a.localeCompare(b);
 }

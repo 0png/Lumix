@@ -9,9 +9,21 @@ import { ImportScanner } from '../src/main/services/import-scanner';
 import { ServerManager } from '../src/main/services/server-manager';
 
 class FakeProcessManager extends EventEmitter {
-  public spawned: Array<{ serverId: string; jarPath: string; workingDir: string }> = [];
+  public spawned: Array<{
+    serverId: string;
+    jarPath: string;
+    workingDir: string;
+    loaderArgsFile?: string;
+    userJvmArgsFile?: string;
+  }> = [];
 
-  spawn(config: { serverId: string; jarPath: string; workingDir: string }) {
+  spawn(config: {
+    serverId: string;
+    jarPath: string;
+    workingDir: string;
+    loaderArgsFile?: string;
+    userJvmArgsFile?: string;
+  }) {
     this.spawned.push(config);
     return {} as never;
   }
@@ -160,6 +172,58 @@ describe('ServerManager import flow', () => {
     expect(processManager.spawned[0]?.workingDir).toBe(path.resolve(externalDir));
   });
 
+  it('imports, reloads, and starts NeoForge args-file servers without a root jar', async () => {
+    const argsFile = path.join(
+      externalDir,
+      'libraries',
+      'net',
+      'neoforged',
+      'neoforge',
+      '21.1.171',
+      'win_args.txt'
+    );
+    const userJvmArgsFile = path.join(externalDir, 'user_jvm_args.txt');
+    await fs.mkdir(path.dirname(argsFile), { recursive: true });
+    await fs.writeFile(argsFile, '--launchTarget neoforgeserver\n');
+    await fs.writeFile(userJvmArgsFile, '# custom JVM args\n');
+    await fs.writeFile(
+      path.join(externalDir, 'run.bat'),
+      'java @user_jvm_args.txt @libraries/net/neoforged/neoforge/21.1.171/win_args.txt %*\r\n'
+    );
+
+    const imported = await manager.importExistingServer({
+      directory: externalDir,
+      name: 'Imported NeoForge Server',
+      coreType: 'neoforge',
+      mcVersion: '1.21.1',
+      launchArgsFile: argsFile,
+      userJvmArgsFile,
+      javaPath: 'java',
+    });
+
+    const reloadedManager = new ServerManager({
+      fileManager,
+      importRegistry,
+      importScanner: new ImportScanner(),
+      processManager: processManager as never,
+      defaultJavaPath: 'java',
+    });
+    await reloadedManager.loadServers();
+    Object.assign(
+      reloadedManager as unknown as { validateJava: (javaPath: string) => Promise<boolean> },
+      { validateJava: async () => true }
+    );
+
+    await reloadedManager.startServer(imported.id);
+
+    expect(processManager.spawned[0]?.jarPath).toBe(path.join(externalDir, 'server.jar'));
+    expect(processManager.spawned[0]?.loaderArgsFile).toBe(
+      path.join('libraries', 'net', 'neoforged', 'neoforge', '21.1.171', 'win_args.txt')
+    );
+    expect(processManager.spawned[0]?.userJvmArgsFile).toBe('user_jvm_args.txt');
+    expect(processManager.spawned[0]?.workingDir).toBe(path.resolve(externalDir));
+  });
+
   it('starts managed servers with a relative launch jar path inside the server directory', async () => {
     const created = await manager.createServer({
       name: 'Managed Server',
@@ -179,5 +243,26 @@ describe('ServerManager import flow', () => {
 
     expect(processManager.spawned[0]?.jarPath).toBe(path.join(created.directory, 'server.jar'));
     expect(processManager.spawned[0]?.workingDir).toBe(created.directory);
+  });
+
+  it('rejects loader args files that escape the managed server directory', async () => {
+    const created = await manager.createServer({
+      name: 'Unsafe Loader Server',
+      coreType: 'neoforge',
+      mcVersion: '1.21.1',
+      javaPath: 'java',
+    });
+    await fs.writeFile(path.join(created.directory, '..', 'outside_args.txt'), '--launchTarget neoforgeserver\n');
+    await fs.writeFile(
+      path.join(created.directory, 'loader-config.json'),
+      JSON.stringify({ type: 'args-file', argsFile: '../outside_args.txt' })
+    );
+    Object.assign(
+      manager as unknown as { validateJava: (javaPath: string) => Promise<boolean> },
+      { validateJava: async () => true }
+    );
+
+    await expect(manager.startServer(created.id)).rejects.toThrow('Loader 啟動檔案不在伺服器目錄內');
+    expect(processManager.spawned).toHaveLength(0);
   });
 });

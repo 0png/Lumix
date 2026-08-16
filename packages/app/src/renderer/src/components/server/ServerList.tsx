@@ -20,9 +20,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import type { CoreType as SharedCoreType } from '../../../../shared/ipc-types';
 
 export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
-export type CoreType = 'vanilla' | 'paper' | 'spigot' | 'fabric' | 'forge';
+export type CoreType = SharedCoreType;
 export type ServerOrigin = 'managed' | 'imported';
 
 export interface ServerInstance {

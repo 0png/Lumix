@@ -58,7 +58,8 @@ function registerHandlers(): void {
           data.coreType,
           data.mcVersion,
           data.targetDir,
-          data.serverId || data.targetDir
+          data.serverId || data.targetDir,
+          { javaPath: data.javaPath }
         );
         return { success: true, data: jarPath };
       } catch (error) {

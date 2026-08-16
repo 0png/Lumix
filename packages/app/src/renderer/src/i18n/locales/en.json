@@ -133,6 +133,8 @@
     "downloadingDescription": "The server core is still being prepared. It can start after the download finishes.",
     "overview": "Overview",
     "launchPanel": "Launch Panel",
+    "identity": "Server profile",
+    "moreActions": "More actions",
     "runtimeState": "Runtime State",
     "runtimeRunningDescription": "The server is running and the console will show live output. Settings are temporarily locked.",
     "runtimeTransitionDescription": "The server is changing state. Wait for the current action to finish.",
@@ -147,8 +149,13 @@
     "consoleExitFullscreen": "Exit Fullscreen",
     "connection": {
       "title": "Connection Info & Diagnostics",
+      "bentoDescription": "Copy common addresses and review listening, binding, and firewall status at a glance.",
       "copy": "Copy",
+      "copied": "Copied",
       "refresh": "Refresh",
+      "retry": "Retry",
+      "unavailableTitle": "Connection info is unavailable",
+      "unavailableDescription": "Lumix could not retrieve the latest connection status. Try again in a moment.",
       "statusTitle": "Current state",
       "bindingTitle": "Binding",
       "firewallTitle": "Firewall hint",
@@ -436,7 +443,7 @@
     "options": {
       "standard": {
         "title": "Create a new server",
-        "description": "Start clean with Vanilla, Paper, Fabric, or Forge.",
+        "description": "Start clean with Vanilla, Paper, Purpur, Fabric, Forge, or NeoForge.",
         "action": "Choose core and version"
       },
       "modpack": {
@@ -498,8 +505,10 @@
     "ramProfiles": {
       "vanilla": "Vanilla usually needs less memory and fits smaller worlds well.",
       "paper": "Paper is suited for everyday multiplayer servers and usually runs efficiently.",
+      "purpur": "Purpur extends Paper with performance and gameplay controls for highly customized communities.",
       "fabric": "Fabric is friendlier to modded and performance-focused setups, so leave some headroom.",
-      "forge": "Forge and larger modpacks need more memory, so start higher."
+      "forge": "Forge and larger modpacks need more memory, so start higher.",
+      "neoforge": "NeoForge and larger modpacks need more memory, so leave plenty of headroom."
     },
     "steps": {
       "name": {
@@ -532,6 +541,10 @@
         "description": "A common high-performance server core with mature plugin support.",
         "usage": "Best for community servers, day-to-day multiplayer, and stable TPS."
       },
+      "purpur": {
+        "description": "Built on Paper with extensive gameplay and performance controls.",
+        "usage": "Best for communities that need Paper plugin compatibility and deep customization."
+      },
       "fabric": {
         "description": "A lightweight modding core that usually updates quickly.",
         "usage": "Best for performance mods, technical playstyles, and lean mod stacks."
@@ -539,6 +552,10 @@
       "forge": {
         "description": "Traditional large mod ecosystem with broad compatibility.",
         "usage": "Best for classic modpacks and content-heavy tech or adventure servers."
+      },
+      "neoforge": {
+        "description": "A modern branch of the Forge ecosystem for current-generation mods and modpacks.",
+        "usage": "Best for NeoForge modpacks, large modern mod sets, and ongoing updates."
       }
     },
     "review": {
@@ -570,6 +587,9 @@
       "playerData": "Has player data",
       "launchJar": "Launch jar",
       "selectJar": "Select a launch jar",
+      "launchTarget": "Launch target",
+      "selectLaunchTarget": "Select a launch jar or Loader args file",
+      "loaderArgs": "Loader args: {{path}}",
       "selectCoreType": "Select a core type",
       "detectedInfo": "Detected details",
       "warnings": "Warnings",
@@ -619,7 +639,7 @@
     },
     "warningMessages": {
       "unsupportedLoader": "{{loader}} modpacks are not supported yet.",
-      "missingLoader": "No Fabric or Forge loader information was found.",
+      "missingLoader": "No Fabric, Forge, or NeoForge loader information was found.",
       "clientOnlyFiles": "{{count}} client-only files were detected and will be skipped for the server.",
       "reservedFiles": "{{count}} items that could overwrite Lumix server control files will be skipped.",
       "curseForgeAuth": "{{count}} CurseForge manifest files require API authorization; only content bundled in the archive will be loaded."
@@ -647,7 +667,7 @@
       "duplicateName": "A server with this name already exists",
       "invalidArchive": "The modpack is invalid, damaged, or exceeds the safety limit",
       "unsupportedFormat": "No supported Modrinth or CurseForge modpack index was found",
-      "unsupportedLoader": "Only Fabric and Forge modpacks are currently supported",
+      "unsupportedLoader": "Only Fabric, Forge, and NeoForge modpacks are currently supported",
       "incomplete": "The modpack still contains required files that cannot be retrieved automatically",
       "noJava": "No Java installation compatible with this Minecraft version was found"
     }
@@ -655,9 +675,11 @@
   "coreType": {
     "vanilla": "Vanilla",
     "paper": "Paper",
+    "purpur": "Purpur",
     "spigot": "Spigot",
     "fabric": "Fabric",
-    "forge": "Forge"
+    "forge": "Forge",
+    "neoforge": "NeoForge"
   },
   "settings": {
     "title": "Settings",

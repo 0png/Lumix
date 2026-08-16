@@ -133,6 +133,8 @@
     "downloadingDescription": "伺服器核心仍在準備中，下載完成後即可啟動。",
     "overview": "總覽",
     "launchPanel": "啟動面板",
+    "identity": "伺服器資訊",
+    "moreActions": "更多操作",
     "runtimeState": "運行狀態",
     "runtimeRunningDescription": "伺服器正在運行，控制台會顯示即時輸出；設定類操作會暫時鎖定。",
     "runtimeTransitionDescription": "伺服器正在切換狀態，請等待目前動作完成。",
@@ -147,8 +149,13 @@
     "consoleExitFullscreen": "關閉全螢幕",
     "connection": {
       "title": "連線資訊與診斷",
+      "bentoDescription": "快速複製常用位址，並檢查監聽、綁定與防火牆狀態。",
       "copy": "複製",
+      "copied": "已複製",
       "refresh": "重新整理",
+      "retry": "重試",
+      "unavailableTitle": "目前無法載入連線資訊",
+      "unavailableDescription": "Lumix 沒有取得最新的連線狀態，請稍後再試。",
       "statusTitle": "目前狀態",
       "bindingTitle": "綁定位址",
       "firewallTitle": "防火牆提示",
@@ -436,7 +443,7 @@
     "options": {
       "standard": {
         "title": "建立新伺服器",
-        "description": "從 Vanilla、Paper、Fabric 或 Forge 建立乾淨的伺服器。",
+        "description": "從 Vanilla、Paper、Purpur、Fabric、Forge 或 NeoForge 建立乾淨的伺服器。",
         "action": "選擇核心與版本"
       },
       "modpack": {
@@ -498,8 +505,10 @@
     "ramProfiles": {
       "vanilla": "原版需求較低，適合少量玩家與輕量世界。",
       "paper": "Paper 適合多人日常伺服器，通常比原版更有效率。",
+      "purpur": "Purpur 延伸 Paper 的效能與玩法設定，適合高度自訂的社群服。",
       "fabric": "Fabric 對模組與效能插件更友善，建議保留額外空間。",
-      "forge": "Forge 與大型模組包較吃記憶體，建議從較高配置開始。"
+      "forge": "Forge 與大型模組包較吃記憶體，建議從較高配置開始。",
+      "neoforge": "NeoForge 與大型模組包需要較多記憶體，建議保留充足空間。"
     },
     "steps": {
       "name": {
@@ -532,6 +541,10 @@
         "description": "常見高效能核心，插件生態成熟。",
         "usage": "適合多人社群服、日常營運與需要穩定 TPS 的情境。"
       },
+      "purpur": {
+        "description": "以 Paper 為基礎，加入大量玩法與效能調整選項。",
+        "usage": "適合需要 Paper 插件相容性與高度客製玩法的社群服。"
+      },
       "fabric": {
         "description": "輕量模組核心，更新通常較快。",
         "usage": "適合效能模組、技術向玩法與精簡模組組合。"
@@ -539,6 +552,10 @@
       "forge": {
         "description": "傳統大型模組生態，兼容度高。",
         "usage": "適合經典模組包、內容量大的冒險或科技服。"
+      },
+      "neoforge": {
+        "description": "現代 Forge 生態分支，支援新世代模組與模組包。",
+        "usage": "適合 NeoForge 模組包、現代大型模組組合與長期更新。"
       }
     },
     "review": {
@@ -570,6 +587,9 @@
       "playerData": "含玩家資料",
       "launchJar": "啟動 jar",
       "selectJar": "選擇啟動 jar",
+      "launchTarget": "啟動目標",
+      "selectLaunchTarget": "選擇啟動 jar 或 Loader args file",
+      "loaderArgs": "Loader args：{{path}}",
       "selectCoreType": "選擇核心類型",
       "detectedInfo": "偵測資訊",
       "warnings": "警告與提醒",
@@ -619,7 +639,7 @@
     },
     "warningMessages": {
       "unsupportedLoader": "目前尚未支援 {{loader}} 模組包。",
-      "missingLoader": "找不到 Fabric 或 Forge Loader 資訊。",
+      "missingLoader": "找不到 Fabric、Forge 或 NeoForge Loader 資訊。",
       "clientOnlyFiles": "已辨識 {{count}} 個純客戶端檔案，建立伺服器時會自動略過。",
       "reservedFiles": "已略過 {{count}} 個可能覆寫 Lumix 伺服器控制檔的項目。",
       "curseForgeAuth": "清單中有 {{count}} 個 CurseForge 檔案需要 API 授權；目前只會載入壓縮檔內附內容。"
@@ -647,17 +667,19 @@
       "duplicateName": "伺服器名稱已存在，請使用其他名稱",
       "invalidArchive": "模組包檔案無效、損毀或超過安全限制",
       "unsupportedFormat": "找不到支援的 Modrinth 或 CurseForge 模組包索引",
-      "unsupportedLoader": "目前只支援 Fabric 與 Forge 模組包",
+      "unsupportedLoader": "目前只支援 Fabric、Forge 與 NeoForge 模組包",
       "incomplete": "模組包仍有無法自動取得的必要檔案",
       "noJava": "找不到適用於此 Minecraft 版本的 Java"
     }
   },
   "coreType": {
-    "vanilla": "原版",
+    "vanilla": "Vanilla",
     "paper": "Paper",
+    "purpur": "Purpur",
     "spigot": "Spigot",
     "fabric": "Fabric",
-    "forge": "Forge"
+    "forge": "Forge",
+    "neoforge": "NeoForge"
   },
   "settings": {
     "title": "設定",

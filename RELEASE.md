@@ -14,13 +14,15 @@ Lumix 1.0.0 是一個 Windows-first 的 Minecraft 伺服器啟動與管理工具
 
 ### 伺服器管理
 - 建立、啟動、停止、刪除 Minecraft 伺服器
-- 支援 Vanilla、Paper、Fabric、Forge 核心
+- 支援 Vanilla、Paper、Purpur、Fabric、Forge、NeoForge 核心
 - 即時 console 輸出與指令輸入
 - 圖形化編輯 `server.properties`
 - 一鍵開啟伺服器資料夾
 
 ### 匯入與首次使用流程
 - 匯入既有伺服器資料夾並納入 Lumix 管理
+- 自動辨識 Purpur，以及使用 `run.bat` / args file 啟動的 Forge、NeoForge 伺服器
+- 支援 Modrinth 與 CurseForge 格式的 NeoForge 模組包
 - 建立新伺服器後顯示首次引導 checklist
 - 快速導向 Java、記憶體、設定、連線資訊與啟動動作
 
@@ -69,7 +71,7 @@ Lumix 1.0.0 是一個 Windows-first 的 Minecraft 伺服器啟動與管理工具
 ## 已知限制
 
 - 產品目前以 Windows-first 為主，本次正式版發布與驗證目標為 Windows 桌面環境
-- Forge 部分版本仍可能需要額外安裝處理或手動介入
+- 少數非標準或自行修改過啟動腳本的模組伺服器，匯入時仍可能需要手動確認核心與版本
 - Lumix 可提供區網與外網連線診斷，但不會自動設定路由器轉發或代管遠端連線
 - 自動更新需要 GitHub Release 資產與版本資訊正確發布後才會生效
 

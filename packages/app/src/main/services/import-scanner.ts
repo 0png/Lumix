@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { CoreType, ImportCandidateDto } from '../../shared/ipc-types';
+import { getNeoForgeMinecraftVersion } from './download-service';
 
 const WORLD_DIR_CANDIDATES = ['world', 'world_nether', 'world_the_end'];
 
@@ -22,14 +23,15 @@ export class ImportScanner {
       .sort((a, b) => this.rankJarCandidate(b) - this.rankJarCandidate(a) || a.localeCompare(b));
 
     const serverJarPath = jarCandidates[0];
+    const loaderLaunch = await this.detectLoaderLaunch(resolvedDirectory, filePaths.get('run.bat'));
     const eulaAccepted = await this.readEulaAccepted(filePaths.get('eula.txt'));
-    const detectedCoreType = this.detectCoreType(jarCandidates, entryNames);
-    const detectedMcVersion = this.detectMcVersion(jarCandidates);
+    const detectedCoreType = this.detectCoreType(jarCandidates, entryNames, loaderLaunch?.argsFile);
+    const detectedMcVersion = this.detectMcVersion(jarCandidates, loaderLaunch?.argsFile);
     const hasWorldData = entries.some((entry) => entry.isDirectory() && WORLD_DIR_CANDIDATES.includes(entry.name.toLowerCase()));
     const hasSpigotJarCandidate = jarCandidates.some((jarPath) => path.basename(jarPath).toLowerCase().includes('spigot'));
 
     const warnings: string[] = [];
-    if (!serverJarPath) warnings.push('找不到可直接啟動的 server jar。');
+    if (!serverJarPath && !loaderLaunch) warnings.push('找不到可直接啟動的 server jar 或 Loader args file。');
     if (!detectedCoreType) warnings.push('無法可靠判斷伺服器核心，匯入前請手動確認。');
     if (!detectedMcVersion) warnings.push('無法可靠判斷 Minecraft 版本，匯入前請手動確認。');
     if (hasSpigotJarCandidate) warnings.push('目前匯入流程不提供 Spigot core，請改選其他已支援的核心類型。');
@@ -43,6 +45,8 @@ export class ImportScanner {
       detectedMcVersion,
       serverJarPath,
       jarCandidates,
+      launchArgsFile: loaderLaunch?.argsFile,
+      userJvmArgsFile: loaderLaunch?.userJvmArgsFile,
       hasEula: entryNames.has('eula.txt'),
       eulaAccepted,
       hasServerProperties: entryNames.has('server.properties'),
@@ -81,12 +85,27 @@ export class ImportScanner {
     }
   }
 
-  private detectCoreType(jarCandidates: string[], entryNames: Set<string>): CoreType | undefined {
+  private detectCoreType(
+    jarCandidates: string[],
+    entryNames: Set<string>,
+    launchArgsFile?: string
+  ): CoreType | undefined {
+    const normalizedArgsFile = launchArgsFile?.replace(/\\/g, '/').toLowerCase();
+    if (normalizedArgsFile?.includes('/net/neoforged/neoforge/')) return 'neoforge';
+    if (normalizedArgsFile?.includes('/net/minecraftforge/forge/')) return 'forge';
+
+    // 先找名稱明確的 Loader / fork，避免同目錄的通用 server.jar 蓋掉判斷。
     for (const jarPath of jarCandidates) {
       const lower = path.basename(jarPath).toLowerCase();
+      if (lower.includes('neoforge')) return 'neoforge';
+      if (lower.includes('purpur')) return 'purpur';
       if (lower.includes('paper')) return 'paper';
       if (lower.includes('fabric')) return 'fabric';
       if (lower.includes('forge')) return 'forge';
+    }
+
+    for (const jarPath of jarCandidates) {
+      const lower = path.basename(jarPath).toLowerCase();
       if (lower === 'server.jar' || lower.startsWith('minecraft_server')) return 'vanilla';
     }
 
@@ -95,11 +114,19 @@ export class ImportScanner {
     return undefined;
   }
 
-  private detectMcVersion(jarCandidates: string[]): string | undefined {
+  private detectMcVersion(jarCandidates: string[], launchArgsFile?: string): string | undefined {
     for (const jarPath of jarCandidates) {
       const match = path.basename(jarPath).match(/(?:^|[^0-9])((?:1\.\d+(?:\.\d+)?)|(?:\d+\.\d+(?:\.\d+)?))(?:[^0-9]|$)/);
       if (match?.[1]) {
         return match[1];
+      }
+    }
+
+    if (launchArgsFile) {
+      const normalized = launchArgsFile.replace(/\\/g, '/');
+      const neoForgeMatch = normalized.match(/\/net\/neoforged\/neoforge\/([^/]+)\/[^/]*args\.txt$/i);
+      if (neoForgeMatch?.[1]) {
+        return getNeoForgeMinecraftVersion(neoForgeMatch[1]) ?? undefined;
       }
     }
     return undefined;
@@ -109,11 +136,36 @@ export class ImportScanner {
     const name = path.basename(jarPath).toLowerCase();
     if (name === 'fabric-server-launch.jar') return 100;
     if (name === 'server.jar') return 90;
+    if (name.includes('purpur')) return 85;
     if (name.includes('paper')) return 80;
     if (name.includes('spigot')) return 70;
     if (name.includes('fabric')) return 60;
+    if (name.includes('neoforge')) return 55;
     if (name.includes('forge')) return 50;
     if (name.startsWith('minecraft_server')) return 40;
     return 10;
+  }
+
+  private async detectLoaderLaunch(
+    directory: string,
+    runBatPath?: string
+  ): Promise<{ argsFile: string; userJvmArgsFile?: string } | undefined> {
+    if (!runBatPath) return undefined;
+    try {
+      const content = await fs.readFile(runBatPath, 'utf-8');
+      const argsMatch = content.match(/@(["']?)(libraries[^\s"']+args\.txt)\1/i);
+      if (!argsMatch?.[2]) return undefined;
+
+      const argsFile = path.resolve(directory, argsMatch[2]);
+      await fs.access(argsFile);
+      const userJvmArgsFile = path.join(directory, 'user_jvm_args.txt');
+      const hasUserJvmArgs = await fs.access(userJvmArgsFile).then(() => true).catch(() => false);
+      return {
+        argsFile,
+        userJvmArgsFile: hasUserJvmArgs ? userJvmArgsFile : undefined,
+      };
+    } catch {
+      return undefined;
+    }
   }
 }
