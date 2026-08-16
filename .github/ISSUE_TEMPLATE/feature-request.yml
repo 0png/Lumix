@@ -1,0 +1,48 @@
+name: Feature request / 功能建議
+description: Propose an improvement to Lumix / 提議 Lumix 改善方向
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Strong proposals start with the user problem, not only a preferred implementation.
+
+        好的提案會先說明使用者問題，而不只是一種預設解法。
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting / 提交前確認
+      options:
+        - label: I searched existing issues and did not find the same request. / 我已搜尋現有 Issue，沒有找到相同提案。
+          required: true
+        - label: This request is related to Lumix's Minecraft server management scope. / 此提案屬於 Lumix 的 Minecraft 伺服器管理範圍。
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case / 問題或使用情境
+      description: Who is affected, and what is difficult today? / 誰會遇到問題？目前哪裡困難？
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience / 建議體驗
+      description: Describe the outcome and workflow you would like. / 說明理想結果與操作流程。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered / 曾考慮的替代方案
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context / 其他資訊
+      description: Mockups, examples, and links are welcome. / 歡迎附上 mockup、範例與連結。

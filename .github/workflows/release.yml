@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Validate, package, and publish
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Verify tag and package versions
+        shell: pwsh
+        run: |
+          $rootVersion = node -p "require('./package.json').version"
+          $appVersion = node -p "require('./packages/app/package.json').version"
+          $expectedTag = "v$rootVersion"
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag $env:GITHUB_REF_NAME does not match package version $rootVersion. Expected $expectedTag."
+          }
+          if ($appVersion -ne $rootVersion) {
+            throw "Root version $rootVersion and app version $appVersion do not match."
+          }
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build installer
+        run: pnpm --filter @lumix/app build:win
+
+      - name: Verify packaged application starts
+        shell: pwsh
+        run: |
+          $executable = Resolve-Path "packages/app/dist/win-unpacked/Lumix.exe"
+          $profile = Join-Path $env:RUNNER_TEMP "lumix-smoke-profile"
+          New-Item -ItemType Directory -Path $profile -Force | Out-Null
+          $process = Start-Process -FilePath $executable -ArgumentList "--user-data-dir=$profile" -PassThru -WindowStyle Hidden
+          try {
+            Start-Sleep -Seconds 8
+            if ($process.HasExited) {
+              throw "Packaged Lumix exited during the startup smoke test (exit code $($process.ExitCode))."
+            }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+          }
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = node -p "require('./package.json').version"
+          if (-not (gh release view $tag 2>$null)) {
+            gh release create $tag --verify-tag --title "Lumix $version" --generate-notes
+          }
+          gh release upload $tag `
+            "packages/app/dist/Lumix-Setup-$version.exe" `
+            "packages/app/dist/Lumix-Setup-$version.exe.blockmap" `
+            "packages/app/dist/latest.yml" `
+            --clobber

@@ -19,6 +19,7 @@
 <p align="center">
   <a href="https://github.com/0png/Lumix/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/0png/Lumix?display_name=tag&sort=semver" /></a>
   <a href="https://github.com/0png/Lumix/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/0png/Lumix/total?logo=github" /></a>
+  <a href="https://github.com/0png/Lumix/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/0png/Lumix/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/0png/Lumix" /></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows11&logoColor=white" />
 </p>
@@ -111,7 +112,7 @@ Lumix 能顯示區網位址並提供外網連線檢查方向，但不會自動�
 
 ## 從原始碼執行
 
-需要 Node.js 20+ 與 pnpm 8+。
+需要 Node.js 22+ 與 pnpm 10+。
 
 ```bash
 git clone https://github.com/0png/Lumix.git
@@ -134,9 +135,9 @@ pnpm --filter @lumix/app build:win
 
 ## 參與專案
 
-- 遇到問題：先搜尋或建立 [Issue](https://github.com/0png/Lumix/issues)
-- 有改善想法：歡迎提出 Issue 或 Pull Request
-- 提交程式碼前：請至少執行受影響範圍的 typecheck、lint 與 test
+- 遇到問題：使用 [Issue 表單](https://github.com/0png/Lumix/issues/new/choose)
+- 想參與開發：閱讀[貢獻指南](.github/CONTRIBUTING.md)與[行為準則](.github/CODE_OF_CONDUCT.md)
+- 發現漏洞：依照[安全政策](.github/SECURITY.md)私下通報，請勿建立公開 Issue
 
 ## 致謝
 

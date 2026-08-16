@@ -19,6 +19,7 @@
 <p align="center">
   <a href="https://github.com/0png/Lumix/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/0png/Lumix?display_name=tag&sort=semver" /></a>
   <a href="https://github.com/0png/Lumix/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/0png/Lumix/total?logo=github" /></a>
+  <a href="https://github.com/0png/Lumix/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/0png/Lumix/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/0png/Lumix" /></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows11&logoColor=white" />
 </p>
@@ -111,7 +112,7 @@ Lumix can show LAN addresses and guide external connection troubleshooting, but 
 
 ## Run from source
 
-Requires Node.js 20+ and pnpm 8+.
+Requires Node.js 22+ and pnpm 10+.
 
 ```bash
 git clone https://github.com/0png/Lumix.git
@@ -134,9 +135,9 @@ Built with Electron, Vite, React, TypeScript, Tailwind CSS, and Radix UI.
 
 ## Contributing
 
-- Found a problem? Search existing issues or [open a new one](https://github.com/0png/Lumix/issues)
-- Have an improvement in mind? Issues and pull requests are welcome
-- Before submitting code, run typecheck, lint, and tests for the affected area
+- Found a problem? Use the structured [issue forms](https://github.com/0png/Lumix/issues/new/choose)
+- Want to contribute? Read the [contributing guide](.github/CONTRIBUTING.md) and [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+- Found a vulnerability? Follow the [security policy](.github/SECURITY.md) and report it privately
 
 ## Acknowledgements
 

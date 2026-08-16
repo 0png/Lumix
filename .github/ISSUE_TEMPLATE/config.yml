@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability / 安全漏洞
+    url: https://github.com/0png/Lumix/security/advisories/new
+    about: Report security issues privately. 請勿公開安全漏洞，請改用私人通報。
+  - name: Latest release / 最新版本
+    url: https://github.com/0png/Lumix/releases/latest
+    about: Check whether the issue is already fixed in the latest release. 請先確認最新版是否已修正。

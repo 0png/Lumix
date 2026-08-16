@@ -1,0 +1,6 @@
+* @0png
+
+/.github/ @0png
+/packages/app/src/main/ @0png
+/packages/app/src/preload/ @0png
+/packages/app/src/shared/ @0png

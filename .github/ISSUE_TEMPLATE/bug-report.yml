@@ -1,0 +1,83 @@
+name: Bug report / 錯誤回報
+description: Report a reproducible problem in Lumix / 回報可重現的 Lumix 問題
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Lumix. Please search existing issues and remove tokens, usernames, IP addresses, and private paths from logs.
+
+        感謝協助改善 Lumix。請先搜尋現有 Issue，並從記錄中移除權杖、使用者名稱、IP 與私人路徑。
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting / 提交前確認
+      options:
+        - label: I searched existing issues and did not find a duplicate. / 我已搜尋現有 Issue，沒有找到重複回報。
+          required: true
+        - label: I reproduced this with the latest Lumix release. / 我已在最新版 Lumix 重現此問題。
+          required: true
+        - label: This is not a security vulnerability. / 這不是安全漏洞。
+          required: true
+
+  - type: input
+    id: lumix-version
+    attributes:
+      label: Lumix version / Lumix 版本
+      placeholder: e.g. 1.1.1
+    validations:
+      required: true
+
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version / Windows 版本
+      placeholder: e.g. Windows 11 24H2
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Server environment / 伺服器環境
+      description: Include Minecraft version, server core, Java version, and modpack if relevant. / 請提供 Minecraft、核心、Java 與模組包版本（若相關）。
+      placeholder: Minecraft 1.21.1, Paper, Java 21...
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened? / 發生了什麼？
+      description: Describe the problem and its impact. / 說明問題與造成的影響。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / 重現步驟
+      placeholder: |
+        1. Open...
+        2. Select...
+        3. See...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior / 預期行為
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots / 記錄或截圖
+      description: Drag files here. Redact sensitive data first. / 可直接拖曳檔案，請先遮蔽敏感資訊。
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context / 其他資訊
