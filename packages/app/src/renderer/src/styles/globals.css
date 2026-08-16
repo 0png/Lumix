@@ -28,6 +28,11 @@
     --glow-green: 142 76% 36%;
     --glow-yellow: 48 96% 53%;
     --glow-primary: 240 5% 15%;
+    --motion-fast: 100ms;
+    --motion-standard: 140ms;
+    --motion-panel: 180ms;
+    --ease-interface: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .dark {
@@ -948,5 +953,240 @@
   .server-primary-action-content > span,
   .server-copy-content > span {
     filter: none;
+  }
+}
+
+/* Settings workspace modal */
+@keyframes settings-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes settings-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes settings-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes settings-modal-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 4px)) scale(0.985);
+  }
+}
+
+@keyframes settings-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-workspace-overlay {
+  background: hsl(240 10% 3.9% / 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.settings-workspace-overlay[data-state='open'] {
+  animation: settings-overlay-in var(--motion-panel) ease-out both;
+}
+
+.settings-workspace-overlay[data-state='closed'] {
+  animation: settings-overlay-out var(--motion-standard) ease-in both;
+}
+
+.settings-workspace-modal[data-state='open'] {
+  animation: settings-modal-in 260ms var(--ease-out-back) both;
+  transform-origin: center;
+}
+
+.settings-workspace-modal[data-state='closed'] {
+  animation: settings-modal-out var(--motion-standard) cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.settings-workspace-modal > button {
+  transition:
+    color var(--motion-fast) ease-out,
+    background-color var(--motion-fast) ease-out,
+    opacity var(--motion-fast) ease-out,
+    transform var(--motion-fast) ease-out;
+}
+
+.settings-workspace-modal > button:not(:disabled):active {
+  transform: scale(0.92);
+}
+
+.settings-panel-enter {
+  animation: settings-panel-in 160ms var(--ease-interface) both;
+}
+
+.settings-nav-item {
+  transition:
+    color var(--motion-fast) ease-out,
+    background-color var(--motion-fast) ease-out,
+    box-shadow var(--motion-fast) ease-out,
+    transform var(--motion-fast) ease-out;
+}
+
+.settings-nav-item:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.3);
+}
+
+.settings-nav-item:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+.settings-nav-chevron {
+  transition:
+    opacity var(--motion-standard) ease-out,
+    transform var(--motion-standard) var(--ease-interface);
+}
+
+.settings-nav-item[aria-current='page'] .settings-nav-chevron {
+  transform: translateX(1px);
+}
+
+.settings-select-trigger {
+  transition:
+    color var(--motion-fast) ease-out,
+    border-color var(--motion-fast) ease-out,
+    background-color var(--motion-fast) ease-out,
+    box-shadow var(--motion-standard) ease-out,
+    transform var(--motion-fast) ease-out;
+}
+
+.settings-select-trigger:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+.settings-select-trigger > svg:last-child {
+  transition: transform var(--motion-standard) var(--ease-interface);
+}
+
+.settings-select-trigger[data-state='open'] > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.settings-select-content[data-state='open'],
+.settings-select-content[data-state='closed'] {
+  --tw-enter-scale: 0.985 !important;
+  --tw-exit-scale: 0.985 !important;
+  animation-duration: var(--motion-standard);
+  animation-timing-function: var(--ease-interface);
+}
+
+.settings-memory-panel {
+  transition:
+    border-color var(--motion-standard) ease-out,
+    background-color var(--motion-standard) ease-out,
+    box-shadow var(--motion-standard) ease-out;
+}
+
+.settings-slider [role='slider'] {
+  transition:
+    transform 120ms var(--ease-interface),
+    box-shadow 120ms ease-out,
+    border-color 120ms ease-out;
+}
+
+.settings-slider [role='slider']:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.09);
+}
+
+.settings-slider [role='slider']:active {
+  transform: scale(0.94);
+  box-shadow: 0 0 0 6px hsl(var(--primary) / 0.12);
+}
+
+.settings-action {
+  transition:
+    color var(--motion-fast) ease-out,
+    border-color var(--motion-fast) ease-out,
+    background-color var(--motion-fast) ease-out,
+    transform var(--motion-fast) ease-out;
+}
+
+.settings-action:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+.settings-java-item {
+  transition:
+    border-color var(--motion-standard) ease-out,
+    background-color var(--motion-standard) ease-out,
+    transform var(--motion-standard) var(--ease-interface);
+}
+
+.settings-java-icon {
+  transition:
+    color var(--motion-standard) ease-out,
+    background-color var(--motion-standard) ease-out,
+    transform var(--motion-standard) var(--ease-interface);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .settings-memory-panel:hover,
+  .settings-java-item:hover {
+    border-color: hsl(var(--foreground) / 0.16);
+    background-color: hsl(var(--muted) / 0.42);
+  }
+
+  .settings-java-item:hover .settings-java-icon {
+    transform: translateY(-1px) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-workspace-overlay,
+  .settings-workspace-modal,
+  .settings-panel-enter,
+  .settings-select-content {
+    animation: none !important;
+  }
+
+  .settings-workspace-modal > button,
+  .settings-nav-item,
+  .settings-nav-chevron,
+  .settings-select-trigger,
+  .settings-select-trigger > svg:last-child,
+  .settings-memory-panel,
+  .settings-slider [role='slider'],
+  .settings-action,
+  .settings-java-item,
+  .settings-java-icon {
+    transition: none !important;
+  }
+
+  .settings-workspace-modal,
+  .settings-panel-enter,
+  .settings-nav-item,
+  .settings-select-trigger,
+  .settings-slider [role='slider'],
+  .settings-action,
+  .settings-java-icon {
+    transform: none !important;
+  }
+
+  .settings-workspace-modal {
+    transform: translate(-50%, -50%) !important;
   }
 }

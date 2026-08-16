@@ -7,13 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-16
+
 ### Added
 - Full NeoForge server support, including official version discovery, installer-based setup, args-file startup, existing-server import, and NeoForge modpacks
 - Purpur server support through the official Purpur v2 API, including version discovery, latest-build downloads, import detection, and dedicated UI branding
+- Modpack import for Modrinth and CurseForge packages, including review, validation, download progress, and server creation
+- View-level error recovery so renderer failures can return safely to the server dashboard
 
 ### Changed
 - Generalized modern Forge startup metadata into a shared loader args-file flow with legacy `forge-config.json` compatibility
 - Expanded server creation, import review, core icons, memory recommendations, and Traditional Chinese / English copy for NeoForge and Purpur
+- Reworked the server dashboard, detail view, connection diagnostics, sidebar, title bar, and creation entry points for a denser desktop workflow
+- Replaced the standalone settings page with a large General / Java workspace modal and restrained Linear-style micro-interactions
+- Added shared motion timing, an ease-out-back modal entrance, and reduced-motion fallbacks for settings controls
+
+### Fixed
+- Prevented blank or black renderer views caused by stale scroll positions when entering a shorter view
+- Added a view error boundary and recovery path for unexpected renderer failures
+- Improved modern Forge and NeoForge import, startup metadata, download, and lifecycle handling
+
+### Technical
+- Expanded automated coverage for downloads, Forge installation, imports, modpacks, server lifecycle, connection diagnostics, and backup flows
+- Verified the release candidate with typecheck, lint, 45 automated tests, production build, and Windows packaging
 
 ## [1.0.0] - 2026-05-17
 

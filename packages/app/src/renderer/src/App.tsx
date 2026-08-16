@@ -25,14 +25,14 @@ import {
   type LogEntry,
   type CreateServerData,
 } from '@/components/server';
-import { SettingsView, AboutView } from '@/components/settings';
+import { SettingsDialog, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
 import { useJava } from '@/hooks/use-java';
 import { toast } from '@/lib/toast';
 import type { ImportServerRequest } from '../../shared/ipc-types';
 import '@/i18n';
 
-type ViewType = 'servers' | 'server-settings' | 'settings' | 'about';
+type ViewType = 'servers' | 'server-settings' | 'about';
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
 const POST_CREATE_ONBOARDING_PROMPT_KEY = 'lumix.postCreateOnboardingPrompt.enabled';
 const HIDDEN_ONBOARDING_SERVER_IDS_KEY = 'lumix.postCreateOnboarding.hiddenServerIds';
@@ -98,12 +98,14 @@ function AppContent() {
   } = useServers();
   const {
     installations: javaInstallations,
+    loading: javaLoading,
     detect: detectJava,
   } = useJava();
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAddServerDialog, setShowAddServerDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showImportModpackDialog, setShowImportModpackDialog] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
@@ -341,12 +343,6 @@ function AppContent() {
     }
   }, [detectJava, t]);
 
-  const handleRemoveJavaPath = useCallback(async (_path: string) => {
-    // Java installations 是由系統偵測的，無法手動移除
-    // 這個功能暫時不實作
-    toast.info(t('toast.javaCannotRemove'));
-  }, [t]);
-
   useEffect(() => {
     const storedPreference = window.localStorage.getItem(POST_CREATE_ONBOARDING_PROMPT_KEY);
     if (storedPreference === 'false') {
@@ -443,15 +439,6 @@ function AppContent() {
     }
 
     switch (currentView) {
-      case 'settings':
-        return (
-          <SettingsView
-            onBack={handleBackToServers}
-            javaInstallations={javaInstallations}
-            onAddJavaPath={handleAddJavaPath}
-            onRemoveJavaPath={handleRemoveJavaPath}
-          />
-        );
       case 'about':
         return <AboutView onBack={handleBackToServers} />;
       default:
@@ -522,7 +509,7 @@ function AppContent() {
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
                 onCreateServer={handleOpenAddServer}
-                onOpenSettings={() => setCurrentView('settings')}
+                onOpenSettings={() => setShowSettingsDialog(true)}
                 javaInstallationsCount={javaInstallations.length}
                 downloadProgress={new Map(
                   Array.from(downloadProgress.entries()).map(([serverId, progress]) => [
@@ -561,11 +548,11 @@ function AppContent() {
       servers={sidebarServers}
       onGoHome={handleGoHome}
       onCreateServer={handleOpenAddServer}
-      onOpenSettings={() => setCurrentView('settings')}
+      onOpenSettings={() => setShowSettingsDialog(true)}
       onOpenAbout={() => setCurrentView('about')}
       selectedServerId={selectedServerId}
       onSelectServer={handleSelectServer}
-      currentView={currentView}
+      currentView={showSettingsDialog ? 'settings' : currentView}
     >
       <ViewErrorBoundary
         key={`${currentView}:${selectedServerId ?? 'dashboard'}`}
@@ -583,6 +570,14 @@ function AppContent() {
         onCreateStandard={handleOpenCreateServer}
         onImportModpack={handleOpenImportModpack}
         onImportExisting={handleOpenImportServer}
+      />
+
+      <SettingsDialog
+        open={showSettingsDialog}
+        onOpenChange={setShowSettingsDialog}
+        javaInstallations={javaInstallations}
+        javaLoading={javaLoading}
+        onDetectJava={handleAddJavaPath}
       />
 
       {showCreateDialog && activeCreateServerPresentation === 'modal' ? (

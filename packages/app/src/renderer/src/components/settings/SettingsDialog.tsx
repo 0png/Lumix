@@ -1,17 +1,22 @@
-﻿/**
- * SettingsDialog 元件 - 設定對話框
- * 設計語言與 Lumix 保持一致，優化 1000x600 視窗
- */
-
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sun, Moon, Monitor, FolderOpen, Plus, Trash2, Settings2 } from 'lucide-react';
-import { Dialog } from '@/components/ui/dialog';
-import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
+import {
+  Check,
+  ChevronRight,
+  Coffee,
+  FolderOpen,
+  Palette,
+  RefreshCw,
+  Settings2,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -19,8 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useTheme, type Theme } from '@/contexts';
-import { useLanguage, type Language } from '@/contexts';
+import { useLanguage, useTheme, type Language, type Theme } from '@/contexts';
+import { cn } from '@/lib/utils';
 
 interface JavaInstallation {
   path: string;
@@ -33,12 +38,12 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultRamMax?: number;
   javaInstallations?: JavaInstallation[];
+  javaLoading?: boolean;
   onDefaultRamChange?: (min: number, max: number) => void;
-  onAddJavaPath?: () => void;
-  onRemoveJavaPath?: (path: string) => void;
+  onDetectJava?: () => void | Promise<void>;
 }
 
-const themeIcons = { light: Sun, dark: Moon, system: Monitor };
+type SettingsSection = 'general' | 'java';
 
 const themeOptions: { value: Theme; labelKey: string }[] = [
   { value: 'light', labelKey: 'theme.light' },
@@ -51,24 +56,44 @@ const languageOptions: { value: Language; label: string }[] = [
   { value: 'en', label: 'English' },
 ];
 
-function JavaItem({ java, onRemove }: { java: JavaInstallation; onRemove: () => void }) {
+function SettingRow({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
-      <div className="flex items-center gap-2 min-w-0">
-        <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <div className="min-w-0">
-          <p className="text-xs font-medium">Java {java.majorVersion}</p>
-          <p className="text-[10px] text-muted-foreground truncate">{java.path}</p>
-        </div>
+    <div className="settings-row flex min-h-16 items-center justify-between gap-8 border-b border-border/55 py-3 last:border-b-0">
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-foreground">{title}</p>
+        <p className="mt-0.5 max-w-md text-xs leading-5 text-muted-foreground">{description}</p>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="shrink-0 h-6 w-6 text-destructive hover:text-destructive"
-        onClick={onRemove}
-      >
-        <Trash2 className="h-3 w-3" />
-      </Button>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
+function JavaItem({ java }: { java: JavaInstallation }) {
+  return (
+    <div className="settings-java-item group flex items-center gap-3 rounded-lg border border-border/60 bg-background px-3.5 py-3">
+      <div className="settings-java-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/45">
+        <Coffee className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-[13px] font-medium">Java {java.majorVersion}</p>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {java.version}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground" title={java.path}>
+          {java.path}
+        </p>
+      </div>
+      <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500 opacity-75" aria-hidden="true" />
     </div>
   );
 }
@@ -78,123 +103,220 @@ export function SettingsDialog({
   onOpenChange,
   defaultRamMax = 4096,
   javaInstallations = [],
+  javaLoading = false,
   onDefaultRamChange,
-  onAddJavaPath,
-  onRemoveJavaPath,
+  onDetectJava,
 }: SettingsDialogProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
+  const [section, setSection] = useState<SettingsSection>('general');
   const [ramMax, setRamMax] = useState(defaultRamMax);
 
-  const handleRamChange = (values: number[]) => {
+  useEffect(() => {
+    setRamMax(defaultRamMax);
+  }, [defaultRamMax]);
+
+  const commitRam = (values: number[]) => {
     const value = values[0];
     if (value !== undefined) {
-      setRamMax(value);
       onDefaultRamChange?.(Math.floor(value / 2), value);
     }
   };
 
+  const navigation = [
+    { id: 'general' as const, label: t('settings.general'), icon: Settings2 },
+    { id: 'java' as const, label: t('settings.java'), icon: Coffee },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <WorkspaceDialogContent className="max-h-[500px] sm:max-w-md">
-        <WorkspaceDialogHeader icon={Settings2} eyebrow={t('modal.preferences')} title={t('settings.title')} />
-
-        <WorkspaceDialogBody className="space-y-4">
-          <div className="space-y-3">
-            <h3 className="text-xs font-medium text-muted-foreground">{t('settings.appearance')}</h3>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">{t('settings.theme')}</Label>
-              <div className="flex gap-1.5">
-                {themeOptions.map((option) => {
-                  const Icon = themeIcons[option.value];
-                  return (
-                    <Button
-                      key={option.value}
-                      variant={theme === option.value ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTheme(option.value)}
-                      className="flex-1 h-8 text-xs"
-                    >
-                      <Icon className="mr-1.5 h-3.5 w-3.5" />
-                      {t(option.labelKey)}
-                    </Button>
-                  );
-                })}
-              </div>
+      <DialogContent
+        overlayClassName="settings-workspace-overlay"
+        className="settings-workspace-modal h-[calc(100vh-48px)] max-h-[620px] w-[calc(100vw-48px)] max-w-[920px] grid-cols-[168px_minmax(0,1fr)] grid-rows-[56px_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:rounded-xl"
+      >
+        <header className="col-span-2 flex h-14 items-center border-b border-border/60 px-5 pr-14">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border/70 bg-muted/50">
+              <Settings2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">{t('settings.language')}</Label>
-              <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {languageOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value} className="text-xs">
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <DialogTitle className="text-sm font-semibold tracking-[-0.01em]">
+              {t('settings.title')}
+            </DialogTitle>
+            <DialogDescription className="hidden truncate text-xs sm:block">
+              {t('settings.description')}
+            </DialogDescription>
           </div>
+        </header>
 
-          <Separator />
-
-          <div className="space-y-3">
-            <h3 className="text-xs font-medium text-muted-foreground">{t('settings.defaults')}</h3>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">{t('settings.defaultRam')}</Label>
-                <span className="text-xs text-muted-foreground">{ramMax} MB</span>
-              </div>
-              <Slider
-                value={[ramMax]}
-                onValueChange={handleRamChange}
-                min={512}
-                max={16384}
-                step={512}
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>512 MB</span>
-                <span>16 GB</span>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-muted-foreground">{t('settings.java')}</h3>
-              <Button variant="outline" size="sm" onClick={onAddJavaPath} className="h-7 text-xs">
-                <Plus className="mr-1 h-3 w-3" />
-                {t('common.detect')}
-              </Button>
-            </div>
-
-            {javaInstallations.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-3">
-                {t('settings.javaPath')}
-              </p>
-            ) : (
-              <div className="space-y-1.5 max-h-24 overflow-y-auto">
-                {javaInstallations.map((java) => (
-                  <JavaItem
-                    key={java.path}
-                    java={java}
-                    onRemove={() => onRemoveJavaPath?.(java.path)}
+        <aside className="flex min-h-0 w-[168px] flex-col border-r border-border/60 bg-muted/20 p-2.5">
+          <p className="px-2 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+            {t('settings.navigation')}
+          </p>
+          <nav className="space-y-0.5" aria-label={t('settings.navigation')}>
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const active = section === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={cn(
+                    'settings-nav-item flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs outline-none',
+                    active
+                      ? 'bg-accent text-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--border)/0.45)]'
+                      : 'text-muted-foreground hover:bg-accent/55 hover:text-foreground'
+                  )}
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => setSection(item.id)}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  <ChevronRight
+                    className={cn('settings-nav-chevron h-3 w-3', active ? 'opacity-60' : 'opacity-0')}
+                    aria-hidden="true"
                   />
-                ))}
-              </div>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="mt-auto px-2 py-1 text-[10px] leading-4 text-muted-foreground/65">
+            {t('settings.autoSaveHint')}
+          </div>
+        </aside>
+
+        <main className="modal-scrollbar min-h-0 min-w-0 overflow-y-auto bg-background">
+          <div key={section} className="settings-panel-enter mx-auto max-w-[680px] px-8 py-7">
+            {section === 'general' ? (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">{t('settings.general')}</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {t('settings.generalDescription')}
+                  </p>
+                </div>
+
+                <section aria-labelledby="settings-appearance-heading">
+                  <div className="mb-1 flex items-center gap-2">
+                    <Palette className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    <h3 id="settings-appearance-heading" className="text-xs font-medium">
+                      {t('settings.appearance')}
+                    </h3>
+                  </div>
+                  <SettingRow title={t('settings.theme')} description={t('settings.themeDescription')}>
+                    <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+                      <SelectTrigger className="settings-select-trigger h-8 w-44 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="settings-select-content">
+                        {themeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value} className="text-xs">
+                            {t(option.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </SettingRow>
+                  <SettingRow title={t('settings.language')} description={t('settings.languageDescription')}>
+                    <Select value={language} onValueChange={(value) => setLanguage(value as Language)}>
+                      <SelectTrigger className="settings-select-trigger h-8 w-44 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="settings-select-content">
+                        {languageOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value} className="text-xs">
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </SettingRow>
+                </section>
+
+                <section className="mt-7" aria-labelledby="settings-defaults-heading">
+                  <h3 id="settings-defaults-heading" className="mb-3 text-xs font-medium">
+                    {t('settings.defaults')}
+                  </h3>
+                  <div className="settings-memory-panel rounded-lg border border-border/60 bg-muted/25 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[13px] font-medium">{t('settings.defaultRam')}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                          {t('settings.defaultRamDescription')}
+                        </p>
+                      </div>
+                      <output className="settings-ram-value rounded-md border border-border/60 bg-background px-2 py-1 font-mono text-[11px] tabular-nums">
+                        {ramMax >= 1024 ? `${ramMax / 1024} GB` : `${ramMax} MB`}
+                      </output>
+                    </div>
+                    <Slider
+                      className="settings-slider mt-5"
+                      value={[ramMax]}
+                      onValueChange={(values) => values[0] !== undefined && setRamMax(values[0])}
+                      onValueCommit={commitRam}
+                      min={1024}
+                      max={16384}
+                      step={512}
+                      aria-label={t('settings.defaultRam')}
+                    />
+                    <div className="mt-2 flex justify-between text-[10px] text-muted-foreground/75">
+                      <span>1 GB</span>
+                      <span>16 GB</span>
+                    </div>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <>
+                <div className="mb-6 flex items-start justify-between gap-6">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-[-0.02em]">{t('settings.java')}</h2>
+                    <p className="mt-1 max-w-lg text-xs leading-5 text-muted-foreground">
+                      {t('settings.javaDescription')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="settings-action h-8 shrink-0 text-xs"
+                    onClick={onDetectJava}
+                    disabled={javaLoading}
+                  >
+                    <RefreshCw className={cn('mr-1.5 h-3.5 w-3.5', javaLoading && 'animate-spin')} />
+                    {t('settings.redetect')}
+                  </Button>
+                </div>
+
+                <section aria-labelledby="settings-java-list-heading">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 id="settings-java-list-heading" className="text-xs font-medium">
+                      {t('settings.detectedInstallations')}
+                    </h3>
+                    <span className="text-[10px] tabular-nums text-muted-foreground">
+                      {javaInstallations.length}
+                    </span>
+                  </div>
+                  {javaInstallations.length === 0 ? (
+                    <div className="flex min-h-36 flex-col items-center justify-center rounded-lg border border-dashed border-border/70 bg-muted/15 px-6 text-center">
+                      <FolderOpen className="mb-3 h-5 w-5 text-muted-foreground/70" aria-hidden="true" />
+                      <p className="text-xs font-medium">{t('settings.noJavaTitle')}</p>
+                      <p className="mt-1 max-w-sm text-[11px] leading-5 text-muted-foreground">
+                        {t('settings.noJavaDescription')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {javaInstallations.map((java) => (
+                        <JavaItem key={java.path} java={java} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
             )}
           </div>
-        </WorkspaceDialogBody>
-      </WorkspaceDialogContent>
+        </main>
+      </DialogContent>
     </Dialog>
   );
 }

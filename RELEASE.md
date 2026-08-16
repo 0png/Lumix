@@ -1,104 +1,92 @@
-# Lumix 1.0.0 Release Notes
+# Lumix 1.1.0 Release Notes
 
-**版本**: 1.0.0  
-**發布日期**: 2026-05-17  
-**類型**: Formal Release
+**版本**: 1.1.0
+
+**發布日期**: 2026-08-16
+
+**類型**: Feature Release
 
 ## 概述
 
-Lumix 1.0.0 是一個 Windows-first 的 Minecraft 伺服器啟動與管理工具，提供從建立、匯入、啟停、備份還原，到連線資訊與更新檢查的一體化桌面體驗。
+Lumix 1.1.0 擴充了伺服器核心與模組包支援，並重新整理桌面管理體驗。這次更新加入 NeoForge、Purpur 與 Modrinth／CurseForge 模組包匯入，同時強化既有伺服器匯入、啟動流程、連線診斷與 renderer 異常復原。
 
-本次正式版以目前已經落地的功能為準，重點是把核心伺服器操作流程收斂成可穩定發布、可實際使用、可持續更新的正式產品。
+介面方面，伺服器儀表板與詳細資訊改為更緊湊的桌面配置；設定則改為大型工作區 Modal，以一般／Java 二級導覽呈現，並加入短促、低幅度且支援 reduced motion 的微動效。
 
-## 正式版重點
+## 版本重點
 
-### 伺服器管理
-- 建立、啟動、停止、刪除 Minecraft 伺服器
-- 支援 Vanilla、Paper、Purpur、Fabric、Forge、NeoForge 核心
-- 即時 console 輸出與指令輸入
-- 圖形化編輯 `server.properties`
-- 一鍵開啟伺服器資料夾
+### NeoForge 與 Purpur
 
-### 匯入與首次使用流程
-- 匯入既有伺服器資料夾並納入 Lumix 管理
-- 自動辨識 Purpur，以及使用 `run.bat` / args file 啟動的 Forge、NeoForge 伺服器
-- 支援 Modrinth 與 CurseForge 格式的 NeoForge 模組包
-- 建立新伺服器後顯示首次引導 checklist
-- 快速導向 Java、記憶體、設定、連線資訊與啟動動作
+- 完整支援 NeoForge 版本探索、安裝器建置、args-file 啟動與既有伺服器匯入
+- 透過 Purpur 官方 v2 API 探索版本與下載最新 build
+- 為 NeoForge、Purpur 補齊專屬圖示、建立流程、記憶體建議與中英文文案
+- 改善現代 Forge／NeoForge 啟動 metadata 與舊版 `forge-config.json` 相容性
 
-### Java 與版本相容
-- 自動偵測系統已安裝的 Java
-- 依 Minecraft 版本匹配合適的 Java 版本
-- 支援自訂 Java 路徑
+### 模組包匯入
 
-### 備份與還原
-- 建立手動與排程備份
-- 顯示備份清單、建立時間、大小與路徑
-- 還原前執行 preflight 檢查
-- 支援還原前自動建立保護性備份
+- 支援 Modrinth 與 CurseForge 格式的伺服器模組包
+- 匯入前掃描並顯示 Minecraft 版本、loader 與記憶體配置
+- 提供驗證、下載進度、錯誤回饋與完成後伺服器建立流程
 
-### 連線資訊與診斷
-- 顯示 `localhost`、LAN 位址與連接埠資訊
-- 區分本機、區網與外網使用情境
-- 提示常見連線問題與可行下一步
+### 伺服器管理體驗
 
-### 更新與桌面體驗
-- 整合 GitHub Releases 自動更新
-- 啟動後自動檢查更新
-- 提供手動檢查、下載進度與重新啟動安裝流程
-- 支援繁體中文與 English
-- 支援淺色、深色與跟隨系統主題
+- 重構伺服器儀表板、卡片與詳細資訊為更緊湊的桌面配置
+- 改善新增伺服器入口，清楚區分標準建立、模組包匯入與既有伺服器匯入
+- 更新側欄、標題列、console 與首次使用引導
+- 強化本機、區網與外網連線資訊與診斷提示
 
-## 系統需求
+### 設定工作區
 
-- 作業系統: Windows 10 / 11
-- 記憶體: 建議 4GB 以上
-- 可用空間: 至少 500MB
-- 網路: 下載伺服器核心、更新與版本資料時需要網路
-- Java:
-  - MC 1.16.x 及以下建議 Java 8
-  - MC 1.17 至 1.20.4 建議 Java 17
-  - MC 1.20.5 以上建議 Java 21
+- 將獨立設定頁改為大型工作區 Modal，保留使用者目前所在畫面
+- 使用「一般／Java」二級導覽與單欄設定內容
+- 主題與語言改為緊湊 Select，記憶體配置使用橫向 Slider
+- Java 安裝改為單欄清單，支援重新偵測與長路徑顯示
+- Modal 使用 `cubic-bezier(0.34, 1.56, 0.64, 1)` 進場
+- 導覽、Select、Slider、按鈕與清單加入短促微動效，並支援 `prefers-reduced-motion`
+
+### 穩定性
+
+- 修復切換至較短頁面時，舊 scroll position 造成空白或黑畫面的問題
+- 新增 view-level error boundary，renderer 異常時可安全返回伺服器儀表板
+- 改善伺服器下載、匯入、啟動 metadata 與生命週期處理
+- 擴充下載、Forge 安裝、匯入、模組包、生命週期、連線診斷與備份測試
 
 ## 安裝方式
 
 從 [GitHub Releases](https://github.com/0png/Lumix/releases) 下載：
 
-- `Lumix-Setup-1.0.0.exe`
+- `Lumix-Setup-1.1.0.exe`
 
-安裝完成後首次啟動，Lumix 會自動偵測系統 Java 並可立即建立或匯入伺服器。
+若已安裝 Lumix 1.0.0，可透過應用程式內的更新檢查下載 1.1.0。
 
-## 已知限制
+## 系統需求
 
-- 產品目前以 Windows-first 為主，本次正式版發布與驗證目標為 Windows 桌面環境
-- 少數非標準或自行修改過啟動腳本的模組伺服器，匯入時仍可能需要手動確認核心與版本
-- Lumix 可提供區網與外網連線診斷，但不會自動設定路由器轉發或代管遠端連線
-- 自動更新需要 GitHub Release 資產與版本資訊正確發布後才會生效
+- Windows 10 / 11
+- 建議 4GB 以上記憶體
+- 至少 500MB 可用空間
+- 下載伺服器核心、模組包、Java 或更新時需要網路
 
 ## 驗證摘要
 
-本次正式版發版前已完成：
+本次發版前完成：
 
-- 手動功能測試
 - `pnpm --filter @lumix/app typecheck`
 - `pnpm --filter @lumix/app lint`
 - `pnpm --filter @lumix/app test`
 - `pnpm --filter @lumix/app build`
 - `pnpm --filter @lumix/app build:win`
+- Windows 1000×650 與寬視窗設定 Modal 實機檢查
+- 鍵盤焦點、Select、Esc 關閉與 Java 長清單檢查
+
+## 已知限制
+
+- Lumix 目前以 Windows-first 為主要發布與驗證目標
+- 少數非標準或自行修改啟動腳本的伺服器，匯入時仍可能需要手動確認核心與版本
+- Lumix 不會自動設定路由器連接埠轉發或代管遠端連線
+- 自動更新需依賴 GitHub Release 中的安裝程式、blockmap 與 `latest.yml`
 
 ## 回報問題
 
-- GitHub Releases: https://github.com/0png/Lumix/releases
-- GitHub Issues: https://github.com/0png/Lumix/issues
+- [GitHub Issues](https://github.com/0png/Lumix/issues)
+- [GitHub Releases](https://github.com/0png/Lumix/releases)
 
-回報問題時建議附上：
-- Windows 版本
-- Java 版本
-- Minecraft 版本與核心類型
-- 錯誤訊息
-- 重現步驟
-
-## 授權
-
-- License: MIT
-- Author: 0png
+回報時建議附上 Windows、Java、Minecraft 與核心版本，以及錯誤訊息和重現步驟。
