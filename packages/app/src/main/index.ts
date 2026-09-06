@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, shell } from 'electron';
+import { app, autoUpdater, BrowserWindow, Menu, Tray, shell } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { initAllIpcHandlers, cleanupAllIpcHandlers } from './ipc';
@@ -23,6 +23,9 @@ function showMainWindow(): void {
     getUpdateService().setMainWindow(mainWindow);
   }
 
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
   mainWindow.show();
   mainWindow.focus();
 }
@@ -74,6 +77,7 @@ function createWindow(): BrowserWindow {
 
   window.on('ready-to-show', () => {
     window.show();
+    window.focus();
   });
 
   window.on('close', (event) => {
@@ -105,6 +109,13 @@ if (!hasSingleInstanceLock) {
   isQuitting = true;
   app.quit();
 } else {
+  // electron-updater emits this Electron-level event immediately before it
+  // asks Electron to quit. Mark the exit as intentional so the normal close
+  // handler does not hide the window in the tray and block the update restart.
+  autoUpdater.on('before-quit-for-update', () => {
+    isQuitting = true;
+  });
+
   app.on('second-instance', () => {
     showMainWindow();
   });

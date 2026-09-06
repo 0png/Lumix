@@ -135,7 +135,10 @@ export class UpdateService {
    * 安裝更新並重啟應用程式
    */
   quitAndInstall(): void {
-    autoUpdater.quitAndInstall(false, true);
+    // NSIS 的 assisted installer 仍保留給首次安裝使用；更新時則以靜默模式
+    // 執行，讓 updater 直接覆蓋目前的安裝目錄，不再次顯示安裝精靈。
+    // 第二個參數確保靜默安裝完成後重新啟動應用程式。
+    autoUpdater.quitAndInstall(true, true);
   }
 
   /**
