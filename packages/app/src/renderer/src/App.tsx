@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
 import { MainLayout, ViewErrorBoundary } from '@/components/layout';
-import { ThemeProvider, LanguageProvider } from '@/contexts';
+import { ThemeProvider, LanguageProvider, useLanguage, useTheme } from '@/contexts';
 import { UpdateNotification } from '@/components/update/UpdateNotification';
 import { WhatsNewDialog } from '@/components/update/WhatsNewDialog';
 import {
@@ -27,6 +27,7 @@ import { SettingsDialog, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
 import { useJava } from '@/hooks/use-java';
 import { useReleaseNotes } from '@/hooks/use-release-notes';
+import { useSettings } from '@/hooks/use-settings';
 import { shouldShowWhatsNew, WHATS_NEW_LAST_SEEN_VERSION_KEY } from '@/lib/whats-new';
 import type { ImportServerRequest } from '../../shared/ipc-types';
 import '@/i18n';
@@ -35,6 +36,7 @@ type ViewType = 'servers' | 'server-settings' | 'about';
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
 const POST_CREATE_ONBOARDING_PROMPT_KEY = 'lumix.postCreateOnboardingPrompt.enabled';
 const HIDDEN_ONBOARDING_SERVER_IDS_KEY = 'lumix.postCreateOnboarding.hiddenServerIds';
+const LAST_SESSION_KEY = 'lumix.lastSession';
 
 /**
  * 轉換 DTO 為前端 ServerInstance 格式
@@ -46,11 +48,15 @@ function toServerInstance(dto: {
   coreType: string;
   mcVersion: string;
   javaPath?: string;
+  javaSelectionMode?: ServerInstance['javaSelectionMode'];
+  ramMin?: number;
   status: string;
   ramMax: number;
+  jvmArgs?: string[];
   isReady?: boolean;
   hasServerProperties?: boolean;
   backupSettings?: ServerInstance['backupSettings'];
+  autoRestart?: ServerInstance['autoRestart'];
   onboardingState?: ServerInstance['onboardingState'];
 }): ServerInstance {
   return {
@@ -60,17 +66,23 @@ function toServerInstance(dto: {
     coreType: dto.coreType as ServerInstance['coreType'],
     mcVersion: dto.mcVersion,
     javaPath: dto.javaPath,
+    javaSelectionMode: dto.javaSelectionMode,
+    ramMin: dto.ramMin,
     status: dto.status as ServerInstance['status'],
     ramMax: dto.ramMax,
+    jvmArgs: dto.jvmArgs,
     isReady: dto.isReady,
     hasServerProperties: dto.hasServerProperties,
     backupSettings: dto.backupSettings,
+    autoRestart: dto.autoRestart,
     onboardingState: dto.onboardingState,
   };
 }
 
 function AppContent() {
   const { t } = useTranslation();
+  const { setTheme } = useTheme();
+  const { setLanguage } = useLanguage();
   const {
     servers: serverDtos,
     loading,
@@ -99,6 +111,10 @@ function AppContent() {
     error: releaseNotesError,
     loadReleaseNotes,
   } = useReleaseNotes();
+  const {
+    settings,
+    save: saveSettings,
+  } = useSettings();
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showAddServerDialog, setShowAddServerDialog] = useState(false);
@@ -113,6 +129,8 @@ function AppContent() {
   const [serverSettingsSection, setServerSettingsSection] = useState<ServerSettingsSection>('basic');
   const [showWhatsNewDialog, setShowWhatsNewDialog] = useState(false);
   const whatsNewStartupChecked = useRef(false);
+  const sessionRestoreApplied = useRef(false);
+  const restartCountdownTimers = useRef<Map<string, number>>(new Map());
 
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
@@ -156,6 +174,7 @@ function AppContent() {
         ramMin: data.ramMin,
         ramMax: data.ramMax,
         javaPath: selectedJava.path,
+        javaSelectionMode: 'auto',
       });
 
       if (createError) {
@@ -198,33 +217,13 @@ function AppContent() {
   }, [importExistingServer, t]);
 
   const handleStartServer = useCallback(async (id: string) => {
-    // 檢查伺服器是否有 Java 路徑，如果沒有則嘗試自動設定
-    const serverDto = serverDtos.find(s => s.id === id);
-    if (serverDto && !serverDto.javaPath) {
-      // 嘗試自動偵測並設定 Java
-      const javaResult = await window.electronAPI.java.detect();
-      if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
-        toast.add({ title: t('toast.noJavaFound'), type: 'error' });
-        return;
-      }
-
-      const selectResult = await window.electronAPI.java.selectForMc(serverDto.mcVersion);
-      if (!selectResult.success || !selectResult.data) {
-        toast.add({ title: t('toast.noCompatibleJava'), type: 'error' });
-        return;
-      }
-
-      // 更新伺服器的 Java 路徑
-      await updateServer({ id, javaPath: selectResult.data.path });
-    }
-
     const result = await startServer(id);
     if (result.success) {
       toast.add({ title: t('toast.serverStarted'), type: 'success' });
     } else {
       toast.add({ title: t('toast.startFailed'), description: result.error, type: 'error' });
     }
-  }, [startServer, t, serverDtos, updateServer]);
+  }, [startServer, t]);
 
   const handleStopServer = useCallback(async (id: string) => {
     const result = await stopServer(id);
@@ -361,6 +360,161 @@ function AppContent() {
     setShowAddServerDialog(true);
   }, []);
 
+  // localStorage remains the synchronous boot cache. Once the main-process
+  // settings arrive, mirror them only when no cached value exists so the UI
+  // does not flash away from the user's last appearance.
+  useEffect(() => {
+    if (!settings) return;
+    const cachedTheme = window.localStorage.getItem('lumix-theme');
+    const cachedLanguage = window.localStorage.getItem('lumix-language');
+    if (cachedTheme === 'light' || cachedTheme === 'dark' || cachedTheme === 'system') {
+      if (cachedTheme !== settings.theme) void saveSettings({ theme: cachedTheme });
+    } else {
+      setTheme(settings.theme);
+    }
+    if (cachedLanguage === 'zh-TW' || cachedLanguage === 'en') {
+      if (cachedLanguage !== settings.language) void saveSettings({ language: cachedLanguage });
+    } else {
+      setLanguage(settings.language);
+    }
+  }, [saveSettings, settings, setLanguage, setTheme]);
+
+  useEffect(() => {
+    if (sessionRestoreApplied.current || loading || !settings) return;
+    sessionRestoreApplied.current = true;
+    if (!settings.restoreLastSession) return;
+
+    const raw = window.localStorage.getItem(LAST_SESSION_KEY);
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw) as {
+        serverId?: unknown;
+        view?: unknown;
+        serverSettingsSection?: unknown;
+      };
+      const targetServer = typeof saved.serverId === 'string'
+        ? serverDtos.find((server) => server.id === saved.serverId)
+        : undefined;
+      if (!targetServer) {
+        setSelectedServerId(undefined);
+        setCurrentView('servers');
+        return;
+      }
+
+      setSelectedServerId(targetServer.id);
+      if (saved.view === 'server-settings') {
+        const section = saved.serverSettingsSection;
+        if (section === 'basic' || section === 'gameplay' || section === 'network' || section === 'backup') {
+          setServerSettingsSection(section);
+        }
+        setCurrentView('server-settings');
+      } else {
+        // Console/fullscreen/dialog state is intentionally never restored.
+        setCurrentView('servers');
+      }
+    } catch {
+      window.localStorage.removeItem(LAST_SESSION_KEY);
+    }
+  }, [loading, serverDtos, settings]);
+
+  useEffect(() => {
+    if (!sessionRestoreApplied.current) return;
+    window.localStorage.setItem(LAST_SESSION_KEY, JSON.stringify({
+      serverId: selectedServerId ?? null,
+      view: currentView,
+      serverSettingsSection,
+    }));
+  }, [currentView, selectedServerId, serverSettingsSection]);
+
+  useEffect(() => {
+    const clearCountdown = (serverId: string) => {
+      const timer = restartCountdownTimers.current.get(serverId);
+      if (timer !== undefined) {
+        window.clearInterval(timer);
+        restartCountdownTimers.current.delete(serverId);
+      }
+    };
+
+    const unsubscribe = window.electronAPI.server.onAutoRestart((event) => {
+      const openLatestLog = event.latestLogPath
+        ? {
+            children: t('toast.openLatestLog'),
+            onClick: () => {
+              void window.electronAPI.app.openFolder(event.latestLogPath!);
+            },
+          }
+        : undefined;
+
+      if (event.type === 'scheduled') {
+        clearCountdown(event.serverId);
+        const toastId = `server-auto-restart-${event.serverId}`;
+        const targetTime = event.nextRestartAt
+          ? Date.parse(event.nextRestartAt)
+          : Date.now() + (event.delayMs ?? 0);
+        const updateCountdown = () => {
+          const seconds = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
+          toast.update(toastId, {
+            description: t('toast.serverRestartScheduledDescription', {
+              seconds,
+              attempt: event.attempt ?? 0,
+              maxAttempts: event.maxAttempts,
+            }),
+          });
+          if (seconds <= 0) clearCountdown(event.serverId);
+        };
+
+        toast.add({
+          id: toastId,
+          title: t('toast.serverRestartScheduled', { name: event.serverName ?? t('server.name') }),
+          description: t('toast.serverRestartScheduledDescription', {
+            seconds: Math.ceil((event.delayMs ?? 0) / 1000),
+            attempt: event.attempt ?? 0,
+            maxAttempts: event.maxAttempts,
+          }),
+          type: 'warning',
+          timeout: 0,
+          actionProps: {
+            children: t('toast.cancelRestart'),
+            onClick: () => {
+              void window.electronAPI.server.cancelAutoRestart(event.serverId);
+            },
+          },
+        });
+        updateCountdown();
+        if (targetTime > Date.now()) {
+          const timer = window.setInterval(updateCountdown, 1000);
+          restartCountdownTimers.current.set(event.serverId, timer);
+        }
+      } else if (event.type === 'cancelled') {
+        clearCountdown(event.serverId);
+        toast.add({
+          id: `server-auto-restart-${event.serverId}`,
+          title: t('toast.serverRestartCancelled', { name: event.serverName ?? t('server.name') }),
+          type: 'info',
+          timeout: 3800,
+        });
+      } else {
+        clearCountdown(event.serverId);
+        toast.add({
+          id: `server-auto-restart-${event.serverId}`,
+          title: t('toast.serverRestartExhausted', { name: event.serverName ?? t('server.name') }),
+          description: t('toast.serverRestartExhaustedDescription', { maxAttempts: event.maxAttempts }),
+          type: 'error',
+          timeout: 0,
+          actionProps: openLatestLog,
+        });
+      }
+    });
+    const countdownTimers = restartCountdownTimers.current;
+    return () => {
+      unsubscribe();
+      for (const timer of countdownTimers.values()) {
+        window.clearInterval(timer);
+      }
+      countdownTimers.clear();
+    };
+  }, [t]);
+
   useEffect(() => {
     if (whatsNewStartupChecked.current) return;
     whatsNewStartupChecked.current = true;
@@ -440,6 +594,9 @@ function AppContent() {
               onBack={() => setCurrentView('servers')}
               onUpdate={handleUpdateServer}
               initialSection={serverSettingsSection}
+              javaInstallations={javaInstallations}
+              javaLoading={javaLoading}
+              onDetectJava={handleAddJavaPath}
             />
           );
         }
@@ -553,6 +710,7 @@ function AppContent() {
             onSubmit={handleCreateServer}
             disabled={isCreating}
             existingNames={servers.map((server) => server.name)}
+            defaultRamMax={settings?.defaultRamMax}
             presentation="embedded"
           />
         )}
@@ -596,8 +754,11 @@ function AppContent() {
       <SettingsDialog
         open={showSettingsDialog}
         onOpenChange={setShowSettingsDialog}
+        settings={settings}
+        defaultRamMax={settings?.defaultRamMax}
         javaInstallations={javaInstallations}
         javaLoading={javaLoading}
+        onSaveSettings={saveSettings}
         onDetectJava={handleAddJavaPath}
       />
 

@@ -18,6 +18,7 @@ export const ServerChannels = {
   // Lifecycle control
   START: 'server:start',
   STOP: 'server:stop',
+  CANCEL_AUTO_RESTART: 'server:cancel-auto-restart',
   SEND_COMMAND: 'server:send-command',
   GET_PERFORMANCE_HISTORY: 'server:get-performance-history',
   GET_PLAYERS: 'server:get-players',
@@ -42,6 +43,7 @@ export const ServerChannels = {
   LOG_ENTRY: 'server:log-entry',
   PERFORMANCE_SAMPLE: 'server:performance-sample',
   READY: 'server:ready', // 服務器成功啟動事件
+  AUTO_RESTART: 'server:auto-restart',
 } as const;
 
 // ============================================================================
@@ -69,6 +71,7 @@ export function getAllServerChannels(): string[] {
     ServerChannels.DELETE,
     ServerChannels.START,
     ServerChannels.STOP,
+    ServerChannels.CANCEL_AUTO_RESTART,
     ServerChannels.SEND_COMMAND,
     ServerChannels.GET_PERFORMANCE_HISTORY,
     ServerChannels.GET_PLAYERS,
@@ -96,6 +99,7 @@ export const JavaChannels = {
   INSTALL: 'java:install',
   SELECT_FOR_MC: 'java:select-for-mc',
   GET_REQUIRED_VERSION: 'java:get-required-version',
+  VALIDATE: 'java:validate',
   
   // Events
   INSTALL_PROGRESS: 'java:install-progress',
@@ -132,6 +136,7 @@ export const AppChannels = {
   GET_SYSTEM_INFO: 'app:get-system-info',
   SELECT_DIRECTORY: 'app:select-directory',
   SELECT_MODPACK_FILE: 'app:select-modpack-file',
+  SELECT_JAVA_EXECUTABLE: 'app:select-java-executable',
   OPEN_FOLDER: 'app:open-folder',
   OPEN_EXTERNAL: 'app:open-external',
 } as const;

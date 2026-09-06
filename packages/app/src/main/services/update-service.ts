@@ -12,6 +12,7 @@ export class UpdateService {
   private mainWindow: BrowserWindow | null = null;
   private isChecking = false;
   private isDownloading = false;
+  private beforeInstallHandler: (() => Promise<boolean>) | null = null;
 
   constructor() {
     this.setupAutoUpdater();
@@ -82,6 +83,10 @@ export class UpdateService {
     this.mainWindow = window;
   }
 
+  setBeforeInstallHandler(handler: (() => Promise<boolean>) | null): void {
+    this.beforeInstallHandler = handler;
+  }
+
   /**
    * 檢查更新
    */
@@ -134,11 +139,17 @@ export class UpdateService {
   /**
    * 安裝更新並重啟應用程式
    */
-  quitAndInstall(): void {
+  async quitAndInstall(): Promise<boolean> {
+    if (this.beforeInstallHandler) {
+      const prepared = await this.beforeInstallHandler();
+      if (!prepared) return false;
+    }
+
     // NSIS 的 assisted installer 仍保留給首次安裝使用；更新時則以靜默模式
     // 執行，讓 updater 直接覆蓋目前的安裝目錄，不再次顯示安裝精靈。
     // 第二個參數確保靜默安裝完成後重新啟動應用程式。
     autoUpdater.quitAndInstall(true, true);
+    return true;
   }
 
   /**

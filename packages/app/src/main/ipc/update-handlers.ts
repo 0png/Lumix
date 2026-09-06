@@ -37,10 +37,12 @@ export function registerUpdateHandlers(): void {
   });
 
   // 安裝更新並重啟
-  ipcMain.handle(UpdateChannels.QUIT_AND_INSTALL, (): IpcResult<void> => {
+  ipcMain.handle(UpdateChannels.QUIT_AND_INSTALL, async (): Promise<IpcResult<void>> => {
     try {
-      updateService.quitAndInstall();
-      return { success: true };
+      const started = await updateService.quitAndInstall();
+      return started
+        ? { success: true }
+        : { success: false, error: 'UPDATE_INSTALL_CANCELLED: 使用者取消退出' };
     } catch (error) {
       return {
         success: false,

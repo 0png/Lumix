@@ -31,11 +31,10 @@ import { cn } from '@/lib/utils';
 import type { CoreType } from './ServerList';
 import { ServerCoreIcon } from './ServerCoreIcon';
 import type { CreateServerError } from '@/hooks/use-servers';
-import { IpcErrorCode, type SystemInfo } from '../../../../shared/ipc-types';
+import { IpcErrorCode, type JavaSelectionMode, type SystemInfo } from '../../../../shared/ipc-types';
 
 const MOJANG_EULA_URL = 'https://aka.ms/MinecraftEULA';
 const DEFAULT_CORE_TYPE: CoreType = 'vanilla';
-const DEFAULT_RAM_MB = 2048;
 
 export interface CreateServerData {
   name: string;
@@ -44,6 +43,7 @@ export interface CreateServerData {
   ramMin: number;
   ramMax: number;
   javaPath?: string;
+  javaSelectionMode?: JavaSelectionMode;
 }
 
 interface CreateServerDialogProps {
@@ -54,6 +54,7 @@ interface CreateServerDialogProps {
   existingNames?: string[];
   presentation?: 'modal' | 'overlay' | 'embedded';
   onBackToChoice?: () => void;
+  defaultRamMax?: number;
 }
 
 type WizardStep = 0 | 1 | 2 | 3 | 4;
@@ -136,6 +137,7 @@ export function CreateServerDialog({
   existingNames = [],
   presentation = 'modal',
   onBackToChoice,
+  defaultRamMax = 4096,
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
   const { installations, getRequiredVersion, install, installProgress, selectForMc } = useJava();
@@ -143,7 +145,7 @@ export function CreateServerDialog({
   const [name, setName] = useState('');
   const [coreType, setCoreType] = useState<CoreType>(DEFAULT_CORE_TYPE);
   const [mcVersion, setMcVersion] = useState('');
-  const [ramMax, setRamMax] = useState(DEFAULT_RAM_MB);
+  const [ramMax, setRamMax] = useState(defaultRamMax);
   const [versions, setVersions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -196,12 +198,15 @@ export function CreateServerDialog({
   const progressValue = ((step + 1) / steps.length) * 100;
   const currentStepMeta = steps[step]!;
 
+  const preferredRamMax = clamp(roundToStep(defaultRamMax, 512), 1024, 16384);
+  const defaultRamWasClamped = !ramTouched && preferredRamMax > safeMaxRam;
+
   const resetForm = useCallback(() => {
     setStep(0);
     setName('');
     setCoreType(DEFAULT_CORE_TYPE);
     setMcVersion('');
-    setRamMax(DEFAULT_RAM_MB);
+    setRamMax(preferredRamMax);
     setVersions([]);
     setLoading(false);
     setError(null);
@@ -213,7 +218,7 @@ export function CreateServerDialog({
     setJavaCompatible(true);
     setIsInstallingJava(false);
     setJavaInstallRetries(0);
-  }, []);
+  }, [preferredRamMax]);
 
   const fetchVersions = useCallback(async (type: CoreType) => {
     setLoading(true);
@@ -256,9 +261,9 @@ export function CreateServerDialog({
   useEffect(() => {
     if (!open) return;
     if (!ramTouched) {
-      setRamMax(recommendedRam);
+      setRamMax(Math.min(preferredRamMax, safeMaxRam));
     }
-  }, [open, recommendedRam, ramTouched]);
+  }, [open, preferredRamMax, ramTouched, safeMaxRam]);
 
   useEffect(() => {
     if (!mcVersion) {
@@ -369,9 +374,10 @@ export function CreateServerDialog({
       name: name.trim(),
       coreType,
       mcVersion,
-      ramMin: Math.max(1024, Math.floor(ramMax / 2)),
+      ramMin: Math.floor(ramMax / 2),
       ramMax,
       javaPath: selectedJava?.path,
+      javaSelectionMode: 'auto',
     });
 
     if (submitError) {
@@ -608,6 +614,14 @@ export function CreateServerDialog({
                 : t('createServer.ramRecommendationWarning')}
             </p>
             <p>{t('createServer.ramRecommendationMessage', { recommended: recommendedRam / 1024, safeMax: safeMaxRam / 1024 })}</p>
+            {defaultRamWasClamped && (
+              <p className="text-amber-700 dark:text-amber-300">
+                {t('createServer.defaultRamClamped', {
+                  requested: preferredRamMax / 1024,
+                  safeMax: safeMaxRam / 1024,
+                })}
+              </p>
+            )}
           </div>
         </div>
       </div>

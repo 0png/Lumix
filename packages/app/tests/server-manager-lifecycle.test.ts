@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import os from 'os';
 import path from 'path';
 import { promises as fs } from 'fs';
@@ -8,9 +8,15 @@ import { FileManager } from '../src/main/services/file-manager';
 import { ImportRegistry } from '../src/main/services/import-registry';
 import { ImportScanner } from '../src/main/services/import-scanner';
 import { ServerManager } from '../src/main/services/server-manager';
+import { ManagedServerRegistry } from '../src/main/services/managed-server-registry';
+import { SettingsService } from '../src/main/services/settings-service';
+import type { JavaDetector } from '../src/main/services/java-detector';
 
 class FakeProcessManager extends EventEmitter {
+  public spawnCalls: unknown[] = [];
+
   spawn() {
+    this.spawnCalls.push(arguments[0]);
     return {} as never;
   }
 
@@ -33,6 +39,25 @@ class FakeProcessManager extends EventEmitter {
   killAll(): void {}
 }
 
+function createFakeJavaDetector(): JavaDetector {
+  const installation = {
+    path: 'java',
+    version: '21.0.0',
+    majorVersion: 21,
+    isValid: true,
+  };
+  return {
+    detectAll: async () => [installation],
+    selectForMinecraft: async () => installation,
+    validateForMinecraft: async (javaPath: string) => ({
+      installation: { ...installation, path: javaPath },
+      requiredMajor: 21,
+      compatible: true,
+      reason: 'test Java',
+    }),
+  } as unknown as JavaDetector;
+}
+
 describe('ServerManager process lifecycle', () => {
   let rootDir: string;
   let processManager: FakeProcessManager;
@@ -51,6 +76,7 @@ describe('ServerManager process lifecycle', () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     await fs.rm(rootDir, { recursive: true, force: true });
   });
 
@@ -97,5 +123,108 @@ describe('ServerManager process lifecycle', () => {
 
     expect(events.at(-1)?.unexpected).toBe(false);
     expect(events.at(-1)?.status).toBe('stopped');
+  });
+
+  it('rejects JVM arguments managed by Lumix at the backend boundary', async () => {
+    const server = await manager.createServer({
+      name: 'JVM Validation Server',
+      coreType: 'vanilla',
+      mcVersion: '1.21.1',
+      javaSelectionMode: 'auto',
+    });
+
+    await expect(manager.updateServer({
+      id: server.id,
+      jvmArgs: ['-Dmessage=hello world', '-Xmx8192M'],
+    })).rejects.toThrow('VALIDATION_ERROR');
+  });
+
+  it('uses persisted workspace defaults for a server created through the backend', async () => {
+    const settingsService = new SettingsService(rootDir);
+    await settingsService.save({ defaultRamMax: 8192 });
+    const persistedManager = new ServerManager({
+      fileManager: new FileManager(rootDir),
+      importRegistry: new ImportRegistry(rootDir),
+      importScanner: new ImportScanner(),
+      processManager: new FakeProcessManager() as never,
+      defaultJavaPath: 'java',
+      settingsService,
+      managedServerRegistry: new ManagedServerRegistry(rootDir),
+      javaDetector: createFakeJavaDetector(),
+    });
+
+    const server = await persistedManager.createServer({
+      name: 'Persisted Defaults Server',
+      coreType: 'vanilla',
+      mcVersion: '1.21.1',
+      javaSelectionMode: 'auto',
+    });
+
+    expect(server.ramMax).toBe(8192);
+    expect(server.ramMin).toBe(4096);
+    expect(server.directory).toBe(path.join(rootDir, 'servers', 'Persisted Defaults Server'));
+    expect(server.backupSettings?.regularRetention).toBe(3);
+  });
+
+  it('schedules automatic restarts with bounded backoff and reports exhaustion', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    const restartProcessManager = new FakeProcessManager();
+    const restartManager = new ServerManager({
+      fileManager: new FileManager(rootDir),
+      importRegistry: new ImportRegistry(rootDir),
+      importScanner: new ImportScanner(),
+      processManager: restartProcessManager as never,
+      defaultJavaPath: 'java',
+      javaDetector: createFakeJavaDetector(),
+    });
+    const created = await restartManager.createServer({
+      name: 'Restart Server',
+      coreType: 'vanilla',
+      mcVersion: '1.21.1',
+      javaSelectionMode: 'auto',
+    });
+    await fs.writeFile(path.join(created.directory, 'server.jar'), 'test-jar');
+    const running = {
+      ...created,
+      status: 'running' as const,
+      autoRestart: { enabled: true, maxAttempts: 2 },
+    };
+    (restartManager as unknown as { servers: Map<string, ServerInstanceDto> }).servers.set(created.id, running);
+
+    const events: Array<{ type: string; attempt?: number; delayMs?: number }> = [];
+    restartManager.on('auto-restart', (event) => events.push(event));
+
+    const waitForRunning = async () => {
+      for (let i = 0; i < 20; i += 1) {
+        if ((await restartManager.getServerById(created.id))?.status === 'running') return;
+        await new Promise<void>((resolve) => setImmediate(resolve));
+      }
+    };
+    const waitForSpawnCount = async (count: number) => {
+      await vi.waitFor(() => {
+        expect(restartProcessManager.spawnCalls.length).toBeGreaterThanOrEqual(count);
+      }, { timeout: 1000, interval: 10 });
+    };
+
+    restartProcessManager.emit('exit', created.id, 1, null);
+    expect(events[0]).toMatchObject({ type: 'scheduled', attempt: 1, delayMs: 10000 });
+
+    await vi.advanceTimersByTimeAsync(10000);
+    await waitForSpawnCount(1);
+    expect(restartProcessManager.spawnCalls).toHaveLength(1);
+    await waitForRunning();
+
+    restartProcessManager.emit('exit', created.id, 1, null);
+    expect(events[1]).toMatchObject({ type: 'scheduled', attempt: 2, delayMs: 30000 });
+
+    await vi.advanceTimersByTimeAsync(30000);
+    await waitForSpawnCount(2);
+    expect(restartProcessManager.spawnCalls).toHaveLength(2);
+    await waitForRunning();
+
+    restartProcessManager.emit('exit', created.id, 1, null);
+    expect(events.at(-1)).toMatchObject({ type: 'exhausted', attempt: 2 });
+    expect((await restartManager.getServerById(created.id))?.status).toBe('stopped');
+    await restartManager.cleanup();
   });
 });

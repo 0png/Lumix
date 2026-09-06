@@ -16,11 +16,13 @@ import { ServerManager } from '../services/server-manager';
 let serverManager: ServerManager | null = null;
 let downloadService: DownloadService | null = null;
 let modpackService: ModpackService | null = null;
+let javaDetector: JavaDetector | null = null;
 
-export function initModpackHandlers(manager: ServerManager, downloader: DownloadService): void {
+export function initModpackHandlers(manager: ServerManager, downloader: DownloadService, detector?: JavaDetector): void {
   serverManager = manager;
   downloadService = downloader;
   modpackService = new ModpackService();
+  javaDetector = detector ?? new JavaDetector();
 
   ipcMain.handle(
     ModpackChannels.SCAN,
@@ -59,6 +61,7 @@ export function initModpackHandlers(manager: ServerManager, downloader: Download
           ramMin: data.ramMin,
           ramMax: data.ramMax,
           javaPath,
+          javaSelectionMode: 'auto',
         });
         serverId = server.id;
 
@@ -108,10 +111,11 @@ export function cleanupModpackHandlers(): void {
   serverManager = null;
   downloadService = null;
   modpackService = null;
+  javaDetector = null;
 }
 
 async function selectJava(mcVersion: string): Promise<string | undefined> {
-  const detector = new JavaDetector();
+  const detector = javaDetector ?? new JavaDetector();
   const installations = await detector.detectAll();
   return (await detector.selectForMinecraft(installations, mcVersion))?.path;
 }

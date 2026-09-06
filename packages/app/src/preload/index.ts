@@ -24,6 +24,7 @@ import type {
   ServerLogEvent,
   ServerPerformanceSample,
   ServerReadyEvent,
+  ServerAutoRestartEvent,
   ConnectionInfoDto,
   ServerProperties,
   UpdateServerPropertiesRequest,
@@ -40,6 +41,8 @@ import type {
   JavaInstallRequest,
   JavaInstallProgressEvent,
   JavaRequiredVersionResult,
+  ValidateJavaRequest,
+  JavaValidationResult,
   FetchVersionsResult,
   DownloadServerRequest,
   DownloadProgressEvent,
@@ -95,6 +98,9 @@ const electronAPI = {
 
     stop: (id: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(ServerChannels.STOP, id),
+
+    cancelAutoRestart: (id: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(ServerChannels.CANCEL_AUTO_RESTART, id),
 
     sendCommand: (id: string, command: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(ServerChannels.SEND_COMMAND, id, command),
@@ -161,6 +167,12 @@ const electronAPI = {
       ipcRenderer.on(ServerChannels.READY, handler);
       return () => ipcRenderer.removeListener(ServerChannels.READY, handler);
     },
+
+    onAutoRestart: (callback: (event: ServerAutoRestartEvent) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: ServerAutoRestartEvent) => callback(data);
+      ipcRenderer.on(ServerChannels.AUTO_RESTART, handler);
+      return () => ipcRenderer.removeListener(ServerChannels.AUTO_RESTART, handler);
+    },
   },
 
   // --------------------------------------------------------------------------
@@ -198,6 +210,9 @@ const electronAPI = {
 
     getRequiredVersion: (mcVersion: string): Promise<IpcResult<JavaRequiredVersionResult>> =>
       ipcRenderer.invoke(JavaChannels.GET_REQUIRED_VERSION, mcVersion),
+
+    validate: (data: ValidateJavaRequest): Promise<IpcResult<JavaValidationResult>> =>
+      ipcRenderer.invoke(JavaChannels.VALIDATE, data),
 
     onInstallProgress: (callback: (event: JavaInstallProgressEvent) => void) => {
       const handler = (_: Electron.IpcRendererEvent, data: JavaInstallProgressEvent) => callback(data);
@@ -254,6 +269,9 @@ const electronAPI = {
 
     selectModpackFile: (): Promise<IpcResult<string | null>> =>
       ipcRenderer.invoke(AppChannels.SELECT_MODPACK_FILE),
+
+    selectJavaExecutable: (): Promise<IpcResult<string | null>> =>
+      ipcRenderer.invoke(AppChannels.SELECT_JAVA_EXECUTABLE),
 
     openFolder: (path: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(AppChannels.OPEN_FOLDER, path),

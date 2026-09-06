@@ -32,11 +32,15 @@ export interface ServerInstance {
   coreType: CoreType;
   mcVersion: string;
   javaPath?: string;
+  javaSelectionMode?: import('../../../../shared/ipc-types').JavaSelectionMode;
+  ramMin?: number;
   status: ServerStatus;
   ramMax: number;
+  jvmArgs?: string[];
   isReady?: boolean;
   hasServerProperties?: boolean;
   backupSettings?: import('../../../../shared/ipc-types').BackupSettings;
+  autoRestart?: import('../../../../shared/ipc-types').AutoRestartSettings;
   onboardingState?: import('../../../../shared/ipc-types').OnboardingState;
 }
 

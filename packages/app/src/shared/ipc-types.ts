@@ -11,6 +11,13 @@ export type ServerStatus = 'stopped' | 'starting' | 'running' | 'stopping';
 export type LogLevel = 'info' | 'warn' | 'error';
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'zh-TW' | 'en';
+export type JavaSelectionMode = 'auto' | 'custom';
+export type CloseBehavior = 'minimize-to-tray' | 'quit';
+
+export interface AutoRestartSettings {
+  enabled: boolean;
+  maxAttempts: number;
+}
 export type ConnectionDiagnosticLevel = 'info' | 'warn' | 'error';
 export type ConnectionDiagnosticCode =
   | 'SERVER_NOT_RUNNING'
@@ -155,6 +162,7 @@ export interface ServerInstanceDto {
   coreType: CoreType;
   mcVersion: string;
   javaPath: string;
+  javaSelectionMode: JavaSelectionMode;
   ramMin: number;
   ramMax: number;
   jvmArgs: string[];
@@ -169,6 +177,7 @@ export interface ServerInstanceDto {
   hasServerProperties?: boolean;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+  autoRestart?: AutoRestartSettings;
   onboardingState?: OnboardingState;
 }
 
@@ -180,12 +189,14 @@ export interface CreateServerRequest {
   ramMax?: number;
   jvmArgs?: string[];
   javaPath?: string;
+  javaSelectionMode?: JavaSelectionMode;
 }
 
 export interface UpdateServerRequest {
   id: string;
   name?: string;
   javaPath?: string;
+  javaSelectionMode?: JavaSelectionMode;
   ramMin?: number;
   ramMax?: number;
   jvmArgs?: string[];
@@ -194,6 +205,7 @@ export interface UpdateServerRequest {
   userJvmArgsFile?: string;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+  autoRestart?: AutoRestartSettings;
   onboardingState?: OnboardingState;
 }
 
@@ -232,10 +244,12 @@ export interface ImportServerRequest {
   launchArgsFile?: string;
   userJvmArgsFile?: string;
   javaPath?: string;
+  javaSelectionMode?: JavaSelectionMode;
   ramMin?: number;
   ramMax?: number;
   jvmArgs?: string[];
   eulaAccepted?: boolean;
+  autoRestart?: AutoRestartSettings;
 }
 
 export interface ServerStatusEvent {
@@ -243,6 +257,20 @@ export interface ServerStatusEvent {
   status: ServerStatus;
   exitCode?: number;
   unexpected?: boolean;
+  serverName?: string;
+  latestLogPath?: string;
+  serverDirectory?: string;
+}
+
+export type ServerAutoRestartEventType = 'scheduled' | 'cancelled' | 'exhausted';
+
+export interface ServerAutoRestartEvent {
+  serverId: string;
+  type: ServerAutoRestartEventType;
+  attempt?: number;
+  maxAttempts: number;
+  delayMs?: number;
+  nextRestartAt?: string;
   serverName?: string;
   latestLogPath?: string;
   serverDirectory?: string;
@@ -412,6 +440,8 @@ export interface BackupSettings {
   intervalMinutes?: number;
   includeLogs?: boolean;
   notifyOps?: boolean;
+  regularRetention?: number;
+  preRestoreRetention?: number;
   lastRunAt?: string;
   nextRunAt?: string;
 }
@@ -494,6 +524,18 @@ export interface JavaRequiredVersionResult {
   reason: string;
 }
 
+export interface ValidateJavaRequest {
+  path: string;
+  mcVersion: string;
+}
+
+export interface JavaValidationResult {
+  installation: JavaInstallationDto;
+  requiredMajor: number;
+  compatible: boolean;
+  reason: string;
+}
+
 export interface JavaInstallProgressEvent {
   majorVersion: number;
   progress: DownloadProgress;
@@ -535,6 +577,13 @@ export interface SettingsDto {
   defaultRamMax: number;
   autoCheckUpdate?: boolean;
   autoUpdate?: boolean;
+  launchAtLogin: boolean;
+  startMinimized: boolean;
+  restoreLastSession: boolean;
+  closeBehavior: CloseBehavior;
+  defaultServersPath: string;
+  defaultRegularBackupRetention: number;
+  defaultPreRestoreBackupRetention: number;
   javaInstallations: JavaInstallationDto[];
 }
 
@@ -544,6 +593,14 @@ export interface SaveSettingsRequest {
   defaultRamMin?: number;
   defaultRamMax?: number;
   autoCheckUpdate?: boolean;
+  autoUpdate?: boolean;
+  launchAtLogin?: boolean;
+  startMinimized?: boolean;
+  restoreLastSession?: boolean;
+  closeBehavior?: CloseBehavior;
+  defaultServersPath?: string;
+  defaultRegularBackupRetention?: number;
+  defaultPreRestoreBackupRetention?: number;
 }
 
 // ============================================================================

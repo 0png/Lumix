@@ -7,7 +7,7 @@ import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { app } from 'electron';
-import type { JavaInstallationDto } from '../../shared/ipc-types';
+import type { JavaInstallationDto, JavaValidationResult } from '../../shared/ipc-types';
 import { fetchJson } from './http-client';
 
 // ============================================================================
@@ -380,6 +380,42 @@ export class JavaDetector {
     }
 
     return this.getFallbackRequiredJavaVersion(mcVersion);
+  }
+
+  /**
+   * 驗證指定 Java 是否能執行，並符合 Minecraft 版本需求。
+   * 這個入口同時供設定儲存與伺服器啟動使用，避免 renderer 自行判斷。
+   */
+  async validateForMinecraft(javaPath: string, mcVersion: string): Promise<JavaValidationResult> {
+    const required = await this.getRequiredJavaVersion(mcVersion);
+    const installation = await this.getJavaInfo(javaPath);
+
+    if (!installation) {
+      return {
+        installation: {
+          path: javaPath,
+          version: 'unknown',
+          majorVersion: 0,
+          isValid: false,
+        },
+        requiredMajor: required.requiredMajor,
+        compatible: false,
+        reason: `無法執行 Java：${javaPath}`,
+      };
+    }
+
+    const compatible = required.requiredMajor === 8
+      ? installation.majorVersion === 8
+      : installation.majorVersion >= required.requiredMajor;
+
+    return {
+      installation,
+      requiredMajor: required.requiredMajor,
+      compatible,
+      reason: compatible
+        ? `${installation.version} 符合需求（${required.reason}）`
+        : `Java ${installation.majorVersion} 不符合需求：${required.reason}`,
+    };
   }
 
   private async getRequiredJavaVersionFromManifest(

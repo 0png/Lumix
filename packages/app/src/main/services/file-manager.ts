@@ -5,7 +5,15 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { BackupSettings, CoreType, OnboardingState, ServerOrigin, ServerProperties } from '../../shared/ipc-types';
+import type {
+  AutoRestartSettings,
+  BackupSettings,
+  CoreType,
+  JavaSelectionMode,
+  OnboardingState,
+  ServerOrigin,
+  ServerProperties,
+} from '../../shared/ipc-types';
 
 // ============================================================================
 // Types
@@ -21,6 +29,7 @@ export interface ServerMetadata {
   ramMax: number;
   jvmArgs: string[];
   javaPath?: string;
+  javaSelectionMode?: JavaSelectionMode;
   launchJarPath?: string;
   launchArgsFile?: string;
   userJvmArgsFile?: string;
@@ -28,7 +37,13 @@ export interface ServerMetadata {
   lastStartedAt?: string;
   eulaAccepted?: boolean;
   backupSettings?: BackupSettings;
+  autoRestart?: AutoRestartSettings;
   onboardingState?: OnboardingState;
+}
+
+export interface DiscoveredServerEntry {
+  metadata: ServerMetadata;
+  directory: string;
 }
 
 export interface RunBatConfig {
@@ -37,6 +52,8 @@ export interface RunBatConfig {
   ramMin: number;
   ramMax: number;
   jvmArgs: string[];
+  loaderArgsFile?: string;
+  userJvmArgsFile?: string;
 }
 
 // ============================================================================
@@ -53,14 +70,14 @@ export class FileManager {
   /**
    * 取得 servers 目錄路徑
    */
-  getServersPath(): string {
-    return path.join(this.basePath, 'servers');
+  getServersPath(rootPath?: string): string {
+    return rootPath ? path.resolve(rootPath) : path.join(this.basePath, 'servers');
   }
 
   /**
    * 取得特定伺服器的目錄路徑
    */
-  getServerPath(serverName: string): string {
+  getServerPath(serverName: string, rootPath?: string): string {
     // 使用 path.basename 防止路徑遍歷攻擊
     // 這會移除任何路徑分隔符，只保留最後的檔名部分
     const sanitized = path.basename(serverName);
@@ -70,14 +87,14 @@ export class FileManager {
       throw new Error(`Invalid server name: ${serverName}`);
     }
     
-    return path.join(this.getServersPath(), sanitized);
+    return path.join(this.getServersPath(rootPath), sanitized);
   }
 
   /**
    * 建立伺服器目錄
    */
-  async createServerDirectory(serverName: string): Promise<string> {
-    const serverPath = this.getServerPath(serverName);
+  async createServerDirectory(serverName: string, rootPath?: string): Promise<string> {
+    const serverPath = this.getServerPath(serverName, rootPath);
     await fs.mkdir(serverPath, { recursive: true });
     return serverPath;
   }
@@ -103,10 +120,15 @@ export class FileManager {
    */
   async writeRunBat(serverPath: string, config: RunBatConfig): Promise<void> {
     const batPath = path.join(serverPath, 'run.bat');
-    const jvmArgsStr = config.jvmArgs.length > 0 ? config.jvmArgs.join(' ') + ' ' : '';
+    const jvmArgsStr = config.jvmArgs.length > 0
+      ? `${config.jvmArgs.map(quoteBatchArgument).join(' ')} `
+      : '';
     const jarPath = config.jarPath || 'server.jar';
+    const launchTarget = config.loaderArgsFile
+      ? `${config.userJvmArgsFile ? `${quoteBatchArgument(`@${config.userJvmArgsFile}`)} ` : ''}${quoteBatchArgument(`@${config.loaderArgsFile}`)} nogui`
+      : `-jar ${quoteBatchArgument(jarPath)} nogui`;
     const content = `@echo off
-"${config.javaPath}" -Xms${config.ramMin}M -Xmx${config.ramMax}M ${jvmArgsStr}-jar "${jarPath}" nogui
+${quoteBatchArgument(config.javaPath)} -Xms${config.ramMin}M -Xmx${config.ramMax}M ${jvmArgsStr}${launchTarget}
 pause
 `;
     await fs.writeFile(batPath, content, 'utf-8');
@@ -155,8 +177,8 @@ pause
   /**
    * 檢查伺服器目錄是否存在
    */
-  async serverExists(serverName: string): Promise<boolean> {
-    const serverPath = this.getServerPath(serverName);
+  async serverExists(serverName: string, rootPath?: string): Promise<boolean> {
+    const serverPath = this.getServerPath(serverName, rootPath);
     try {
       await fs.access(serverPath);
       return true;
@@ -168,33 +190,40 @@ pause
   /**
    * 探索並載入所有現有伺服器
    */
-  async discoverServers(): Promise<ServerMetadata[]> {
-    const serversPath = this.getServersPath();
-    const servers: ServerMetadata[] = [];
+  async discoverServerEntries(roots?: string[]): Promise<DiscoveredServerEntry[]> {
+    const servers: DiscoveredServerEntry[] = [];
+    const rootsToScan = roots && roots.length > 0 ? roots : [this.getServersPath()];
 
-    try {
-      await fs.access(serversPath);
-    } catch {
-      // servers 目錄不存在，回傳空陣列
-      return servers;
-    }
-
-    const entries = await fs.readdir(serversPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-
-      const serverPath = path.join(serversPath, entry.name);
+    for (const root of rootsToScan) {
+      const serversPath = this.getServersPath(root);
       try {
-        const metadata = await this.readServerJson(serverPath);
-        servers.push(metadata);
+        await fs.access(serversPath);
       } catch {
-        // 無法讀取 server.json，跳過此目錄
-        console.warn(`無法讀取伺服器元資料: ${serverPath}`);
+        continue;
+      }
+
+      const entries = await fs.readdir(serversPath, { withFileTypes: true });
+
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+
+        const serverPath = path.join(serversPath, entry.name);
+        try {
+          const metadata = await this.readServerJson(serverPath);
+          servers.push({ metadata, directory: serverPath });
+        } catch {
+          // 無法讀取 server.json，跳過此目錄
+          console.warn(`無法讀取伺服器元資料: ${serverPath}`);
+        }
       }
     }
 
     return servers;
+  }
+
+  async discoverServers(roots?: string[]): Promise<ServerMetadata[]> {
+    const entries = await this.discoverServerEntries(roots);
+    return entries.map((entry) => entry.metadata);
   }
 
   /**
@@ -438,4 +467,16 @@ max-world-size=29999984
 
     return result.join('\n');
   }
+}
+
+/**
+ * Keep a JVM argument as one token when a user runs the generated batch file.
+ * The process launcher receives an argument array directly; this quoting is
+ * only needed for the human-readable Windows script.
+ */
+function quoteBatchArgument(argument: string): string {
+  const escaped = argument
+    .replace(/%/g, '%%')
+    .replace(/"/g, '\\"');
+  return /[\s"&|<>^]/.test(argument) ? `"${escaped}"` : escaped;
 }

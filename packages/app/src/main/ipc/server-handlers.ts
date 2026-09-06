@@ -30,6 +30,7 @@ import type {
   RestoreBackupRequest,
   RestoreBackupResult,
   UpdateBackupSettingsRequest,
+  ServerAutoRestartEvent,
 } from '../../shared/ipc-types';
 import { parseIpcError, type IpcError } from '../../shared/ipc-types';
 
@@ -88,27 +89,7 @@ function registerHandlers(): void {
     ServerChannels.CREATE,
     async (_, data: CreateServerRequest): Promise<IpcResult<ServerInstanceDto>> => {
       try {
-        // 如果沒有指定 javaPath，自動選擇合適的 Java 版本
-        let effectiveData = data;
-        if (!data.javaPath) {
-          // 動態 import JavaDetector 以避免循環依賴
-          const { JavaDetector } = await import('../services/java-detector');
-          const javaDetector = new JavaDetector();
-          
-          // 偵測所有 Java 安裝
-          const installations = await javaDetector.detectAll();
-          
-          // 根據 MC 版本選擇合適的 Java
-          const selectedJava = await javaDetector.selectForMinecraft(installations, data.mcVersion);
-          
-          if (selectedJava) {
-            effectiveData = { ...data, javaPath: selectedJava.path };
-          } else {
-            console.warn(`[ServerHandlers] No suitable Java found for MC ${data.mcVersion}, will use system default`);
-          }
-        }
-        
-        const server = await serverManager!.createServer(effectiveData);
+        const server = await serverManager!.createServer(data);
         return { success: true, data: server };
       } catch (error) {
         return { success: false, error: formatError(error) };
@@ -132,18 +113,7 @@ function registerHandlers(): void {
     ServerChannels.IMPORT_EXISTING,
     async (_, data: ImportServerRequest): Promise<IpcResult<ServerInstanceDto>> => {
       try {
-        let effectiveData = data;
-        if (!data.javaPath) {
-          const { JavaDetector } = await import('../services/java-detector');
-          const javaDetector = new JavaDetector();
-          const installations = await javaDetector.detectAll();
-          const selectedJava = await javaDetector.selectForMinecraft(installations, data.mcVersion);
-          if (selectedJava) {
-            effectiveData = { ...data, javaPath: selectedJava.path };
-          }
-        }
-
-        const server = await serverManager!.importExistingServer(effectiveData);
+        const server = await serverManager!.importExistingServer(data);
         return { success: true, data: server };
       } catch (error) {
         return { success: false, error: formatError(error) };
@@ -209,6 +179,18 @@ function registerHandlers(): void {
     async (_, id: string, command: string): Promise<IpcResult<void>> => {
       try {
         await serverManager!.sendCommand(id, command);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    ServerChannels.CANCEL_AUTO_RESTART,
+    async (_, id: string): Promise<IpcResult<void>> => {
+      try {
+        serverManager!.cancelAutoRestart(id);
         return { success: true };
       } catch (error) {
         return { success: false, error: formatError(error) };
@@ -406,6 +388,10 @@ function setupEventForwarding(): void {
   // 轉發服務器就緒事件到所有視窗
   serverManager.on('server-ready', (event: ServerReadyEvent) => {
     broadcastToAllWindows(ServerChannels.READY, event);
+  });
+
+  serverManager.on('auto-restart', (event: ServerAutoRestartEvent) => {
+    broadcastToAllWindows(ServerChannels.AUTO_RESTART, event);
   });
 }
 

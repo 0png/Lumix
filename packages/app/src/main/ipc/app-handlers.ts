@@ -97,6 +97,20 @@ function registerHandlers(): void {
     }
   });
 
+  ipcMain.handle(AppChannels.SELECT_JAVA_EXECUTABLE, async (): Promise<IpcResult<string | null>> => {
+    try {
+      const executableName = process.platform === 'win32' ? 'java.exe' : 'java';
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Java executable', extensions: [process.platform === 'win32' ? 'exe' : '*'] }],
+        title: `選擇 ${executableName}`,
+      });
+      return { success: true, data: result.canceled ? null : (result.filePaths[0] ?? null) };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
   ipcMain.on(WindowChannels.MINIMIZE, (event) => {
     try {
       BrowserWindow.fromWebContents(event.sender)?.minimize();

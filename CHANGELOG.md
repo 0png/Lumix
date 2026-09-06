@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-06
+
+### Added
+- Added persistent workspace settings for default memory, startup behavior, close-to-tray behavior, server storage location, backup retention, and detected Java installations
+- Added per-server Java selection with Minecraft compatibility validation, custom JVM arguments, and bounded automatic restart attempts
+- Added a managed-server registry that keeps managed servers discoverable after the default storage location changes
+
+### Changed
+- Reworked server creation, import, and settings flows to share workspace defaults and preserve per-server runtime and backup configuration
+- Expanded backup retention and cleanup to track regular and pre-restore backups independently
+- Improved server lifecycle coordination, safe shutdown, and Windows runtime script generation for quoted paths and arguments
+- Replaced the legacy toast stack with Base UI and improved Windows icon generation, update installation behavior, and application startup focus
+
+### Fixed
+- Prevented Lumix-managed JVM arguments from being duplicated or overridden by server profiles
+- Improved recovery of legacy, partial, or malformed settings and managed-server metadata
+- Refreshed dependencies and the production bundle verification path to address security alerts and startup reliability
+- Removed misleading sidebar keyboard shortcut handling and hints
+
+### Technical
+- Added automated coverage for workspace settings, managed-server migration, JVM arguments, runtime scripts, lifecycle/restart behavior, and backup retention
+- Verified the release candidate with `pnpm typecheck`
+- Verified the release candidate with `pnpm lint`
+- Verified the release candidate with `pnpm test`
+- Verified the release candidate with `pnpm build`
+- Verified the Windows package with `pnpm --filter @lumix/app build:win`
+
 ## [1.2.0] - 2026-09-05
 
 ### Added

@@ -16,6 +16,8 @@ import type {
   JavaInstallationDto,
   JavaInstallRequest,
   JavaRequiredVersionResult,
+  ValidateJavaRequest,
+  JavaValidationResult,
 } from '../../shared/ipc-types';
 
 // ============================================================================
@@ -60,8 +62,8 @@ interface AdoptiumApiResponse {
 // Initialization
 // ============================================================================
 
-export function initJavaHandlers(): void {
-  javaDetector = new JavaDetector();
+export function initJavaHandlers(detector?: JavaDetector): void {
+  javaDetector = detector ?? new JavaDetector();
   registerHandlers();
 }
 
@@ -153,6 +155,29 @@ function registerHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle(
+    JavaChannels.VALIDATE,
+    async (_, data: ValidateJavaRequest): Promise<IpcResult<JavaValidationResult>> => {
+      try {
+        const result = await javaDetector!.validateForMinecraft(data.path, data.mcVersion);
+        return { success: true, data: result };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+}
+
+export function cleanupJavaHandlers(): void {
+  ipcMain.removeHandler(JavaChannels.DETECT);
+  ipcMain.removeHandler(JavaChannels.GET_INSTALLATIONS);
+  ipcMain.removeHandler(JavaChannels.INSTALL);
+  ipcMain.removeHandler(JavaChannels.GET_REQUIRED_VERSION);
+  ipcMain.removeHandler(JavaChannels.SELECT_FOR_MC);
+  ipcMain.removeHandler(JavaChannels.VALIDATE);
+  javaDetector = null;
+  cachedInstallations = null;
 }
 
 // ============================================================================

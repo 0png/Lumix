@@ -1,38 +1,49 @@
-// Settings IPC Handlers - Mock 版本
-// 使用記憶體儲存設定
+// Settings IPC Handlers
+// 工作區設定由主程序持久化至 userData/settings.json。
 
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 import { SettingsChannels } from '../../shared/ipc-channels';
-import type {
-  IpcResult,
-  SettingsDto,
-  SaveSettingsRequest,
-} from '../../shared/ipc-types';
+import type { IpcResult, SaveSettingsRequest, SettingsDto } from '../../shared/ipc-types';
+import { SettingsService } from '../services/settings-service';
 
-// Mock 設定資料
-let mockSettings: SettingsDto = {
-  theme: 'system',
-  language: 'zh-TW',
-  defaultRamMin: 1024,
-  defaultRamMax: 4096,
-  autoUpdate: true,
-  javaInstallations: [],
-};
+let settingsService: SettingsService | null = null;
 
-export function initSettingsHandlers(): void {
-  registerHandlers();
+export function initSettingsHandlers(service?: SettingsService): void {
+  settingsService = service ?? new SettingsService(app.getPath('userData'));
+
+  ipcMain.handle(SettingsChannels.GET, async (): Promise<IpcResult<SettingsDto>> => {
+    try {
+      return { success: true, data: await settingsService!.get() };
+    } catch (error) {
+      return { success: false, error: formatError(error) };
+    }
+  });
+
+  ipcMain.handle(
+    SettingsChannels.SAVE,
+    async (_, data: SaveSettingsRequest): Promise<IpcResult<SettingsDto>> => {
+      try {
+        const saved = await settingsService!.save(data);
+        if (process.platform === 'win32') {
+          app.setLoginItemSettings({
+            openAtLogin: saved.launchAtLogin,
+            args: ['--hidden'],
+          });
+        }
+        return { success: true, data: saved };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
 }
 
-function registerHandlers(): void {
-  ipcMain.handle(SettingsChannels.GET, async (): Promise<IpcResult<SettingsDto>> => {
-    return { success: true, data: mockSettings };
-  });
+export function cleanupSettingsHandlers(): void {
+  ipcMain.removeHandler(SettingsChannels.GET);
+  ipcMain.removeHandler(SettingsChannels.SAVE);
+  settingsService = null;
+}
 
-  ipcMain.handle(SettingsChannels.SAVE, async (_, data: SaveSettingsRequest): Promise<IpcResult<SettingsDto>> => {
-    mockSettings = { 
-      ...mockSettings, 
-      ...data,
-    };
-    return { success: true, data: mockSettings };
-  });
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

@@ -34,6 +34,13 @@ describe('backup-utils', () => {
     });
   });
 
+  it('normalizes regular and pre-restore retention independently', () => {
+    expect(normalizeBackupSettings({ regularRetention: 0, preRestoreRetention: 99 }))
+      .toMatchObject({ regularRetention: 1, preRestoreRetention: 50 });
+    expect(normalizeBackupSettings({ regularRetention: '7' as never, preRestoreRetention: '2' as never }))
+      .toMatchObject({ regularRetention: 7, preRestoreRetention: 2 });
+  });
+
   it('schedules daily backups later on the same day when possible', () => {
     const nextRun = calculateNextBackupRun(
       normalizeBackupSettings({ enabled: true, scheduleType: 'daily', time: '15:30' }),

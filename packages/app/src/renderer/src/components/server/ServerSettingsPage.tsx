@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, ArrowLeft, Archive, Clock3, FolderOpen, Loader2, MemoryStick, RotateCcw, Save, ServerCog, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Archive, Clock3, Coffee, FileCode2, FolderOpen, Loader2, MemoryStick, RotateCcw, Save, ServerCog, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { normalizeBackupSettings } from '../../../../shared/backup-utils';
+import { findLumixManagedJvmArgument } from '../../../../shared/jvm-args';
 import type {
   BackupInfoDto,
   BackupOperationFailure,
@@ -24,6 +25,9 @@ import type {
   IpcResult,
   RestoreBackupResult,
   ServerPropertyValue,
+  AutoRestartSettings,
+  JavaInstallationDto,
+  JavaSelectionMode,
 } from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
 
@@ -46,6 +50,9 @@ interface ServerSettingsPageProps {
   onBack?: () => void;
   onUpdate?: (updates: Partial<ServerInstance>) => Promise<ServerInstance | null | void> | ServerInstance | null | void;
   initialSection?: 'basic' | 'gameplay' | 'network' | 'backup';
+  javaInstallations?: JavaInstallationDto[];
+  javaLoading?: boolean;
+  onDetectJava?: () => void | Promise<void>;
 }
 
 const PROPERTY_META: PropertyMeta[] = [
@@ -156,10 +163,28 @@ function SettingsSkeleton() {
   );
 }
 
-export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 'basic' }: ServerSettingsPageProps) {
+export function ServerSettingsPage({
+  server,
+  onBack,
+  onUpdate,
+  initialSection = 'basic',
+  javaInstallations = [],
+  javaLoading = false,
+  onDetectJava,
+}: ServerSettingsPageProps) {
   const { t } = useTranslation();
   const [serverName, setServerName] = useState(server.name);
   const [ramMax, setRamMax] = useState(server.ramMax);
+  const [javaSelectionMode, setJavaSelectionMode] = useState<JavaSelectionMode>(server.javaSelectionMode ?? (server.javaPath ? 'custom' : 'auto'));
+  const [javaPath, setJavaPath] = useState(server.javaPath ?? '');
+  const [jvmArgsText, setJvmArgsText] = useState((server.jvmArgs ?? []).join('\n'));
+  const [autoRestart, setAutoRestart] = useState<AutoRestartSettings>(server.autoRestart ?? { enabled: false, maxAttempts: 3 });
+  const [initialRuntime, setInitialRuntime] = useState({
+    javaSelectionMode: server.javaSelectionMode ?? (server.javaPath ? 'custom' : 'auto') as JavaSelectionMode,
+    javaPath: server.javaPath ?? '',
+    jvmArgsText: (server.jvmArgs ?? []).join('\n'),
+    autoRestart: server.autoRestart ?? { enabled: false, maxAttempts: 3 },
+  });
   const [properties, setProperties] = useState<Record<string, ServerPropertyValue>>({});
   const [initialProperties, setInitialProperties] = useState<Record<string, ServerPropertyValue>>({});
   const [backupSettings, setBackupSettings] = useState<BackupSettings>(() => normalizeBackupSettings(server.backupSettings));
@@ -181,15 +206,29 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
   const backupSectionRef = useRef<HTMLDivElement | null>(null);
 
   const isRunning = server.status === 'running';
+  const isStopped = server.status === 'stopped';
   const hasServerProperties = server.hasServerProperties === true;
 
   useEffect(() => {
     setServerName(server.name);
     setRamMax(server.ramMax);
+    const nextMode = server.javaSelectionMode ?? (server.javaPath ? 'custom' : 'auto');
+    const nextJvmArgsText = (server.jvmArgs ?? []).join('\n');
+    const nextAutoRestart = server.autoRestart ?? { enabled: false, maxAttempts: 3 };
+    setJavaSelectionMode(nextMode);
+    setJavaPath(server.javaPath ?? '');
+    setJvmArgsText(nextJvmArgsText);
+    setAutoRestart(nextAutoRestart);
+    setInitialRuntime({
+      javaSelectionMode: nextMode,
+      javaPath: server.javaPath ?? '',
+      jvmArgsText: nextJvmArgsText,
+      autoRestart: nextAutoRestart,
+    });
     const nextSettings = normalizeBackupSettings(server.backupSettings);
     setBackupSettings(nextSettings);
     setInitialBackupSettings(nextSettings);
-  }, [server.backupSettings, server.name, server.ramMax]);
+  }, [server.autoRestart, server.backupSettings, server.javaPath, server.javaSelectionMode, server.jvmArgs, server.name, server.ramMax]);
 
   const loadBackups = useCallback(async () => {
     const result = await window.electronAPI.server.listBackups(server.id);
@@ -254,13 +293,19 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
     return () => window.clearTimeout(timeout);
   }, [initialSection, server.id]);
 
+  const runtimeDirty = javaSelectionMode !== initialRuntime.javaSelectionMode
+    || javaPath !== initialRuntime.javaPath
+    || jvmArgsText !== initialRuntime.jvmArgsText;
   const isDirty = useMemo(
     () =>
       serverName !== server.name ||
       ramMax !== server.ramMax ||
+      runtimeDirty ||
+      autoRestart.enabled !== initialRuntime.autoRestart.enabled ||
+      autoRestart.maxAttempts !== initialRuntime.autoRestart.maxAttempts ||
       JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings) ||
       (hasServerProperties && PROPERTY_META.some((meta) => properties[meta.key] !== initialProperties[meta.key])),
-    [backupSettings, hasServerProperties, initialBackupSettings, initialProperties, properties, ramMax, server.name, server.ramMax, serverName]
+    [autoRestart, backupSettings, hasServerProperties, initialBackupSettings, initialProperties, initialRuntime, properties, ramMax, runtimeDirty, server.name, server.ramMax, serverName]
   );
 
   const regularBackups = useMemo(
@@ -279,8 +324,71 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      if (serverName !== server.name || ramMax !== server.ramMax) {
-        await onUpdate?.({ name: serverName, ramMax });
+      const targetRegularRetention = backupSettings.regularRetention ?? 3;
+      const targetPreRestoreRetention = backupSettings.preRestoreRetention ?? 3;
+      const regularToDelete = Math.max(0, regularBackups.length - targetRegularRetention);
+      const preRestoreToDelete = Math.max(0, preRestoreBackups.length - targetPreRestoreRetention);
+      if (
+        (targetRegularRetention < (initialBackupSettings.regularRetention ?? 3) && regularToDelete > 0)
+        || (targetPreRestoreRetention < (initialBackupSettings.preRestoreRetention ?? 3) && preRestoreToDelete > 0)
+      ) {
+        const confirmed = window.confirm(t('backup.retentionReductionConfirm', {
+          regular: regularToDelete,
+          preRestore: preRestoreToDelete,
+        }));
+        if (!confirmed) {
+          setBackupSettings((current) => ({
+            ...current,
+            regularRetention: initialBackupSettings.regularRetention,
+            preRestoreRetention: initialBackupSettings.preRestoreRetention,
+          }));
+          return;
+        }
+      }
+
+      if (runtimeDirty) {
+        const controlledJvmArg = findLumixManagedJvmArgument(jvmArgsText.split(/\r?\n/));
+        if (controlledJvmArg) {
+          toast.add({
+            title: t('server.jvmArgsControlled'),
+            description: controlledJvmArg,
+            type: 'error',
+          });
+          return;
+        }
+      }
+
+      if (runtimeDirty && javaSelectionMode === 'custom') {
+        if (!javaPath) {
+          toast.add({ title: t('server.javaPathRequired'), type: 'error' });
+          return;
+        }
+        const validation = await window.electronAPI.java.validate({ path: javaPath, mcVersion: server.mcVersion });
+        if (!validation.success || !validation.data?.compatible) {
+          toast.add({ title: t('server.javaIncompatible'), description: validation.data?.reason || validation.error, type: 'error' });
+          return;
+        }
+      }
+
+      const updatedServer = await onUpdate?.({
+        ...(serverName !== server.name || ramMax !== server.ramMax
+          ? { name: serverName, ramMin: Math.floor(ramMax / 2), ramMax }
+          : {}),
+        ...(runtimeDirty
+          ? {
+              javaSelectionMode,
+              javaPath,
+              jvmArgs: jvmArgsText.split(/\r?\n/).map((arg) => arg.trim()).filter(Boolean),
+            }
+          : {}),
+        ...(autoRestart.enabled !== initialRuntime.autoRestart.enabled || autoRestart.maxAttempts !== initialRuntime.autoRestart.maxAttempts
+          ? { autoRestart }
+          : {}),
+        ...(JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings) ? { backupSettings } : {}),
+      });
+      if (!updatedServer && onUpdate) {
+        toast.add({ title: t('toast.settingsSaveFailed'), type: 'error' });
+        return;
       }
 
       const updates = PROPERTY_META.reduce<Record<string, ServerPropertyValue>>((acc, meta) => {
@@ -304,19 +412,13 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         setInitialProperties(properties);
       }
 
-      if (JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings)) {
-        const updatedServer = onUpdate
-          ? await onUpdate({ backupSettings })
-          : null;
-
-        if (!updatedServer) {
-          toast.add({ title: t('toast.backupSettingsSaveFailed'), type: 'error' });
-          return;
+      if (updatedServer) {
+        setInitialRuntime({ javaSelectionMode, javaPath, jvmArgsText, autoRestart });
+        if (JSON.stringify(backupSettings) !== JSON.stringify(initialBackupSettings)) {
+          const savedSettings = normalizeBackupSettings(updatedServer.backupSettings);
+          setBackupSettings(savedSettings);
+          setInitialBackupSettings(savedSettings);
         }
-
-        const savedSettings = normalizeBackupSettings(updatedServer.backupSettings);
-        setBackupSettings(savedSettings);
-        setInitialBackupSettings(savedSettings);
       }
 
       toast.add({
@@ -371,6 +473,18 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
     } finally {
       setIsRestorePreflightLoading(false);
     }
+  };
+
+  const chooseJavaPath = async () => {
+    const result = await window.electronAPI.app.selectJavaExecutable();
+    if (!result.success || !result.data) return;
+    const validation = await window.electronAPI.java.validate({ path: result.data, mcVersion: server.mcVersion });
+    if (!validation.success || !validation.data?.compatible) {
+      toast.add({ title: t('server.javaIncompatible'), description: validation.data?.reason || validation.error, type: 'error' });
+      return;
+    }
+    setJavaSelectionMode('custom');
+    setJavaPath(result.data);
   };
 
   const handleRestoreBackup = async () => {
@@ -573,7 +687,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         <Button
           size="sm"
           onClick={handleSave}
-          disabled={!isDirty || isSaving || isLoading || isRunning}
+          disabled={!isDirty || isSaving || isLoading || (!isStopped && (serverName !== server.name || ramMax !== server.ramMax || runtimeDirty))}
           className="h-8 text-xs ripple"
         >
           {isSaving ? (
@@ -635,7 +749,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
               <Slider
                 value={[ramMax]}
                 onValueChange={(values) => values[0] !== undefined && setRamMax(values[0])}
-                min={512}
+                min={1024}
                 max={16384}
                 step={512}
                 disabled={isRunning}
@@ -644,6 +758,105 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
           </CardContent>
         </Card>
       </div>
+
+      <Card className="glass">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <FileCode2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            {t('server.runtimeSettings')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 p-4 pt-1">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">{t('server.javaMode')}</Label>
+              <Select
+                value={javaSelectionMode}
+                onValueChange={(value) => setJavaSelectionMode(value as JavaSelectionMode)}
+                disabled={!isStopped}
+              >
+                <SelectTrigger className="h-9 bg-secondary/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">{t('server.javaModeAuto')}</SelectItem>
+                  <SelectItem value="custom">{t('server.javaModeCustom')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">{t('server.javaPath')}</Label>
+              {javaSelectionMode === 'custom' ? (
+                <div className="flex gap-2">
+                  <Select value={javaPath || undefined} onValueChange={setJavaPath} disabled={!isStopped || javaLoading}>
+                    <SelectTrigger className="h-9 min-w-0 flex-1 bg-secondary/50"><SelectValue placeholder={t('server.chooseJava')} /></SelectTrigger>
+                    <SelectContent>
+                      {javaPath && !javaInstallations.some((java) => java.path === javaPath) && (
+                        <SelectItem value={javaPath}>{javaPath}</SelectItem>
+                      )}
+                      {javaInstallations.map((java) => <SelectItem key={java.path} value={java.path}>{`Java ${java.majorVersion} · ${java.path}`}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => void chooseJavaPath()} disabled={!isStopped} aria-label={t('server.browseJava')}>
+                    <FolderOpen className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex h-9 items-center rounded-md border border-border/60 bg-secondary/30 px-3 font-mono text-[11px] text-muted-foreground" title={javaPath}>
+                  <Coffee className="mr-2 h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{javaPath || t('server.javaAutoPending')}</span>
+                </div>
+              )}
+              {javaSelectionMode === 'custom' && javaInstallations.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">{t('server.noDetectedJava')} {onDetectJava && <button type="button" className="text-primary underline underline-offset-2" onClick={() => void onDetectJava()}>{t('settings.redetect')}</button>}</p>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="server-jvm-args" className="text-xs text-muted-foreground">{t('server.jvmArgs')}</Label>
+            <textarea
+              id="server-jvm-args"
+              value={jvmArgsText}
+              onChange={(event) => setJvmArgsText(event.target.value)}
+              disabled={!isStopped}
+              rows={4}
+              placeholder={t('server.jvmArgsPlaceholder')}
+              className="flex w-full resize-y rounded-md border border-input bg-secondary/30 px-3 py-2 font-mono text-xs shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <p className="text-[11px] leading-5 text-muted-foreground">{t('server.jvmArgsDescription')}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <RotateCcw className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            {t('server.lifecycleSettings')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 p-4 pt-1">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-secondary/25 px-3 py-3">
+            <div>
+              <p className="text-xs font-medium">{t('server.autoRestart')}</p>
+              <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t('server.autoRestartDescription')}</p>
+            </div>
+            <Switch checked={autoRestart.enabled} onCheckedChange={(enabled) => setAutoRestart((current) => ({ ...current, enabled }))} />
+          </div>
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-secondary/25 px-3 py-3">
+            <div>
+              <p className="text-xs font-medium">{t('server.maxRestartAttempts')}</p>
+              <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t('server.maxRestartAttemptsDescription')}</p>
+            </div>
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={autoRestart.maxAttempts}
+              onChange={(event) => setAutoRestart((current) => ({ ...current, maxAttempts: Math.min(10, Math.max(1, Number(event.target.value) || 1)) }))}
+              className="h-8 w-20 text-right text-xs"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <div ref={backupSectionRef}>
         <Card className="glass">
@@ -819,17 +1032,34 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
             </div>
           </div>
 
+          <div className="grid gap-3 rounded-lg border border-border/60 bg-secondary/20 p-3 md:grid-cols-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="regular-retention" className="text-xs font-medium">{t('backup.regularRetention')}</Label>
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('backup.retentionCopiesDescription')}</p>
+              </div>
+              <Input id="regular-retention" type="number" min={1} max={50} value={backupSettings.regularRetention ?? 3} onChange={(event) => updateBackupSetting('regularRetention', Number(event.target.value))} className="h-8 w-20 text-right text-xs" />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="pre-restore-retention" className="text-xs font-medium">{t('backup.preRestoreRetention')}</Label>
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('backup.retentionCopiesDescription')}</p>
+              </div>
+              <Input id="pre-restore-retention" type="number" min={1} max={50} value={backupSettings.preRestoreRetention ?? 3} onChange={(event) => updateBackupSetting('preRestoreRetention', Number(event.target.value))} className="h-8 w-20 text-right text-xs" />
+            </div>
+          </div>
+
           <div className="space-y-4">
             {renderBackupList(
               regularBackups,
               t('backup.regularSection'),
-              `${regularBackups.length}/3`,
+              `${regularBackups.length}/${backupSettings.regularRetention ?? 3}`,
               t('backup.empty')
             )}
             {renderBackupList(
               preRestoreBackups,
               t('backup.preRestoreSection'),
-              `${preRestoreBackups.length}/3`,
+              `${preRestoreBackups.length}/${backupSettings.preRestoreRetention ?? 3}`,
               t('backup.preRestoreEmpty')
             )}
             {isRunning && (

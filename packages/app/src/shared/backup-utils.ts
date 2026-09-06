@@ -9,7 +9,12 @@ export const DEFAULT_BACKUP_SETTINGS: BackupSettings = {
   intervalMinutes: 30,
   includeLogs: false,
   notifyOps: true,
+  regularRetention: 3,
+  preRestoreRetention: 3,
 };
+
+export const MIN_BACKUP_RETENTION = 1;
+export const MAX_BACKUP_RETENTION = 50;
 
 export function normalizeBackupSettings(settings?: Partial<BackupSettings>): BackupSettings {
   const merged = { ...DEFAULT_BACKUP_SETTINGS, ...settings };
@@ -20,6 +25,8 @@ export function normalizeBackupSettings(settings?: Partial<BackupSettings>): Bac
   const intervalHours = Math.min(24, Math.max(1, Number(merged.intervalHours) || 6));
   const intervalMinutes = Math.min(1440, Math.max(5, Number(merged.intervalMinutes) || 30));
   const dayOfWeek = Math.min(6, Math.max(0, Number(merged.dayOfWeek) || 0));
+  const regularRetention = normalizeRetention(merged.regularRetention);
+  const preRestoreRetention = normalizeRetention(merged.preRestoreRetention);
 
   return {
     ...merged,
@@ -31,7 +38,15 @@ export function normalizeBackupSettings(settings?: Partial<BackupSettings>): Bac
     enabled: Boolean(merged.enabled),
     includeLogs: Boolean(merged.includeLogs),
     notifyOps: merged.notifyOps !== false,
+    regularRetention,
+    preRestoreRetention,
   };
+}
+
+function normalizeRetention(value: unknown): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 3;
+  return Math.min(MAX_BACKUP_RETENTION, Math.max(MIN_BACKUP_RETENTION, Math.round(numeric)));
 }
 
 export function withNextBackupRun(settings: BackupSettings, now: Date = new Date()): BackupSettings {
