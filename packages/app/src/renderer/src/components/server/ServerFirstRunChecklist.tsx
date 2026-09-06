@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
-import { toast } from '@/lib/toast';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { findNextOnboardingStep, ONBOARDING_STEP_ORDER } from '@/lib/onboarding';
 import type { BackupInfoDto, OnboardingState, OnboardingStepId } from '../../../../shared/ipc-types';
@@ -202,9 +202,13 @@ export function ServerFirstRunChecklist({
       const result = await window.electronAPI.server.createBackup({ serverId: server.id, trigger: 'manual' });
       if (!result.success) throw new Error(result.error || t('onboarding.backupFailed'));
       await refreshBackups();
-      toast.success(t('onboarding.backupCreated'));
+      toast.add({ title: t('onboarding.backupCreated'), type: 'success' });
     } catch (error) {
-      toast.error(t('onboarding.backupFailed'), (error as Error).message);
+      toast.add({
+        title: t('onboarding.backupFailed'),
+        description: (error as Error).message,
+        type: 'error',
+      });
     } finally {
       setIsCreatingBackup(false);
     }

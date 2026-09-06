@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Router,
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -181,7 +181,7 @@ export function ConnectionInfoCard({
       const result = await window.electronAPI.server.getConnectionInfo(serverId);
       if (!result.success || !result.data) {
         if (!refreshing) setLoadError(true);
-        toast.error(t('toast.connectionInfoLoadFailed'));
+        toast.add({ title: t('toast.connectionInfoLoadFailed'), type: 'error' });
         return;
       }
 
@@ -189,7 +189,7 @@ export function ConnectionInfoCard({
       setLoadError(false);
     } catch {
       if (!refreshing) setLoadError(true);
-      toast.error(t('toast.connectionInfoLoadFailed'));
+      toast.add({ title: t('toast.connectionInfoLoadFailed'), type: 'error' });
     } finally {
       if (refreshing) {
         setIsRefreshing(false);
@@ -224,10 +224,10 @@ export function ConnectionInfoCard({
         setCopiedTarget(target);
         copyResetTimer.current = setTimeout(() => setCopiedTarget(null), 1400);
       } else {
-        toast.success(t('toast.connectionAddressCopied'));
+        toast.add({ title: t('toast.connectionAddressCopied'), type: 'success' });
       }
     } catch {
-      toast.error(t('toast.connectionAddressCopyFailed'));
+      toast.add({ title: t('toast.connectionAddressCopyFailed'), type: 'error' });
     }
   }, [appearance, t]);
 

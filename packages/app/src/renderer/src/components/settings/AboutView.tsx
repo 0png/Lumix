@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, BookText, ExternalLink, Github, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUpdate } from '@/hooks/use-update';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import appIcon from '@/assets/icon.png';
 
 interface AboutViewProps {
@@ -41,8 +41,10 @@ export function AboutView({ onBack, onOpenWhatsNew }: AboutViewProps) {
     setHasCheckedUpdate(true);
 
     if (result.success && !result.data?.hasUpdate) {
-      toast.success(t('update.noUpdate.title'), {
+      toast.add({
+        title: t('update.noUpdate.title'),
         description: t('update.noUpdate.description'),
+        type: 'success',
       });
     }
   };

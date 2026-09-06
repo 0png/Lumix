@@ -14,7 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { normalizeBackupSettings } from '../../../../shared/backup-utils';
 import type {
   BackupInfoDto,
@@ -232,7 +232,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
 
   useEffect(() => {
     loadBackups().catch(() => {
-      toast.error(t('toast.backupsLoadFailed'));
+      toast.add({ title: t('toast.backupsLoadFailed'), type: 'error' });
     });
   }, [loadBackups, server.id, t]);
 
@@ -297,7 +297,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         });
 
         if (!result.success) {
-          toast.error(t('toast.propertiesSaveFailed'));
+          toast.add({ title: t('toast.propertiesSaveFailed'), type: 'error' });
           return;
         }
 
@@ -310,7 +310,7 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
           : null;
 
         if (!updatedServer) {
-          toast.error(t('toast.backupSettingsSaveFailed'));
+          toast.add({ title: t('toast.backupSettingsSaveFailed'), type: 'error' });
           return;
         }
 
@@ -319,9 +319,12 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         setInitialBackupSettings(savedSettings);
       }
 
-      toast.success(t(hasServerProperties ? 'toast.propertiesSaved' : 'toast.settingsSaved'));
+      toast.add({
+        title: t(hasServerProperties ? 'toast.propertiesSaved' : 'toast.settingsSaved'),
+        type: 'success',
+      });
     } catch {
-      toast.error(t('toast.propertiesSaveFailed'));
+      toast.add({ title: t('toast.propertiesSaveFailed'), type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -338,10 +341,10 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       const result = await window.electronAPI.server.createBackup({ serverId: server.id, trigger: 'manual' });
       if (!result.success) {
         setBackupFailure(extractBackupFailure(result) ?? buildFallbackFailure(result.error || t('toast.backupCreateFailed')));
-        toast.error(t('toast.backupCreateFailed'));
+        toast.add({ title: t('toast.backupCreateFailed'), type: 'error' });
         return;
       }
-      toast.success(t('toast.backupCreated'));
+      toast.add({ title: t('toast.backupCreated'), type: 'success' });
       await loadBackups();
     } finally {
       setIsBackupBusy(false);
@@ -385,13 +388,13 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
         const failure = extractBackupFailure(result) ?? buildFallbackFailure(result.error || t('toast.backupRestoreFailed'));
         setBackupFailure(failure);
         setRestoreFailure(failure);
-        toast.error(t('toast.backupRestoreFailed'));
+        toast.add({ title: t('toast.backupRestoreFailed'), type: 'error' });
         return;
       }
       const restoreResult = result.data as RestoreBackupResult;
-      toast.success(t('toast.backupRestored'));
+      toast.add({ title: t('toast.backupRestored'), type: 'success' });
       if (restoreResult.preRestoreBackupId) {
-        toast.message(t('backup.preRestoreBackupCreated'));
+        toast.add({ title: t('backup.preRestoreBackupCreated') });
       }
       await loadBackups();
       setIsRestoreDialogOpen(false);
@@ -407,10 +410,10 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
     try {
       const result = await window.electronAPI.server.deleteBackup(server.id, backup.id);
       if (!result.success) {
-        toast.error(t('toast.backupDeleteFailed'));
+        toast.add({ title: t('toast.backupDeleteFailed'), type: 'error' });
         return;
       }
-      toast.success(t('toast.backupDeleted'));
+      toast.add({ title: t('toast.backupDeleted'), type: 'success' });
       await loadBackups();
     } finally {
       setIsBackupBusy(false);

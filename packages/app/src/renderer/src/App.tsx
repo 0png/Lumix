@@ -1,11 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast as sonnerToast } from 'sonner';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster, toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
-import { useTheme } from '@/contexts/theme-context';
 import { MainLayout, ViewErrorBoundary } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
 import { UpdateNotification } from '@/components/update/UpdateNotification';
@@ -29,7 +27,6 @@ import { SettingsDialog, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
 import { useJava } from '@/hooks/use-java';
 import { useReleaseNotes } from '@/hooks/use-release-notes';
-import { toast } from '@/lib/toast';
 import { shouldShowWhatsNew, WHATS_NEW_LAST_SEEN_VERSION_KEY } from '@/lib/whats-new';
 import type { ImportServerRequest } from '../../shared/ipc-types';
 import '@/i18n';
@@ -74,7 +71,6 @@ function toServerInstance(dto: {
 
 function AppContent() {
   const { t } = useTranslation();
-  const { theme } = useTheme();
   const {
     servers: serverDtos,
     loading,
@@ -140,14 +136,14 @@ function AppContent() {
       // 1. 先偵測系統 Java
       const javaResult = await window.electronAPI.java.detect();
       if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
-        toast.error(t('toast.noJavaFound'));
+        toast.add({ title: t('toast.noJavaFound'), type: 'error' });
         return { code: 'JAVA_NOT_FOUND' as const, message: t('toast.noJavaFound') };
       }
 
       // 2. 選擇適合此 MC 版本的 Java
       const selectResult = await window.electronAPI.java.selectForMc(data.mcVersion);
       if (!selectResult.success || !selectResult.data) {
-        toast.error(t('toast.noCompatibleJava'));
+        toast.add({ title: t('toast.noCompatibleJava'), type: 'error' });
         return { code: 'JAVA_NOT_FOUND' as const, message: t('toast.noCompatibleJava') };
       }
 
@@ -180,7 +176,7 @@ function AppContent() {
             return next;
           });
         }
-        toast.success(t('toast.serverReady'));
+        toast.add({ title: t('toast.serverReady'), type: 'success' });
       }
       return null;
     } finally {
@@ -197,7 +193,7 @@ function AppContent() {
     if (server) {
       setSelectedServerId(server.id);
       setCurrentView('servers');
-      toast.success(t('serverImport.importSuccess'));
+      toast.add({ title: t('serverImport.importSuccess'), type: 'success' });
     }
     return null;
   }, [importExistingServer, t]);
@@ -209,13 +205,13 @@ function AppContent() {
       // 嘗試自動偵測並設定 Java
       const javaResult = await window.electronAPI.java.detect();
       if (!javaResult.success || !javaResult.data || javaResult.data.length === 0) {
-        toast.error(t('toast.noJavaFound'));
+        toast.add({ title: t('toast.noJavaFound'), type: 'error' });
         return;
       }
 
       const selectResult = await window.electronAPI.java.selectForMc(serverDto.mcVersion);
       if (!selectResult.success || !selectResult.data) {
-        toast.error(t('toast.noCompatibleJava'));
+        toast.add({ title: t('toast.noCompatibleJava'), type: 'error' });
         return;
       }
 
@@ -225,18 +221,18 @@ function AppContent() {
 
     const result = await startServer(id);
     if (result.success) {
-      toast.success(t('toast.serverStarted'));
+      toast.add({ title: t('toast.serverStarted'), type: 'success' });
     } else {
-      toast.error(t('toast.startFailed'), result.error);
+      toast.add({ title: t('toast.startFailed'), description: result.error, type: 'error' });
     }
   }, [startServer, t, serverDtos, updateServer]);
 
   const handleStopServer = useCallback(async (id: string) => {
     const result = await stopServer(id);
     if (result.success) {
-      toast.success(t('toast.serverStopped'));
+      toast.add({ title: t('toast.serverStopped'), type: 'success' });
     } else {
-      toast.error(t('toast.stopFailed'), result.error);
+      toast.add({ title: t('toast.stopFailed'), description: result.error, type: 'error' });
     }
   }, [stopServer, t]);
 
@@ -245,9 +241,12 @@ function AppContent() {
     const success = await deleteServer(id);
     if (success) {
       setSelectedServerId(undefined);
-      toast.success(target?.origin === 'imported' ? t('serverImport.removeSuccess') : t('toast.serverDeleted'));
+      toast.add({
+        title: target?.origin === 'imported' ? t('serverImport.removeSuccess') : t('toast.serverDeleted'),
+        type: 'success',
+      });
     } else {
-      toast.error(t('toast.deleteFailed'));
+      toast.add({ title: t('toast.deleteFailed'), type: 'error' });
     }
   }, [deleteServer, serverDtos, t]);
 
@@ -255,7 +254,7 @@ function AppContent() {
     if (!selectedServerId) return;
     const result = await updateServer({ id: selectedServerId, ...updates });
     if (result) {
-      toast.success(t('toast.settingsSaved'));
+      toast.add({ title: t('toast.settingsSaved'), type: 'success' });
     }
     return result;
   }, [selectedServerId, updateServer, t]);
@@ -301,7 +300,7 @@ function AppContent() {
 
       const openLatestLog = event.latestLogPath
         ? {
-            label: t('toast.openLatestLog'),
+            children: t('toast.openLatestLog'),
             onClick: () => {
               void (async () => {
                 const result = await window.electronAPI.app.openFolder(event.latestLogPath!);
@@ -313,17 +312,16 @@ function AppContent() {
           }
         : undefined;
 
-      sonnerToast.error(
-        t('toast.serverUnexpectedExit', { name: event.serverName ?? t('server.name') }),
-        {
-          id: `server-unexpected-exit-${event.serverId}`,
-          description: t('toast.serverUnexpectedExitDescription', {
-            code: event.exitCode ?? t('common.unknown'),
-          }),
-          duration: 15000,
-          action: openLatestLog,
-        }
-      );
+      toast.add({
+        id: `server-unexpected-exit-${event.serverId}`,
+        title: t('toast.serverUnexpectedExit', { name: event.serverName ?? t('server.name') }),
+        description: t('toast.serverUnexpectedExitDescription', {
+          code: event.exitCode ?? t('common.unknown'),
+        }),
+        type: 'error',
+        timeout: 15000,
+        actionProps: openLatestLog,
+      });
     });
 
     return () => {
@@ -332,12 +330,12 @@ function AppContent() {
   }, [t]);
 
   const handleAddJavaPath = useCallback(async () => {
-    toast.info(t('toast.detectingJava'));
+    toast.add({ title: t('toast.detectingJava'), type: 'info' });
     const detectedJava = await detectJava();
     if (detectedJava.length > 0) {
-      toast.success(t('toast.javaDetected', { count: detectedJava.length }));
+      toast.add({ title: t('toast.javaDetected', { count: detectedJava.length }), type: 'success' });
     } else {
-      toast.error(t('toast.noJavaFound'));
+      toast.add({ title: t('toast.noJavaFound'), type: 'error' });
     }
   }, [detectJava, t]);
 
@@ -586,9 +584,12 @@ function AppContent() {
               setSelectedServerId(result.server.id);
               setCurrentView('servers');
               if (result.unresolvedFiles > 0) {
-                toast.warning(t('modpackImport.importedIncomplete', { count: result.unresolvedFiles }));
+                toast.add({
+                  title: t('modpackImport.importedIncomplete', { count: result.unresolvedFiles }),
+                  type: 'warning',
+                });
               } else {
-                toast.success(t('modpackImport.importSuccess'));
+                toast.add({ title: t('modpackImport.importSuccess'), type: 'success' });
               }
             }}
           />
@@ -624,7 +625,7 @@ function AppContent() {
         </WorkspaceDialogContent>
       </Dialog>
 
-      <Toaster position="bottom-right" theme={theme} />
+      <Toaster />
       <DownloadProgressToast servers={servers} downloadProgress={downloadProgress} />
       <UpdateNotification />
       <WhatsNewDialog

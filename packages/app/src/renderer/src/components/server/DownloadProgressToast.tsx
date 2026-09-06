@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, Loader2 } from 'lucide-react';
-import { toast as sonnerToast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Progress } from '@/components/ui/progress';
 import type { DownloadProgress } from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
@@ -98,18 +98,19 @@ export function DownloadProgressToast({ servers, downloadProgress }: DownloadPro
     for (const server of activeDownloads) {
       const toastId = `server-download-${server.id}`;
       toastIds.current.set(server.id, toastId);
-      sonnerToast.custom(
-        () => <ToastContent server={server} progress={downloadProgress.get(server.id)} />,
-        {
-          id: toastId,
-          duration: Infinity,
-        }
-      );
+      toast.add({
+        id: toastId,
+        type: 'loading',
+        timeout: 0,
+        data: {
+          content: <ToastContent server={server} progress={downloadProgress.get(server.id)} />,
+        },
+      });
     }
 
     for (const [serverId, toastId] of toastIds.current) {
       if (!activeIds.has(serverId)) {
-        sonnerToast.dismiss(toastId);
+        toast.close(toastId);
         toastIds.current.delete(serverId);
       }
     }
@@ -119,7 +120,7 @@ export function DownloadProgressToast({ servers, downloadProgress }: DownloadPro
     const activeToastIds = toastIds.current;
     return () => {
       for (const toastId of activeToastIds.values()) {
-        sonnerToast.dismiss(toastId);
+        toast.close(toastId);
       }
       activeToastIds.clear();
     };

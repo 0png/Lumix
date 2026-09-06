@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUpdate } from '../../hooks/use-update';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Progress } from '../ui/progress';
 
 export function UpdateNotification() {
@@ -20,11 +20,14 @@ export function UpdateNotification() {
   // 顯示更新可用通知
   useEffect(() => {
     if (available && updateInfo) {
-      toast(t('update.available.title'), {
+      toast.add({
+        id: 'app-update',
+        title: t('update.available.title'),
         description: t('update.available.description', { version: updateInfo.version }),
-        duration: Infinity,
-        action: {
-          label: t('update.download'),
+        type: 'info',
+        timeout: 0,
+        actionProps: {
+          children: t('update.download'),
           onClick: downloadUpdate,
         },
       });
@@ -35,14 +38,18 @@ export function UpdateNotification() {
   useEffect(() => {
     if (downloading && downloadProgress) {
       const percent = Math.round(downloadProgress.percent);
-      toast(t('update.downloading.title'), {
+      toast.add({
+        id: 'app-update',
+        title: t('update.downloading.title'),
         description: (
           <div className="space-y-2">
             <Progress value={percent} />
             <p className="text-sm text-muted-foreground">{percent}%</p>
           </div>
         ),
-        duration: Infinity,
+        type: 'loading',
+        timeout: 0,
+        actionProps: undefined,
       });
     }
   }, [downloading, downloadProgress, t]);
@@ -50,11 +57,14 @@ export function UpdateNotification() {
   // 顯示下載完成通知
   useEffect(() => {
     if (downloaded) {
-      toast(t('update.downloaded.title'), {
+      toast.add({
+        id: 'app-update',
+        title: t('update.downloaded.title'),
         description: t('update.downloaded.description'),
-        duration: Infinity,
-        action: {
-          label: t('update.install'),
+        type: 'success',
+        timeout: 0,
+        actionProps: {
+          children: t('update.install'),
           onClick: quitAndInstall,
         },
       });
@@ -64,8 +74,13 @@ export function UpdateNotification() {
   // 顯示錯誤通知
   useEffect(() => {
     if (error) {
-      toast.error(t('update.error.title'), {
+      toast.add({
+        id: 'app-update',
+        title: t('update.error.title'),
         description: error,
+        type: 'error',
+        timeout: 3800,
+        actionProps: undefined,
       });
     }
   }, [error, t]);

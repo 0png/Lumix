@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { toast } from '@/lib/toast';
+import { toast } from '@/components/ui/toast';
 import type { PlayerActionType, PlayerDto, ServerStatus } from '../../../../shared/ipc-types';
 
 interface PlayerManagementProps {
@@ -57,7 +57,7 @@ export function PlayerManagement({ serverId, status }: PlayerManagementProps) {
       if (result.success && result.data) {
         setPlayers(result.data);
       } else {
-        toast.error(t('toast.playersLoadFailed'), result.error);
+        toast.add({ title: t('toast.playersLoadFailed'), description: result.error, type: 'error' });
       }
     } finally {
       loadingRef.current = false;
@@ -80,10 +80,10 @@ export function PlayerManagement({ serverId, status }: PlayerManagementProps) {
     try {
       const result = await window.electronAPI.server.playerAction({ serverId, playerName, action });
       if (result.success) {
-        toast.success(t('toast.playerActionSent'));
+        toast.add({ title: t('toast.playerActionSent'), type: 'success' });
         window.setTimeout(loadPlayers, 800);
       } else {
-        toast.error(t('toast.playerActionFailed'), result.error);
+        toast.add({ title: t('toast.playerActionFailed'), description: result.error, type: 'error' });
       }
     } finally {
       setBusyPlayer(null);
