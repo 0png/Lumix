@@ -21,7 +21,7 @@ interface MainLayoutProps {
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
   onGoHome?: () => void;
-  onCreateServer?: () => void;
+  onCreateServer?: (source?: 'pointer' | 'keyboard') => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
   currentView?: 'servers' | 'server-settings' | 'settings' | 'about';

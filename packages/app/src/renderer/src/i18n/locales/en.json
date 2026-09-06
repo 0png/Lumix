@@ -152,6 +152,21 @@
     "serverPropertiesPending": "server.properties has not been generated yet. Start the server successfully once, then return here to edit gameplay, world, and network settings.",
     "consoleFullscreen": "Fullscreen",
     "consoleExitFullscreen": "Exit Fullscreen",
+    "performance": {
+      "title": "Live load",
+      "description": "Track CPU and memory usage for this server's Java process.",
+      "live": "Live",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "average": "Avg {{value}}",
+      "rangeLabel": "Select time range",
+      "last5Minutes": "Last 5 minutes",
+      "last15Minutes": "Last 15 minutes",
+      "last30Minutes": "Last 30 minutes",
+      "chartLabel": "Live CPU and memory chart for the Java server process",
+      "stopped": "Start the server to see its load trend here.",
+      "waiting": "Waiting for the first performance sample…"
+    },
     "connection": {
       "title": "Connection Info & Diagnostics",
       "bentoDescription": "Copy common addresses and review listening, binding, and firewall status at a glance.",
@@ -281,18 +296,28 @@
     }
   },
   "onboarding": {
-    "title": "Next Steps",
-    "description": "The server is created. Use this checklist to verify the folder, core settings, connection notes, and your first backup.",
+    "title": "Server setup",
+    "description": "Verify the runtime, first launch, connection, and backup so the server is ready for real use.",
     "dismissedDescription": "You dismissed the first-run guide, but you can reopen it anytime to finish the remaining setup steps.",
     "completedDescription": "This server's first-run onboarding is complete.",
     "progress": "{{completed}} / {{total}} completed",
     "done": "Complete",
-    "reopen": "Reopen Next Steps",
+    "reopen": "Continue setup",
     "continue": "Continue setup",
-    "viewChecklist": "View full checklist",
-    "modalTitle": "First-run checklist for {{server}}",
-    "dismiss": "Dismiss for now",
+    "viewChecklist": "View all",
+    "modalTitle": "Set up {{server}}",
+    "modalDescription": "Essential checks before the first production launch",
+    "dismiss": "Hide for now",
     "markComplete": "Mark complete",
+    "next": "Recommended next",
+    "setup": "Setup flow",
+    "progressLabel": "Overall progress",
+    "stepNumber": "Step {{current}} of {{total}}",
+    "blocked": "Not available yet",
+    "action": "Available action",
+    "resolve": "Resolve issue",
+    "backupCreated": "First backup created",
+    "backupFailed": "Couldn't create backup",
     "state": {
       "completed": "Completed",
       "blocked": "Blocked",
@@ -362,10 +387,10 @@
     }
   },
   "onboardingPrompt": {
-    "title": "Open the post-create onboarding?",
-    "description": "Lumix can walk you through the first-time setup flow for this new server, including the folder, settings, connection notes, and the first backup.",
-    "open": "Open onboarding",
-    "neverAskAgain": "Don't ask again"
+    "title": "Finish setting up the server?",
+    "description": "Use a focused flow to verify Java, first launch, connection details, and backup. Lumix keeps track of progress automatically.",
+    "open": "Start setup",
+    "neverAskAgain": "Skip this prompt"
   },
   "players": {
     "title": "Player Management",
@@ -441,24 +466,25 @@
     }
   },
   "addServerChoice": {
-    "eyebrow": "Server workspace",
-    "title": "Where would you like to start?",
-    "description": "Choose a setup path and Lumix will guide you through versions, runtime, and server content.",
-    "recommended": "Most common",
+    "eyebrow": "Add server",
+    "title": "Choose a setup method",
+    "description": "Start from scratch, or import an existing server or modpack.",
+    "recommended": "Recommended",
+    "backToMethods": "Back to setup methods",
     "options": {
       "standard": {
         "title": "Create a new server",
-        "description": "Start clean with Vanilla, Paper, Purpur, Fabric, Forge, or NeoForge.",
+        "description": "Choose a game version and server core, then configure it from scratch.",
         "action": "Choose core and version"
       },
       "modpack": {
-        "title": "Build from a modpack",
-        "description": "Import a .mrpack or .zip and install its mods, configs, and loader automatically.",
+        "title": "Import a modpack",
+        "description": "Create a server automatically from a .mrpack or .zip file.",
         "action": "Choose or drop a modpack"
       },
       "existing": {
         "title": "Import an existing server",
-        "description": "Bring an existing server folder under Lumix management.",
+        "description": "Add an existing server folder from this computer.",
         "action": "Scan a server folder"
       }
     }
@@ -797,6 +823,30 @@
     "availableBadge": "Available",
     "currentBadge": "Current",
     "copyrightNotice": "© 2026 0png"
+  },
+  "whatsNew": {
+    "title": "What's New",
+    "description": "See what has changed in recent Lumix releases.",
+    "aboutDescription": "Browse this release and previous updates",
+    "open": "View updates",
+    "releaseHistory": "Release history",
+    "currentVersion": "Current version",
+    "prerelease": "Pre-release",
+    "viewOnGitHub": "View on GitHub",
+    "retry": "Try again",
+    "loadErrorTitle": "Couldn't load release notes",
+    "loadErrorDescription": "Lumix can't reach GitHub Releases right now. Check your connection and try again.",
+    "currentReleaseMissing": "GitHub does not have a release for the current version {{version}} yet. Recent releases are shown below.",
+    "emptyRelease": "No release notes were provided for this version.",
+    "emptyTitle": "No release history yet",
+    "emptyDescription": "GitHub Releases does not have any published updates to display.",
+    "alerts": {
+      "note": "Note",
+      "tip": "Tip",
+      "important": "Important",
+      "warning": "Warning",
+      "caution": "Caution"
+    }
   },
   "update": {
     "available": {

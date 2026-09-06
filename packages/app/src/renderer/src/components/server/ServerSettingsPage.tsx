@@ -851,11 +851,8 @@ export function ServerSettingsPage({ server, onBack, onUpdate, initialSection = 
       >
         <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-xl">
           <WorkspaceDialogHeader
-            icon={RotateCcw}
-            eyebrow={t('modal.restorePoint')}
             title={t('backup.restoreDialogTitle')}
             description={t('backup.restoreDialogDescription')}
-            tone="destructive"
           />
 
           <WorkspaceDialogBody>

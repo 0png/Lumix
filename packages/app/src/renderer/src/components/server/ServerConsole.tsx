@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Maximize2, Minimize2, Trash2, Terminal, Send, AlertCircle } from 'lucide-react';
+import { Maximize2, Minimize2, Trash2, Terminal, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -455,11 +455,8 @@ export function ServerConsole({ logs, onClear, onSendCommand, isFullscreen, onTo
       <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
         <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-sm">
           <WorkspaceDialogHeader
-            icon={AlertCircle}
-            eyebrow={t('modal.confirmAction')}
             title={t('server.clearConsole', '清除控制台')}
             description={t('server.clearConsoleConfirm', '確定要清除所有日誌嗎？此操作無法復原。')}
-            tone="destructive"
           />
           <WorkspaceDialogFooter>
             <Button variant="outline" onClick={() => setShowClearDialog(false)}>

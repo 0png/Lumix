@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheck } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { useTheme } from '@/contexts/theme-context';
 import { MainLayout, ViewErrorBoundary } from '@/components/layout';
 import { ThemeProvider, LanguageProvider } from '@/contexts';
 import { UpdateNotification } from '@/components/update/UpdateNotification';
+import { WhatsNewDialog } from '@/components/update/WhatsNewDialog';
 import {
   ServerList,
   ServerDetail,
@@ -28,7 +28,9 @@ import {
 import { SettingsDialog, AboutView } from '@/components/settings';
 import { useServers } from '@/hooks/use-servers';
 import { useJava } from '@/hooks/use-java';
+import { useReleaseNotes } from '@/hooks/use-release-notes';
 import { toast } from '@/lib/toast';
+import { shouldShowWhatsNew, WHATS_NEW_LAST_SEEN_VERSION_KEY } from '@/lib/whats-new';
 import type { ImportServerRequest } from '../../shared/ipc-types';
 import '@/i18n';
 
@@ -36,12 +38,6 @@ type ViewType = 'servers' | 'server-settings' | 'about';
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
 const POST_CREATE_ONBOARDING_PROMPT_KEY = 'lumix.postCreateOnboardingPrompt.enabled';
 const HIDDEN_ONBOARDING_SERVER_IDS_KEY = 'lumix.postCreateOnboarding.hiddenServerIds';
-
-function isFullscreenLike(): boolean {
-  const widthDelta = Math.abs(window.screen.availWidth - window.innerWidth);
-  const heightDelta = Math.abs(window.screen.availHeight - window.innerHeight);
-  return widthDelta <= 24 && heightDelta <= 32;
-}
 
 /**
  * 轉換 DTO 為前端 ServerInstance 格式
@@ -101,13 +97,17 @@ function AppContent() {
     loading: javaLoading,
     detect: detectJava,
   } = useJava();
+  const {
+    data: releaseNotes,
+    loading: releaseNotesLoading,
+    error: releaseNotesError,
+    loadReleaseNotes,
+  } = useReleaseNotes();
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAddServerDialog, setShowAddServerDialog] = useState(false);
+  const [addServerOpenedFromKeyboard, setAddServerOpenedFromKeyboard] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showImportModpackDialog, setShowImportModpackDialog] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
   const [isConsoleFullscreen, setIsConsoleFullscreen] = useState(false);
@@ -116,10 +116,8 @@ function AppContent() {
   const [shouldPromptPostCreateOnboarding, setShouldPromptPostCreateOnboarding] = useState(true);
   const [hiddenOnboardingServerIds, setHiddenOnboardingServerIds] = useState<string[]>([]);
   const [serverSettingsSection, setServerSettingsSection] = useState<ServerSettingsSection>('basic');
-  const [useCreateServerModal, setUseCreateServerModal] = useState(() => isFullscreenLike());
-  const [activeCreateServerPresentation, setActiveCreateServerPresentation] = useState<'modal' | 'overlay'>(
-    () => (isFullscreenLike() ? 'modal' : 'overlay')
-  );
+  const [showWhatsNewDialog, setShowWhatsNewDialog] = useState(false);
+  const whatsNewStartupChecked = useRef(false);
 
   // 轉換 DTO 為前端格式
   const servers = serverDtos.map(toServerInstance);
@@ -362,38 +360,35 @@ function AppContent() {
     }
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setUseCreateServerModal(isFullscreenLike());
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (!showCreateDialog) {
-      setActiveCreateServerPresentation(useCreateServerModal ? 'modal' : 'overlay');
-    }
-  }, [showCreateDialog, useCreateServerModal]);
-
-  const handleOpenCreateServer = useCallback(() => {
-    setActiveCreateServerPresentation(useCreateServerModal ? 'modal' : 'overlay');
-    setShowCreateDialog(true);
-  }, [useCreateServerModal]);
-
-  const handleOpenAddServer = useCallback(() => {
+  const handleOpenAddServer = useCallback((source: 'pointer' | 'keyboard' = 'pointer') => {
+    setAddServerOpenedFromKeyboard(source === 'keyboard');
     setShowAddServerDialog(true);
   }, []);
 
-  const handleOpenImportServer = useCallback(() => {
-    setShowImportDialog(true);
-  }, []);
+  useEffect(() => {
+    if (whatsNewStartupChecked.current) return;
+    whatsNewStartupChecked.current = true;
 
-  const handleOpenImportModpack = useCallback(() => {
-    setShowImportModpackDialog(true);
-  }, []);
+    void loadReleaseNotes().then((result) => {
+      if (!result) return;
+      const lastSeenVersion = window.localStorage.getItem(WHATS_NEW_LAST_SEEN_VERSION_KEY);
+      if (shouldShowWhatsNew(result.currentVersion, lastSeenVersion, Boolean(result.currentRelease))) {
+        setShowWhatsNewDialog(true);
+      }
+    });
+  }, [loadReleaseNotes]);
+
+  const handleWhatsNewOpenChange = useCallback((open: boolean) => {
+    setShowWhatsNewDialog(open);
+    if (!open && releaseNotes?.currentRelease) {
+      window.localStorage.setItem(WHATS_NEW_LAST_SEEN_VERSION_KEY, releaseNotes.currentVersion);
+    }
+  }, [releaseNotes]);
+
+  const handleOpenWhatsNew = useCallback(() => {
+    setShowWhatsNewDialog(true);
+    if (!releaseNotes || releaseNotesError) void loadReleaseNotes();
+  }, [loadReleaseNotes, releaseNotes, releaseNotesError]);
 
   const handleConfirmPostCreateOnboarding = useCallback(() => {
     if (!pendingOnboardingPromptServerId) return;
@@ -440,7 +435,7 @@ function AppContent() {
 
     switch (currentView) {
       case 'about':
-        return <AboutView onBack={handleBackToServers} />;
+        return <AboutView onBack={handleBackToServers} onOpenWhatsNew={handleOpenWhatsNew} />;
       default:
         if (currentView === 'server-settings' && selectedServer) {
           return (
@@ -509,7 +504,6 @@ function AppContent() {
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
                 onCreateServer={handleOpenAddServer}
-                onOpenSettings={() => setShowSettingsDialog(true)}
                 javaInstallationsCount={javaInstallations.length}
                 downloadProgress={new Map(
                   Array.from(downloadProgress.entries()).map(([serverId, progress]) => [
@@ -533,18 +527,6 @@ function AppContent() {
 
   return (
     <MainLayout
-      overlay={
-        showCreateDialog && activeCreateServerPresentation === 'overlay' ? (
-          <CreateServerDialog
-            open={showCreateDialog}
-            onOpenChange={setShowCreateDialog}
-            onSubmit={handleCreateServer}
-            disabled={isCreating}
-            existingNames={servers.map((s) => s.name)}
-            presentation="overlay"
-          />
-        ) : undefined
-      }
       servers={sidebarServers}
       onGoHome={handleGoHome}
       onCreateServer={handleOpenAddServer}
@@ -567,9 +549,50 @@ function AppContent() {
       <AddServerDialog
         open={showAddServerDialog}
         onOpenChange={setShowAddServerDialog}
-        onCreateStandard={handleOpenCreateServer}
-        onImportModpack={handleOpenImportModpack}
-        onImportExisting={handleOpenImportServer}
+        instantOpen={addServerOpenedFromKeyboard}
+        renderCreateStandard={({ open, onOpenChange, onBackToChoice }) => (
+          <CreateServerDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onBackToChoice={onBackToChoice}
+            onSubmit={handleCreateServer}
+            disabled={isCreating}
+            existingNames={servers.map((server) => server.name)}
+            presentation="embedded"
+          />
+        )}
+        renderImportExisting={({ open, onOpenChange, onBackToChoice }) => (
+          <ImportServerDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onBackToChoice={onBackToChoice}
+            embedded
+            existingNames={servers.map((server) => server.name)}
+            onDetect={async (directory) => detectImportCandidate({ directory })}
+            onImport={handleImportServer}
+          />
+        )}
+        renderImportModpack={({ open, onOpenChange, onBackToChoice, onCloseBlockedChange }) => (
+          <ImportModpackDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onBackToChoice={onBackToChoice}
+            onCloseBlockedChange={onCloseBlockedChange}
+            embedded
+            existingNames={servers.map((server) => server.name)}
+            onScan={(archivePath) => scanModpack({ archivePath })}
+            onImport={importModpack}
+            onImported={(result) => {
+              setSelectedServerId(result.server.id);
+              setCurrentView('servers');
+              if (result.unresolvedFiles > 0) {
+                toast.warning(t('modpackImport.importedIncomplete', { count: result.unresolvedFiles }));
+              } else {
+                toast.success(t('modpackImport.importSuccess'));
+              }
+            }}
+          />
+        )}
       />
 
       <SettingsDialog
@@ -580,42 +603,6 @@ function AppContent() {
         onDetectJava={handleAddJavaPath}
       />
 
-      {showCreateDialog && activeCreateServerPresentation === 'modal' ? (
-        <CreateServerDialog
-          open={showCreateDialog}
-          onOpenChange={setShowCreateDialog}
-          onSubmit={handleCreateServer}
-          disabled={isCreating}
-          existingNames={servers.map((s) => s.name)}
-          presentation="modal"
-        />
-      ) : null}
-
-      <ImportServerDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        existingNames={servers.map((s) => s.name)}
-        onDetect={async (directory) => detectImportCandidate({ directory })}
-        onImport={handleImportServer}
-      />
-
-      <ImportModpackDialog
-        open={showImportModpackDialog}
-        onOpenChange={setShowImportModpackDialog}
-        existingNames={servers.map((server) => server.name)}
-        onScan={(archivePath) => scanModpack({ archivePath })}
-        onImport={importModpack}
-        onImported={(result) => {
-          setSelectedServerId(result.server.id);
-          setCurrentView('servers');
-          if (result.unresolvedFiles > 0) {
-            toast.warning(t('modpackImport.importedIncomplete', { count: result.unresolvedFiles }));
-          } else {
-            toast.success(t('modpackImport.importSuccess'));
-          }
-        }}
-      />
-
       <Dialog open={Boolean(pendingOnboardingPromptServerId)} onOpenChange={(open) => {
         if (!open) {
           handleClosePostCreateOnboardingPrompt();
@@ -623,8 +610,6 @@ function AppContent() {
       }}>
         <WorkspaceDialogContent className="sm:max-w-md">
           <WorkspaceDialogHeader
-            icon={ClipboardCheck}
-            eyebrow={t('modal.nextSteps')}
             title={t('onboardingPrompt.title')}
             description={t('onboardingPrompt.description')}
           />
@@ -642,6 +627,14 @@ function AppContent() {
       <Toaster position="bottom-right" theme={theme} />
       <DownloadProgressToast servers={servers} downloadProgress={downloadProgress} />
       <UpdateNotification />
+      <WhatsNewDialog
+        open={showWhatsNewDialog}
+        onOpenChange={handleWhatsNewOpenChange}
+        data={releaseNotes}
+        loading={releaseNotesLoading}
+        error={releaseNotesError}
+        onRetry={() => void loadReleaseNotes()}
+      />
     </MainLayout>
   );
 }

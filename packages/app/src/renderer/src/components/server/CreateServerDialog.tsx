@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
+  ArrowLeft,
   Check,
   ChevronRight,
   Cpu,
@@ -51,7 +52,8 @@ interface CreateServerDialogProps {
   onSubmit: (data: CreateServerData) => Promise<CreateServerError | null>;
   disabled?: boolean;
   existingNames?: string[];
-  presentation?: 'modal' | 'overlay';
+  presentation?: 'modal' | 'overlay' | 'embedded';
+  onBackToChoice?: () => void;
 }
 
 type WizardStep = 0 | 1 | 2 | 3 | 4;
@@ -133,6 +135,7 @@ export function CreateServerDialog({
   disabled = false,
   existingNames = [],
   presentation = 'modal',
+  onBackToChoice,
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
   const { installations, getRequiredVersion, install, installProgress, selectForMc } = useJava();
@@ -401,6 +404,7 @@ export function CreateServerDialog({
       <div className="space-y-2">
         <Label htmlFor="server-name">{t('server.name')}</Label>
         <Input
+          data-flow-autofocus
           id="server-name"
           value={name}
           onChange={handleNameChange}
@@ -710,6 +714,7 @@ export function CreateServerDialog({
   };
 
   const isOverlay = presentation === 'overlay';
+  const isEmbedded = presentation === 'embedded';
   const shell = (
     <div
       className={cn(
@@ -717,17 +722,21 @@ export function CreateServerDialog({
         isOverlay ? 'grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[300px_minmax(0,1fr)] md:grid-rows-1' : 'max-h-[94vh] md:grid-cols-[260px_minmax(0,1fr)]'
       )}
     >
-      <aside className="modal-scrollbar relative max-h-[32vh] overflow-x-hidden overflow-y-auto border-b border-border/60 bg-gradient-to-br from-primary/[0.08] via-muted/20 to-background p-4 pr-3 sm:p-5 md:max-h-none md:border-b-0 md:border-r md:p-6">
-        <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full border border-primary/10 bg-primary/[0.04]" />
-        <div className="relative space-y-2 text-left">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            </span>
-            {t('createServer.eyebrow')}
-          </div>
-          <h1 className="text-lg font-semibold leading-none tracking-tight">{t('createServer.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('createServer.wizardDescription')}</p>
+      <aside className="modal-scrollbar relative max-h-[32vh] overflow-x-hidden overflow-y-auto border-b border-border/60 bg-muted/20 p-4 pr-3 sm:p-5 md:max-h-none md:border-b-0 md:border-r md:p-6">
+        {isEmbedded && onBackToChoice ? (
+          <button
+            type="button"
+            data-flow-back
+            onClick={onBackToChoice}
+            className="relative mb-4 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-[background-color,color,transform] [transition-duration:var(--motion-standard)] [transition-timing-function:var(--ease-interface)] hover:bg-accent hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('addServerChoice.backToMethods')}
+          </button>
+        ) : null}
+        <div className="relative space-y-1 text-left">
+          <h1 className="text-[15px] font-semibold leading-5 tracking-[-0.01em]">{t('createServer.title')}</h1>
+          <p className="text-[13px] leading-5 text-muted-foreground">{t('createServer.wizardDescription')}</p>
         </div>
 
         <div className="mt-6 space-y-3">
@@ -840,6 +849,10 @@ export function CreateServerDialog({
 
   if (isOverlay) {
     return <div className="h-full w-full">{shell}</div>;
+  }
+
+  if (isEmbedded) {
+    return shell;
   }
 
   return (

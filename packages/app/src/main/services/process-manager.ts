@@ -5,6 +5,12 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
+import { availableParallelism } from 'os';
+import pidusage from 'pidusage';
+import type { ServerPerformanceSample } from '../../shared/ipc-types';
+
+const PERFORMANCE_SAMPLE_INTERVAL = 5000;
+const MAX_PERFORMANCE_SAMPLES = 360;
 
 // ============================================================================
 // Types
@@ -41,6 +47,9 @@ export interface ProcessEvents {
 
 export class ProcessManager extends EventEmitter {
   private processes: Map<string, ProcessInfo> = new Map();
+  private performanceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private performanceHistory: Map<string, ServerPerformanceSample[]> = new Map();
+  private performanceSamplesInFlight: Set<string> = new Set();
 
   constructor() {
     super();
@@ -87,6 +96,7 @@ export class ProcessManager extends EventEmitter {
 
     // 設定事件監聯
     this.setupProcessListeners(config.serverId, proc);
+    this.startPerformanceSampling(config.serverId, proc);
 
     return proc;
   }
@@ -176,12 +186,68 @@ export class ProcessManager extends EventEmitter {
     return Array.from(this.processes.keys()).filter((id) => this.isRunning(id));
   }
 
+  getPerformanceHistory(serverId: string): ServerPerformanceSample[] {
+    return [...(this.performanceHistory.get(serverId) ?? [])];
+  }
+
   /**
    * 終止所有程序
    */
   killAll(): void {
     for (const serverId of this.processes.keys()) {
       this.kill(serverId);
+    }
+    for (const serverId of this.performanceTimers.keys()) {
+      this.stopPerformanceSampling(serverId);
+    }
+    this.performanceHistory.clear();
+    pidusage.clear();
+  }
+
+  private startPerformanceSampling(serverId: string, proc: ChildProcess): void {
+    this.stopPerformanceSampling(serverId);
+    this.performanceHistory.set(serverId, []);
+
+    const sample = (): void => {
+      void this.capturePerformanceSample(serverId, proc);
+    };
+
+    sample();
+    this.performanceTimers.set(serverId, setInterval(sample, PERFORMANCE_SAMPLE_INTERVAL));
+  }
+
+  private stopPerformanceSampling(serverId: string): void {
+    const timer = this.performanceTimers.get(serverId);
+    if (timer) clearInterval(timer);
+    this.performanceTimers.delete(serverId);
+    this.performanceSamplesInFlight.delete(serverId);
+    this.performanceHistory.delete(serverId);
+  }
+
+  private async capturePerformanceSample(serverId: string, proc: ChildProcess): Promise<void> {
+    if (!proc.pid || proc.exitCode !== null || proc.signalCode !== null || this.performanceSamplesInFlight.has(serverId)) {
+      return;
+    }
+
+    this.performanceSamplesInFlight.add(serverId);
+    try {
+      const stats = await pidusage(proc.pid);
+      if (!this.performanceTimers.has(serverId) || this.processes.get(serverId)?.process !== proc) return;
+
+      const logicalProcessors = Math.max(1, availableParallelism());
+      const sample: ServerPerformanceSample = {
+        serverId,
+        timestamp: new Date(stats.timestamp || Date.now()).toISOString(),
+        cpuPercent: Math.min(100, Math.max(0, stats.cpu / logicalProcessors)),
+        memoryBytes: Math.max(0, stats.memory),
+      };
+      const history = [...(this.performanceHistory.get(serverId) ?? []), sample].slice(-MAX_PERFORMANCE_SAMPLES);
+      this.performanceHistory.set(serverId, history);
+      this.emit('performance-sample', sample);
+    } catch {
+      // 程序啟停瞬間可能無法取樣，下一個週期會自動重試。
+    } finally {
+      this.performanceSamplesInFlight.delete(serverId);
     }
   }
 
@@ -232,6 +298,7 @@ export class ProcessManager extends EventEmitter {
 
     // 程序結束事件
     proc.on('exit', (code, signal) => {
+      this.stopPerformanceSampling(serverId);
       this.emit('exit', serverId, code, signal);
       // 從 map 中移除（延遲移除以便讀取最終狀態）
       setTimeout(() => {

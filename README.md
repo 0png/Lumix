@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="packages/app/resources/icon.png" width="96" alt="Lumix icon" />
+  <img src="icon.png" width="104" alt="Lumix 全新圖示" />
 </p>
 
 <h1 align="center">Lumix</h1>
@@ -56,10 +56,11 @@ Lumix 是一款 Windows-first、開放原始碼的 Minecraft Server Launcher。�
 - **模組包匯入** — 讀取 Modrinth 與 CurseForge 格式並完成伺服器端安裝
 - **Java 管理** — 偵測本機 Java，依 Minecraft 版本選擇相容執行環境
 - **即時 Console** — 查看伺服器輸出、傳送指令與快速清除畫面
+- **即時負載圖表** — 以互動式圖表追蹤 Java 程序的 CPU 與記憶體趨勢
 - **圖形化設定** — 編輯記憶體與常用 `server.properties` 選項
 - **備份與還原** — 手動／排程備份、還原前 preflight 與 pre-restore backup
 - **連線診斷** — 顯示 localhost、LAN 位址、連接埠與外網連線建議
-- **桌面體驗** — 繁體中文／English、亮色／暗色／跟隨系統與自動更新
+- **桌面體驗** — 繁體中文／English、亮色／暗色／跟隨系統、自動更新與版本更新摘要
 
 ## 下載與安裝
 

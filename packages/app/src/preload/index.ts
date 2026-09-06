@@ -22,6 +22,7 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerPerformanceSample,
   ServerReadyEvent,
   ConnectionInfoDto,
   ServerProperties,
@@ -51,6 +52,7 @@ import type {
   UpdateDownloadProgress,
   UpdateErrorEvent,
   UpdateDownloadedEvent,
+  ReleaseNotesResult,
   ScanModpackRequest,
   ModpackCandidateDto,
   ImportModpackRequest,
@@ -96,6 +98,9 @@ const electronAPI = {
 
     sendCommand: (id: string, command: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(ServerChannels.SEND_COMMAND, id, command),
+
+    getPerformanceHistory: (id: string): Promise<IpcResult<ServerPerformanceSample[]>> =>
+      ipcRenderer.invoke(ServerChannels.GET_PERFORMANCE_HISTORY, id),
 
     getPlayers: (id: string): Promise<IpcResult<PlayerDto[]>> =>
       ipcRenderer.invoke(ServerChannels.GET_PLAYERS, id),
@@ -143,6 +148,12 @@ const electronAPI = {
       const handler = (_: Electron.IpcRendererEvent, data: ServerLogEvent) => callback(data);
       ipcRenderer.on(ServerChannels.LOG_ENTRY, handler);
       return () => ipcRenderer.removeListener(ServerChannels.LOG_ENTRY, handler);
+    },
+
+    onPerformanceSample: (callback: (event: ServerPerformanceSample) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: ServerPerformanceSample) => callback(data);
+      ipcRenderer.on(ServerChannels.PERFORMANCE_SAMPLE, handler);
+      return () => ipcRenderer.removeListener(ServerChannels.PERFORMANCE_SAMPLE, handler);
     },
 
     onReady: (callback: (event: ServerReadyEvent) => void) => {
@@ -285,6 +296,9 @@ const electronAPI = {
 
     getCurrentVersion: (): Promise<IpcResult<string>> =>
       ipcRenderer.invoke(UpdateChannels.GET_CURRENT_VERSION),
+
+    getReleaseNotes: (): Promise<IpcResult<ReleaseNotesResult>> =>
+      ipcRenderer.invoke(UpdateChannels.GET_RELEASE_NOTES),
 
     onError: (callback: (event: UpdateErrorEvent) => void) => {
       const handler = (_: Electron.IpcRendererEvent, data: UpdateErrorEvent) => callback(data);

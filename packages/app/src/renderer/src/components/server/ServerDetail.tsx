@@ -5,7 +5,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  AlertTriangle,
   ArrowLeft,
   ArrowUpRight,
   Cpu,
@@ -42,6 +41,7 @@ import {
 import type { ServerInstance } from './ServerList';
 import { ConnectionInfoCard } from './ConnectionInfoCard';
 import { ServerFirstRunChecklist } from './ServerFirstRunChecklist';
+import { ServerPerformanceChart } from './ServerPerformanceChart';
 
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
 
@@ -369,13 +369,13 @@ export function ServerDetail({
           hasServerProperties={hasServerProperties}
           appearance="bento"
         />
+
+        <ServerPerformanceChart serverId={server.id} status={server.status} />
       </div>
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-md">
           <WorkspaceDialogHeader
-            icon={SlidersHorizontal}
-            eyebrow={t('modal.serverSettings')}
             title={`${t('common.edit')} ${server.name}`}
           />
           <WorkspaceDialogBody className="space-y-3 lg:space-y-4">
@@ -414,10 +414,7 @@ export function ServerDetail({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <WorkspaceDialogContent className="max-w-[90vw] sm:max-w-md">
           <WorkspaceDialogHeader
-            icon={AlertTriangle}
-            eyebrow={t('modal.destructiveAction')}
             title={t('server.delete')}
-            tone="destructive"
             description={
               <div className="space-y-2 text-xs text-muted-foreground lg:text-sm">
                 <p>{t('server.deleteConfirm', '確定要刪除此伺服器嗎？')}</p>

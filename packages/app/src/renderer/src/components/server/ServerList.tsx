@@ -10,7 +10,6 @@ import {
   Plus,
   Search,
   Server,
-  Settings,
   Sparkles,
   X,
 } from 'lucide-react';
@@ -48,7 +47,6 @@ interface ServerListProps {
   onStartServer?: (id: string) => void;
   onStopServer?: (id: string) => void;
   onCreateServer?: () => void;
-  onOpenSettings?: () => void;
   javaInstallationsCount?: number;
   /** 是否正在載入 */
   loading?: boolean;
@@ -61,10 +59,8 @@ interface ServerListProps {
  */
 function EmptyState({
   onCreateServer,
-  onOpenSettings,
 }: {
   onCreateServer?: () => void;
-  onOpenSettings?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -97,14 +93,10 @@ function EmptyState({
             <p className="text-sm leading-6 text-muted-foreground">{t('dashboard.emptyDescription')}</p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <div>
             <Button onClick={onCreateServer} className="gap-2 ripple" aria-label={t('sidebar.addServer')}>
               <Plus className="h-4 w-4" aria-hidden="true" />
               {t('sidebar.addServer')}
-            </Button>
-            <Button variant="outline" onClick={onOpenSettings} className="gap-2">
-              <Settings className="h-4 w-4" aria-hidden="true" />
-              {t('settings.title')}
             </Button>
           </div>
         </div>
@@ -134,7 +126,6 @@ export function ServerList({
   onStartServer,
   onStopServer,
   onCreateServer,
-  onOpenSettings,
   loading = false,
   downloadProgress,
 }: ServerListProps) {
@@ -160,7 +151,7 @@ export function ServerList({
 
   // 空狀態
   if (servers.length === 0) {
-    return <EmptyState onCreateServer={onCreateServer} onOpenSettings={onOpenSettings} />;
+    return <EmptyState onCreateServer={onCreateServer} />;
   }
 
   return (
@@ -171,10 +162,6 @@ export function ServerList({
           <p className="text-sm text-muted-foreground">{t('dashboard.description')}</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button variant="outline" onClick={onOpenSettings} className="gap-2">
-            <Settings className="h-4 w-4" aria-hidden="true" />
-            {t('settings.title')}
-          </Button>
           <Button onClick={onCreateServer} className="gap-2 ripple">
             <Plus className="h-4 w-4" aria-hidden="true" />
             {t('sidebar.addServer')}

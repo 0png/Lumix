@@ -33,6 +33,7 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerPerformanceSample,
   LogLevel,
   ServerProperties,
   ConnectionInfoDto,
@@ -87,6 +88,7 @@ class ServerManagerIpcError extends Error {
 export interface ServerManagerEvents {
   'status-changed': (event: ServerStatusEvent) => void;
   'log-entry': (event: ServerLogEvent) => void;
+  'performance-sample': (event: ServerPerformanceSample) => void;
 }
 
 export interface ServerManagerConfig {
@@ -596,6 +598,16 @@ export class ServerManager extends EventEmitter {
     this.emitLogEntry(id, 'info', `> ${command}`);
   }
 
+  getPerformanceHistory(id: string): ServerPerformanceSample[] {
+    if (!this.servers.has(id)) {
+      throw new Error(formatIpcError(createIpcError(
+        IpcErrorCode.SERVER_NOT_FOUND,
+        '找不到指定的伺服器'
+      )));
+    }
+    return this.processManager.getPerformanceHistory(id);
+  }
+
   async getPlayers(id: string): Promise<PlayerDto[]> {
     const server = this.servers.get(id);
     if (!server) {
@@ -1096,6 +1108,10 @@ export class ServerManager extends EventEmitter {
 
     this.processManager.on('stderr', (serverId: string, data: string) => {
       this.handleProcessOutput(serverId, data, 'error');
+    });
+
+    this.processManager.on('performance-sample', (sample: ServerPerformanceSample) => {
+      this.emit('performance-sample', sample);
     });
 
     this.processManager.on('exit', (serverId: string, code: number | null) => {

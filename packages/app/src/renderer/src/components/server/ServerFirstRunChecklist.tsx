@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Archive,
-  CheckCircle2,
+  Check,
+  Circle,
   CircleDashed,
-  ClipboardList,
   Compass,
   FolderOpen,
   Loader2,
@@ -15,16 +15,14 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { WorkspaceDialogBody, WorkspaceDialogContent, WorkspaceDialogFooter, WorkspaceDialogHeader } from '@/components/ui/workspace-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
+import { findNextOnboardingStep, ONBOARDING_STEP_ORDER } from '@/lib/onboarding';
 import type { BackupInfoDto, OnboardingState, OnboardingStepId } from '../../../../shared/ipc-types';
 import type { ServerInstance } from './ServerList';
 import { ConnectionInfoCard } from './ConnectionInfoCard';
-import { ServerQuickActions } from './ServerQuickActions';
 
 type ServerSettingsSection = 'basic' | 'gameplay' | 'network' | 'backup';
 type StepVisualState = 'completed' | 'blocked' | 'recommended' | 'ready';
@@ -39,20 +37,20 @@ interface ServerFirstRunChecklistProps {
   server: ServerInstance;
   autoOpen?: boolean;
   onAutoOpenHandled?: () => void;
-  onOpenFolder?: () => void;
+  onOpenFolder?: () => Promise<void> | void;
   onOpenSettingsSection: (section: ServerSettingsSection) => void;
   onStart?: () => Promise<void> | void;
   onUpdateOnboardingState: (state: OnboardingState) => Promise<void> | void;
 }
 
-const STEP_ORDER: OnboardingStepId[] = [
-  'review-folder-core',
-  'review-memory-java',
-  'start-server',
-  'review-properties',
-  'review-connection',
-  'create-backup',
-];
+const STEP_ICONS = {
+  'review-folder-core': FolderOpen,
+  'review-memory-java': Settings2,
+  'start-server': Play,
+  'review-properties': ServerCog,
+  'review-connection': Compass,
+  'create-backup': Archive,
+} satisfies Record<OnboardingStepId, typeof Archive>;
 
 function dedupeSteps(steps: OnboardingStepId[]): OnboardingStepId[] {
   return Array.from(new Set(steps));
@@ -69,6 +67,7 @@ export function ServerFirstRunChecklist({
 }: ServerFirstRunChecklistProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedStepId, setSelectedStepId] = useState<OnboardingStepId>('review-folder-core');
   const [isConnectionHelpOpen, setIsConnectionHelpOpen] = useState(false);
   const [port, setPort] = useState<number | null>(null);
   const [backups, setBackups] = useState<BackupInfoDto[]>([]);
@@ -83,10 +82,7 @@ export function ServerFirstRunChecklist({
     };
   }, [server.onboardingState]);
 
-  const completedSteps = useMemo(
-    () => onboardingState?.completedSteps ?? [],
-    [onboardingState]
-  );
+  const completedSteps = useMemo(() => onboardingState?.completedSteps ?? [], [onboardingState]);
   const isDismissed = Boolean(onboardingState?.dismissedAt);
 
   const refreshProperties = useCallback(async () => {
@@ -95,30 +91,20 @@ export function ServerFirstRunChecklist({
       setPort(null);
       return;
     }
-
-    const rawPort = result.data['server-port'];
-    const parsedPort = rawPort ? Number(rawPort) : Number.NaN;
+    const parsedPort = Number(result.data['server-port']);
     setPort(Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : null);
   }, [server.id]);
 
   const refreshBackups = useCallback(async () => {
     const result = await window.electronAPI.server.listBackups(server.id);
-    if (result.success && result.data) {
-      setBackups(result.data);
-    }
+    if (result.success && result.data) setBackups(result.data);
   }, [server.id]);
 
   useEffect(() => {
     if (!onboardingState) return;
-    refreshProperties().catch(() => setPort(null));
-    refreshBackups().catch(() => setBackups([]));
+    void refreshProperties().catch(() => setPort(null));
+    void refreshBackups().catch(() => setBackups([]));
   }, [onboardingState, refreshBackups, refreshProperties]);
-
-  useEffect(() => {
-    if (!onboardingState || !autoOpen || onboardingState.dismissedAt) return;
-    setIsOpen(true);
-    onAutoOpenHandled?.();
-  }, [autoOpen, onboardingState, onAutoOpenHandled]);
 
   const persistState = useCallback(async (nextState: OnboardingState) => {
     setIsPersisting(true);
@@ -142,419 +128,298 @@ export function ServerFirstRunChecklist({
 
   const dismissChecklist = useCallback(async () => {
     if (!onboardingState) return;
-    await persistState({
-      dismissedAt: new Date().toISOString(),
-      completedSteps,
-    });
+    await persistState({ dismissedAt: new Date().toISOString(), completedSteps });
     setIsOpen(false);
   }, [completedSteps, onboardingState, persistState]);
 
   useEffect(() => {
-    if (!onboardingState) return;
-
-    if (server.status === 'running' && !completedSteps.includes('start-server')) {
-      persistState({
-        dismissedAt: onboardingState.dismissedAt,
-        completedSteps: [...completedSteps, 'start-server'],
-      }).catch(() => {});
-    }
+    if (!onboardingState || server.status !== 'running' || completedSteps.includes('start-server')) return;
+    void persistState({
+      dismissedAt: onboardingState.dismissedAt,
+      completedSteps: [...completedSteps, 'start-server'],
+    });
   }, [completedSteps, onboardingState, persistState, server.status]);
 
   useEffect(() => {
-    if (!onboardingState) return;
-
-    if (backups.length > 0 && !completedSteps.includes('create-backup')) {
-      persistState({
-        dismissedAt: onboardingState.dismissedAt,
-        completedSteps: [...completedSteps, 'create-backup'],
-      }).catch(() => {});
-    }
+    if (!onboardingState || backups.length === 0 || completedSteps.includes('create-backup')) return;
+    void persistState({
+      dismissedAt: onboardingState.dismissedAt,
+      completedSteps: [...completedSteps, 'create-backup'],
+    });
   }, [backups.length, completedSteps, onboardingState, persistState]);
 
   const stepStatuses = useMemo<Record<OnboardingStepId, StepStatus>>(() => {
     const isCompleted = (stepId: OnboardingStepId) => completedSteps.includes(stepId);
-    return {
-      'review-folder-core': {
-        stepId: 'review-folder-core',
-        state: isCompleted('review-folder-core') ? 'completed' : 'recommended',
-      },
+    const statuses: Record<OnboardingStepId, StepStatus> = {
+      'review-folder-core': { stepId: 'review-folder-core', state: isCompleted('review-folder-core') ? 'completed' : 'ready' },
       'review-memory-java': {
         stepId: 'review-memory-java',
-        state: isCompleted('review-memory-java')
-          ? 'completed'
-          : server.javaPath
-            ? 'recommended'
-            : 'blocked',
+        state: isCompleted('review-memory-java') ? 'completed' : server.javaPath ? 'ready' : 'blocked',
         blockedReason: server.javaPath ? undefined : t('onboarding.steps.review-memory-java.blockedReason'),
+      },
+      'start-server': {
+        stepId: 'start-server',
+        state: isCompleted('start-server') ? 'completed' : server.isReady === false ? 'blocked' : 'ready',
+        blockedReason: server.isReady === false ? t('onboarding.steps.start-server.blockedReason') : undefined,
       },
       'review-properties': {
         stepId: 'review-properties',
-        state: isCompleted('review-properties')
-          ? 'completed'
-          : server.hasServerProperties
-            ? 'recommended'
-            : 'blocked',
+        state: isCompleted('review-properties') ? 'completed' : server.hasServerProperties ? 'ready' : 'blocked',
         blockedReason: server.hasServerProperties ? undefined : t('onboarding.steps.review-properties.blockedReason'),
       },
       'review-connection': {
         stepId: 'review-connection',
-        state: isCompleted('review-connection')
-          ? 'completed'
-          : port
-            ? 'recommended'
-            : 'blocked',
+        state: isCompleted('review-connection') ? 'completed' : port ? 'ready' : 'blocked',
         blockedReason: port ? undefined : t('onboarding.steps.review-connection.blockedReason'),
       },
-      'start-server': {
-        stepId: 'start-server',
-        state: isCompleted('start-server')
-          ? 'completed'
-          : server.isReady === false
-            ? 'blocked'
-            : 'recommended',
-        blockedReason: server.isReady === false ? t('onboarding.steps.start-server.blockedReason') : undefined,
-      },
-      'create-backup': {
-        stepId: 'create-backup',
-        state: isCompleted('create-backup') ? 'completed' : 'ready',
-      },
+      'create-backup': { stepId: 'create-backup', state: isCompleted('create-backup') ? 'completed' : 'ready' },
     };
+    const nextStep = ONBOARDING_STEP_ORDER.find((stepId) => statuses[stepId].state === 'ready');
+    if (nextStep) statuses[nextStep] = { ...statuses[nextStep], state: 'recommended' };
+    return statuses;
   }, [completedSteps, port, server.hasServerProperties, server.isReady, server.javaPath, t]);
 
-  const completedCount = completedSteps.length;
-  const totalCount = STEP_ORDER.length;
+  const completedCount = ONBOARDING_STEP_ORDER.filter((stepId) => completedSteps.includes(stepId)).length;
+  const totalCount = ONBOARDING_STEP_ORDER.length;
   const hasPendingSteps = completedCount < totalCount;
+  const nextStepId = findNextOnboardingStep(stepStatuses);
+
+  useEffect(() => {
+    if (!onboardingState || !autoOpen || onboardingState.dismissedAt) return;
+    setSelectedStepId(nextStepId);
+    setIsOpen(true);
+    onAutoOpenHandled?.();
+  }, [autoOpen, nextStepId, onboardingState, onAutoOpenHandled]);
+
+  const openChecklist = useCallback(() => {
+    setSelectedStepId(nextStepId);
+    setIsOpen(true);
+  }, [nextStepId]);
 
   const handleCreateBackup = useCallback(async () => {
     setIsCreatingBackup(true);
     try {
-      await window.electronAPI.server.createBackup({ serverId: server.id, trigger: 'manual' });
+      const result = await window.electronAPI.server.createBackup({ serverId: server.id, trigger: 'manual' });
+      if (!result.success) throw new Error(result.error || t('onboarding.backupFailed'));
       await refreshBackups();
+      toast.success(t('onboarding.backupCreated'));
+    } catch (error) {
+      toast.error(t('onboarding.backupFailed'), (error as Error).message);
     } finally {
       setIsCreatingBackup(false);
     }
-  }, [refreshBackups, server.id]);
+  }, [refreshBackups, server.id, t]);
 
-  const quickActions = useMemo(() => {
-    const pendingStepIds = STEP_ORDER.filter((stepId) => !completedSteps.includes(stepId)).slice(0, 3);
+  const performPrimaryAction = useCallback(async (stepId: OnboardingStepId) => {
+    const step = stepStatuses[stepId];
+    switch (stepId) {
+      case 'review-folder-core':
+        await onOpenFolder?.();
+        await completeStep(stepId);
+        break;
+      case 'review-memory-java':
+        if (step.state !== 'blocked') await completeStep(stepId);
+        setIsOpen(false);
+        onOpenSettingsSection('basic');
+        break;
+      case 'start-server':
+        await onStart?.();
+        break;
+      case 'review-properties':
+        if (step.state !== 'blocked') await completeStep(stepId);
+        setIsOpen(false);
+        onOpenSettingsSection('gameplay');
+        break;
+      case 'review-connection':
+        setIsConnectionHelpOpen(true);
+        break;
+      case 'create-backup':
+        await handleCreateBackup();
+        break;
+    }
+  }, [completeStep, handleCreateBackup, onOpenFolder, onOpenSettingsSection, onStart, stepStatuses]);
 
-    return pendingStepIds.map((stepId) => {
-      const stepNumber = STEP_ORDER.indexOf(stepId) + 1;
+  const isStepActionDisabled = (stepId: OnboardingStepId) => {
+    const step = stepStatuses[stepId];
+    if (step.state === 'completed') return true;
+    if (stepId === 'review-folder-core') return !onOpenFolder;
+    if (stepId === 'start-server') return step.state === 'blocked' || !onStart;
+    if (stepId === 'review-properties' || stepId === 'review-connection') return step.state === 'blocked';
+    if (stepId === 'create-backup') return isCreatingBackup;
+    return false;
+  };
 
-      switch (stepId) {
-        case 'review-folder-core':
-          return {
-            id: stepId,
-            stepNumber,
-            label: t('onboarding.steps.review-folder-core.title'),
-            description: t('onboarding.steps.review-folder-core.description'),
-            icon: <FolderOpen className="h-4 w-4 text-muted-foreground" aria-hidden="true" />,
-            onClick: () => onOpenFolder?.(),
-            disabled: !onOpenFolder,
-          };
-        case 'review-memory-java':
-          return {
-            id: stepId,
-            stepNumber,
-            label: t('onboarding.steps.review-memory-java.title'),
-            description: t('onboarding.steps.review-memory-java.description'),
-            icon: <Settings2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />,
-            onClick: () => onOpenSettingsSection('basic'),
-            disabled: stepStatuses[stepId].state === 'blocked',
-          };
-        case 'start-server':
-          return {
-            id: stepId,
-            stepNumber,
-            label: t('onboarding.steps.start-server.title'),
-            description: t('onboarding.steps.start-server.description'),
-            icon: <Play className="h-4 w-4 text-muted-foreground" aria-hidden="true" />,
-            onClick: async () => onStart?.(),
-            disabled: stepStatuses[stepId].state === 'blocked' || stepStatuses[stepId].state === 'completed',
-          };
-        case 'review-properties':
-          return {
-            id: stepId,
-            stepNumber,
-            label: t('onboarding.steps.review-properties.title'),
-            description: t('onboarding.steps.review-properties.description'),
-            icon: <ServerCog className="h-4 w-4 text-muted-foreground" aria-hidden="true" />,
-            onClick: () => onOpenSettingsSection('gameplay'),
-            disabled: stepStatuses[stepId].state === 'blocked',
-          };
-        case 'review-connection':
-          return {
-            id: stepId,
-            stepNumber,
-            label: t('onboarding.steps.review-connection.title'),
-            description: t('onboarding.steps.review-connection.description'),
-            icon: <Compass className="h-4 w-4 text-muted-foreground" aria-hidden="true" />,
-            onClick: () => setIsConnectionHelpOpen(true),
-            disabled: stepStatuses[stepId].state === 'blocked',
-          };
-        case 'create-backup':
-          return {
-            id: stepId,
-            stepNumber,
-            label: t('onboarding.steps.create-backup.title'),
-            description: t('onboarding.steps.create-backup.description'),
-            icon: <Archive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />,
-            onClick: async () => handleCreateBackup(),
-            disabled: isCreatingBackup || stepStatuses[stepId].state === 'completed',
-          };
-        default:
-          {
-            const exhaustiveCheck: never = stepId;
-            return exhaustiveCheck;
-          }
-      }
-    });
-  }, [
-    completedSteps,
-    handleCreateBackup,
-    isCreatingBackup,
-    onOpenFolder,
-    onOpenSettingsSection,
-    onStart,
-    stepStatuses,
-    t,
-  ]);
+  const actionLabel = (stepId: OnboardingStepId) => {
+    if (stepId === 'review-memory-java' && stepStatuses[stepId].state === 'blocked') return t('onboarding.resolve');
+    if (stepId === 'review-properties') return t('onboarding.steps.review-properties.openGameplay');
+    return t(`onboarding.steps.${stepId}.action`);
+  };
 
-  const renderStateBadge = (step: StepStatus) => {
-    const variant = step.state === 'completed'
-      ? 'success'
-      : step.state === 'blocked'
-        ? 'warning'
-        : step.state === 'recommended'
-          ? 'secondary'
-          : 'outline';
-
-    return (
-      <Badge variant={variant} className="shrink-0">
-        {t(`onboarding.state.${step.state}`)}
-      </Badge>
-    );
+  const renderStateIndicator = (step: StepStatus) => {
+    if (step.state === 'completed') return <Check className="h-3.5 w-3.5" aria-hidden="true" />;
+    if (step.state === 'blocked') return <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />;
+    return <Circle className="h-3 w-3" aria-hidden="true" />;
   };
 
   if (!onboardingState) return null;
+  const nextStep = stepStatuses[nextStepId];
+  const NextIcon = STEP_ICONS[nextStepId];
+  const selectedStep = stepStatuses[selectedStepId];
+  const SelectedIcon = STEP_ICONS[selectedStepId];
 
   return (
     <>
       {hasPendingSteps ? (
-        <Card className="glass">
-          <CardHeader className="p-4 pb-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Compass className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  {t('onboarding.title')}
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  {t('onboarding.progress', { completed: completedCount, total: totalCount })}
+        <section className="overflow-hidden rounded-xl border border-border/60 bg-card/35">
+          <header className="flex items-center justify-between gap-4 border-b border-border/60 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/40">
+                <Compass className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs font-medium">{t('onboarding.title')}</h2>
+                <p className="text-[10px] text-muted-foreground">{t('onboarding.progress', { completed: completedCount, total: totalCount })}</p>
+              </div>
+            </div>
+            <div className="h-1 w-24 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-foreground/65 transition-[width] duration-200 ease-out" style={{ width: `${(completedCount / totalCount) * 100}%` }} />
+            </div>
+          </header>
+          <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/55 text-muted-foreground">
+                <NextIcon className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t('onboarding.next')}</p>
+                <p className="mt-0.5 text-sm font-medium">{t(`onboarding.steps.${nextStepId}.title`)}</p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                  {nextStep.blockedReason || t(`onboarding.steps.${nextStepId}.description`)}
                 </p>
               </div>
-              {renderStateBadge({ stepId: 'review-folder-core', state: isDismissed ? 'ready' : 'recommended' })}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4 pt-1">
-            <p className="text-sm text-muted-foreground">
-              {isDismissed ? t('onboarding.dismissedDescription') : t('onboarding.description')}
-            </p>
-
-            <ServerQuickActions actions={quickActions} />
-
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setIsOpen(true)} className="h-8 text-xs">
-                {isDismissed ? t('onboarding.reopen') : t('onboarding.continue')}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs" onClick={openChecklist}>
+                {isDismissed ? t('onboarding.reopen') : t('onboarding.viewChecklist')}
+              </Button>
+              <Button size="sm" className="h-8 px-3 text-xs" onClick={() => void performPrimaryAction(nextStepId)} disabled={isStepActionDisabled(nextStepId)}>
+                {nextStepId === 'create-backup' && isCreatingBackup ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                {actionLabel(nextStepId)}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : null}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <WorkspaceDialogContent className="sm:max-w-3xl">
-          <WorkspaceDialogHeader
-            icon={ClipboardList}
-            eyebrow={t('modal.firstRun')}
-            title={t('onboarding.modalTitle', { server: server.name })}
-            description={t('onboarding.description')}
-          />
+        <DialogContent
+          className="settings-workspace-modal grid h-[min(600px,90vh)] w-[min(860px,94vw)] max-w-[860px] grid-cols-[184px_minmax(0,1fr)] grid-rows-[56px_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:rounded-xl"
+          overlayClassName="settings-workspace-overlay"
+        >
+          <header className="col-span-2 flex h-14 items-center border-b border-border/60 px-5 pr-14">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border/70 bg-muted/50">
+                <Compass className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              </div>
+              <DialogTitle className="truncate text-sm font-semibold tracking-[-0.01em]">{t('onboarding.modalTitle', { server: server.name })}</DialogTitle>
+              <DialogDescription className="hidden truncate text-xs sm:block">{t('onboarding.modalDescription')}</DialogDescription>
+            </div>
+          </header>
 
-          <WorkspaceDialogBody className="p-0">
-          <ScrollArea className="max-h-[60vh] px-6 py-5 pr-8">
-            <div className="space-y-3">
-              {STEP_ORDER.map((stepId, index) => {
+          <aside className="flex min-h-0 flex-col border-r border-border/60 bg-muted/20 p-2.5">
+            <p className="px-2 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">{t('onboarding.setup')}</p>
+            <nav className="modal-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+              {ONBOARDING_STEP_ORDER.map((stepId, index) => {
                 const step = stepStatuses[stepId];
-                const isManual = stepId === 'review-folder-core'
-                  || stepId === 'review-memory-java'
-                  || stepId === 'review-properties'
-                  || stepId === 'review-connection';
-
+                const active = stepId === selectedStepId;
                 return (
-                  <div key={stepId} className="rounded-lg border border-border/60 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          {step.state === 'completed' ? (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
-                          ) : (
-                            <CircleDashed className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                          )}
-                          <p className="text-sm font-medium">
-                            {index + 1}. {t(`onboarding.steps.${stepId}.title`)}
-                          </p>
-                        </div>
-                        <p className="text-xs leading-5 text-muted-foreground">
-                          {t(`onboarding.steps.${stepId}.description`)}
-                        </p>
-                        {step.blockedReason ? (
-                          <p className="text-xs text-amber-600 dark:text-amber-300">{step.blockedReason}</p>
-                        ) : null}
-                      </div>
-                      {renderStateBadge(step)}
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {stepId === 'review-folder-core' ? (
-                        <Button size="sm" variant="outline" onClick={() => onOpenFolder?.()} disabled={!onOpenFolder}>
-                          <FolderOpen className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                          {t('onboarding.steps.review-folder-core.action')}
-                        </Button>
-                      ) : null}
-
-                      {stepId === 'review-memory-java' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onOpenSettingsSection('basic')}
-                          disabled={step.state === 'blocked'}
-                        >
-                          <Settings2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                          {t('onboarding.steps.review-memory-java.action')}
-                        </Button>
-                      ) : null}
-
-                      {stepId === 'review-properties' ? (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => onOpenSettingsSection('gameplay')} disabled={step.state === 'blocked'}>
-                            <ServerCog className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                            {t('onboarding.steps.review-properties.openGameplay')}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => onOpenSettingsSection('network')} disabled={step.state === 'blocked'}>
-                            <ServerCog className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                            {t('onboarding.steps.review-properties.openNetwork')}
-                          </Button>
-                        </>
-                      ) : null}
-
-                      {stepId === 'review-connection' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsConnectionHelpOpen(true)}
-                          disabled={step.state === 'blocked'}
-                        >
-                          <Compass className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                          {t('onboarding.steps.review-connection.action')}
-                        </Button>
-                      ) : null}
-
-                      {stepId === 'start-server' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onStart?.()}
-                          disabled={step.state === 'blocked' || step.state === 'completed'}
-                        >
-                          <Play className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                          {t('onboarding.steps.start-server.action')}
-                        </Button>
-                      ) : null}
-
-                      {stepId === 'create-backup' ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCreateBackup}
-                            disabled={step.state === 'completed' || isCreatingBackup}
-                          >
-                            {isCreatingBackup ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                            ) : (
-                              <Archive className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                            )}
-                            {t('onboarding.steps.create-backup.action')}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => onOpenSettingsSection('backup')}>
-                            <Settings2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                            {t('onboarding.steps.create-backup.openSettings')}
-                          </Button>
-                        </>
-                      ) : null}
-
-                      {isManual ? (
-                        <Button
-                          size="sm"
-                          onClick={() => completeStep(stepId)}
-                          disabled={step.state === 'completed' || step.state === 'blocked' || isPersisting}
-                        >
-                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                          {t('onboarding.markComplete')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
+                  <button
+                    key={stepId}
+                    type="button"
+                    onClick={() => setSelectedStepId(stepId)}
+                    className={cn(
+                      'settings-nav-item flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs outline-none',
+                      active ? 'bg-accent text-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--border)/0.45)]' : 'text-muted-foreground hover:bg-accent/55 hover:text-foreground'
+                    )}
+                    aria-current={active ? 'step' : undefined}
+                  >
+                    <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[9px] tabular-nums', step.state === 'completed' && 'border-foreground/25 bg-foreground text-background', step.state === 'blocked' && 'border-border text-muted-foreground/55')}>
+                      {step.state === 'completed' ? renderStateIndicator(step) : index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{t(`onboarding.steps.${stepId}.title`)}</span>
+                  </button>
                 );
               })}
-            </div>
-          </ScrollArea>
-          </WorkspaceDialogBody>
-
-          <WorkspaceDialogFooter className="flex-row flex-wrap justify-end">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              {t('common.close')}
-            </Button>
-            {hasPendingSteps ? (
-              <Button variant="ghost" onClick={dismissChecklist} disabled={isPersisting}>
-                <X className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                {t('onboarding.dismiss')}
+            </nav>
+            <div className="border-t border-border/60 px-2 pt-2">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground"><span>{t('onboarding.progressLabel')}</span><span>{completedCount}/{totalCount}</span></div>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-foreground/60" style={{ width: `${(completedCount / totalCount) * 100}%` }} /></div>
+              <Button variant="ghost" size="sm" className="mt-2 h-7 w-full justify-start px-1.5 text-[10px] text-muted-foreground" onClick={() => void dismissChecklist()} disabled={isPersisting}>
+                <X className="h-3 w-3" />{t('onboarding.dismiss')}
               </Button>
-            ) : null}
-          </WorkspaceDialogFooter>
-        </WorkspaceDialogContent>
+            </div>
+          </aside>
+
+          <main className="modal-scrollbar min-h-0 min-w-0 overflow-y-auto bg-background">
+            <div key={selectedStepId} className="settings-panel-enter mx-auto max-w-[620px] px-8 py-7">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span>{t('onboarding.stepNumber', { current: ONBOARDING_STEP_ORDER.indexOf(selectedStepId) + 1, total: totalCount })}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{t(`onboarding.state.${selectedStep.state}`)}</span>
+                </div>
+                {selectedStep.state === 'completed' ? <Badge variant="secondary" className="h-5 text-[9px]">{t('onboarding.done')}</Badge> : null}
+              </div>
+              <div className="mt-5 flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/35">
+                  <SelectedIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">{t(`onboarding.steps.${selectedStepId}.title`)}</h2>
+                  <p className="mt-1 max-w-lg text-xs leading-5 text-muted-foreground">{t(`onboarding.steps.${selectedStepId}.description`)}</p>
+                </div>
+              </div>
+
+              {selectedStep.blockedReason ? (
+                <div className="mt-6 rounded-md border border-border/70 bg-muted/25 px-3 py-2.5">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t('onboarding.blocked')}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{selectedStep.blockedReason}</p>
+                </div>
+              ) : null}
+
+              <div className="mt-7 border-t border-border/60 pt-5">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t('onboarding.action')}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" className="h-8 text-xs" onClick={() => void performPrimaryAction(selectedStepId)} disabled={isStepActionDisabled(selectedStepId)}>
+                    {selectedStepId === 'create-backup' && isCreatingBackup ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SelectedIcon className="h-3.5 w-3.5" />}
+                    {selectedStep.state === 'completed' ? t('onboarding.done') : actionLabel(selectedStepId)}
+                  </Button>
+                  {selectedStepId === 'review-properties' ? (
+                    <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setIsOpen(false); onOpenSettingsSection('network'); }} disabled={selectedStep.state === 'blocked'}>
+                      {t('onboarding.steps.review-properties.openNetwork')}
+                    </Button>
+                  ) : null}
+                  {selectedStepId === 'create-backup' ? (
+                    <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setIsOpen(false); onOpenSettingsSection('backup'); }}>
+                      {t('onboarding.steps.create-backup.openSettings')}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </main>
+        </DialogContent>
       </Dialog>
 
       <Dialog open={isConnectionHelpOpen} onOpenChange={setIsConnectionHelpOpen}>
         <WorkspaceDialogContent className="sm:max-w-3xl">
-          <WorkspaceDialogHeader
-            icon={Compass}
-            eyebrow={t('modal.connectionCheck')}
-            title={t('onboarding.connection.title')}
-            description={t('onboarding.connection.description')}
-          />
+          <WorkspaceDialogHeader title={t('onboarding.connection.title')} description={t('onboarding.connection.description')} />
           <WorkspaceDialogBody>
-          <ConnectionInfoCard
-            serverId={server.id}
-            serverStatus={server.status}
-            hasServerProperties={server.hasServerProperties === true}
-            embedded
-          />
+            <ConnectionInfoCard serverId={server.id} serverStatus={server.status} hasServerProperties={server.hasServerProperties === true} embedded />
           </WorkspaceDialogBody>
           <WorkspaceDialogFooter className="flex-row justify-end">
-            <Button variant="outline" onClick={() => setIsConnectionHelpOpen(false)}>
-              {t('common.close')}
-            </Button>
-            <Button
-              onClick={async () => {
-                await completeStep('review-connection');
-                setIsConnectionHelpOpen(false);
-              }}
-              disabled={!port}
-            >
-              {t('onboarding.markComplete')}
-            </Button>
+            <Button variant="outline" onClick={() => setIsConnectionHelpOpen(false)}>{t('common.close')}</Button>
+            <Button onClick={async () => { await completeStep('review-connection'); setIsConnectionHelpOpen(false); }} disabled={!port}>{t('onboarding.markComplete')}</Button>
           </WorkspaceDialogFooter>
         </WorkspaceDialogContent>
       </Dialog>

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-05
+
+### Added
+- Added an interactive live-load chart to each server detail page with Java process CPU and memory history, hover details, and 5 / 15 / 30 minute ranges
+- Added an in-app What's New experience backed by GitHub Releases, including automatic first-view behavior after an update and access from About
+- Added a guided first-run setup workspace that tracks server preparation, startup, connection, properties, and first-backup progress
+
+### Changed
+- Introduced a new Lumix application icon across the executable, renderer, and project documentation
+- Consolidated new server, existing server, and modpack entry points into a unified add-server workspace
+- Refined the server detail page into a denser Linear-inspired bento layout with clearer runtime, identity, storage, settings, and connection sections
+- Reworked server creation, import, console, settings, onboarding, sidebar, and dialog interactions for a more consistent desktop workflow
+- Expanded Traditional Chinese and English interface copy for the new workflows and operational states
+
+### Technical
+- Added five-second Java process telemetry sampling with normalized whole-machine CPU percentages and a bounded 30-minute in-memory history
+- Added typed IPC history queries and live performance events between Electron main, preload, and renderer processes
+- Bundled the process telemetry runtime into the main-process output and added interactive chart rendering through Recharts
+- Added automated coverage for telemetry normalization, lifecycle cleanup, onboarding state, release-note fetching, and What's New visibility
+- Verified the release candidate with typecheck, lint, 60 automated tests, and the production bundle gate
+
 ## [1.1.1] - 2026-08-16
 
 ### Fixed

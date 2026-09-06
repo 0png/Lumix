@@ -19,6 +19,7 @@ export const ServerChannels = {
   START: 'server:start',
   STOP: 'server:stop',
   SEND_COMMAND: 'server:send-command',
+  GET_PERFORMANCE_HISTORY: 'server:get-performance-history',
   GET_PLAYERS: 'server:get-players',
   PLAYER_ACTION: 'server:player-action',
 
@@ -39,6 +40,7 @@ export const ServerChannels = {
   // Events (Main -> Renderer)
   STATUS_CHANGED: 'server:status-changed',
   LOG_ENTRY: 'server:log-entry',
+  PERFORMANCE_SAMPLE: 'server:performance-sample',
   READY: 'server:ready', // 服務器成功啟動事件
 } as const;
 
@@ -68,6 +70,7 @@ export function getAllServerChannels(): string[] {
     ServerChannels.START,
     ServerChannels.STOP,
     ServerChannels.SEND_COMMAND,
+    ServerChannels.GET_PERFORMANCE_HISTORY,
     ServerChannels.GET_PLAYERS,
     ServerChannels.PLAYER_ACTION,
     ServerChannels.LIST_BACKUPS,
@@ -153,6 +156,7 @@ export const UpdateChannels = {
   DOWNLOAD_UPDATE: 'update:download-update',
   QUIT_AND_INSTALL: 'update:quit-and-install',
   GET_CURRENT_VERSION: 'update:get-current-version',
+  GET_RELEASE_NOTES: 'update:get-release-notes',
   
   // Events (Main -> Renderer)
   ERROR: 'update:error',

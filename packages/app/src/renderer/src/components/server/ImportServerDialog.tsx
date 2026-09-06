@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, CheckCircle2, FolderInput, HardDrive, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HardDrive, Loader2 } from 'lucide-react';
 import type { CoreType, ImportCandidateDto, ImportServerRequest } from '../../../../shared/ipc-types';
 import type { CreateServerError } from '@/hooks/use-servers';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ interface ImportServerDialogProps {
   existingNames: string[];
   onDetect: (directory: string) => Promise<ImportCandidateDto | null>;
   onImport: (data: ImportServerRequest) => Promise<CreateServerError | null>;
+  embedded?: boolean;
+  onBackToChoice?: () => void;
 }
 
 const CORE_TYPES: CoreType[] = ['vanilla', 'paper', 'purpur', 'fabric', 'forge', 'neoforge'];
@@ -32,6 +34,8 @@ export function ImportServerDialog({
   existingNames,
   onDetect,
   onImport,
+  embedded = false,
+  onBackToChoice,
 }: ImportServerDialogProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('select');
@@ -159,15 +163,13 @@ export function ImportServerDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-3xl">
+  const shell = (
+    <div className="grid max-h-[94vh] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <WorkspaceDialogHeader
-          icon={FolderInput}
-          eyebrow={t('serverImport.eyebrow')}
           title={t('serverImport.title')}
           description={step === 'select' ? t('serverImport.selectDescription') : t('serverImport.reviewDescription')}
-          tone="amber"
+          onBack={embedded ? onBackToChoice : undefined}
+          backLabel={t('addServerChoice.backToMethods')}
         />
 
         <WorkspaceDialogBody>
@@ -177,6 +179,7 @@ export function ImportServerDialog({
               <Label htmlFor="import-directory">{t('serverImport.directory')}</Label>
               <div className="flex gap-2">
                 <Input
+                  data-flow-autofocus
                   id="import-directory"
                   value={directory}
                   onChange={(event) => setDirectory(event.target.value)}
@@ -306,6 +309,17 @@ export function ImportServerDialog({
             </Button>
           )}
         </WorkspaceDialogFooter>
+    </div>
+  );
+
+  if (embedded) {
+    return open ? shell : null;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-3xl">
+        {shell}
       </WorkspaceDialogContent>
     </Dialog>
   );

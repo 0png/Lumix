@@ -13,6 +13,7 @@ import appIcon from '@/assets/icon.png';
 
 interface AboutViewProps {
   onBack: () => void;
+  onOpenWhatsNew: () => void;
 }
 
 /** 開啟外部連結 */
@@ -21,9 +22,9 @@ async function openExternal(url: string) {
 }
 
 /** 關於頁面元件 */
-export function AboutView({ onBack }: AboutViewProps) {
+export function AboutView({ onBack, onOpenWhatsNew }: AboutViewProps) {
   const { t } = useTranslation();
-  const [version, setVersion] = useState('1.1.1');
+  const [version, setVersion] = useState('1.2.0');
   const [hasCheckedUpdate, setHasCheckedUpdate] = useState(false);
   const { checkForUpdates, checking, available, updateInfo } = useUpdate();
 
@@ -125,6 +126,21 @@ export function AboutView({ onBack }: AboutViewProps) {
             >
               <RefreshCw className={`h-3.5 w-3.5 ${checking ? 'animate-spin' : ''}`} />
               {checking ? t('update.checking') : t('update.checkForUpdates')}
+            </Button>
+          </div>
+
+          <div className="flex min-h-12 items-center justify-between gap-4 border-t border-border/60 px-4 py-3 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/35 text-muted-foreground">
+                <BookText className="h-3.5 w-3.5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{t('whatsNew.title')}</p>
+                <p className="truncate text-xs text-muted-foreground">{t('whatsNew.aboutDescription')}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={onOpenWhatsNew} className="h-8 shrink-0 bg-background/60 px-2.5 text-xs">
+              {t('whatsNew.open')}
             </Button>
           </div>
 

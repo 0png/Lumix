@@ -1,7 +1,8 @@
 import { ipcMain } from 'electron';
 import { UpdateChannels } from '../../shared/ipc-channels';
 import { getUpdateService } from '../services/update-service';
-import type { IpcResult, UpdateCheckResult } from '../../shared/ipc-types';
+import type { IpcResult, ReleaseNotesResult, UpdateCheckResult } from '../../shared/ipc-types';
+import { getReleaseNotesService } from '../services/release-notes-service';
 
 /**
  * 註冊 Update 相關的 IPC handlers
@@ -60,6 +61,19 @@ export function registerUpdateHandlers(): void {
       };
     }
   });
+
+  ipcMain.handle(UpdateChannels.GET_RELEASE_NOTES, async (): Promise<IpcResult<ReleaseNotesResult>> => {
+    try {
+      const currentVersion = updateService.getCurrentVersion();
+      const data = await getReleaseNotesService().getReleaseNotes(currentVersion);
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: (error as Error).message,
+      };
+    }
+  });
 }
 
 /**
@@ -70,4 +84,5 @@ export function removeUpdateHandlers(): void {
   ipcMain.removeHandler(UpdateChannels.DOWNLOAD_UPDATE);
   ipcMain.removeHandler(UpdateChannels.QUIT_AND_INSTALL);
   ipcMain.removeHandler(UpdateChannels.GET_CURRENT_VERSION);
+  ipcMain.removeHandler(UpdateChannels.GET_RELEASE_NOTES);
 }

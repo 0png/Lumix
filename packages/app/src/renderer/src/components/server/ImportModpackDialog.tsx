@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, CheckCircle2, FileArchive, FileCheck2, Loader2, PackageOpen, UploadCloud } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileArchive, FileCheck2, Loader2, UploadCloud } from 'lucide-react';
 import type {
   ImportModpackRequest,
   ImportModpackResult,
@@ -27,6 +27,9 @@ interface ImportModpackDialogProps {
   onScan: (archivePath: string) => Promise<{ candidate: ModpackCandidateDto | null; error: CreateServerError | null }>;
   onImport: (data: ImportModpackRequest) => Promise<{ result: ImportModpackResult | null; error: CreateServerError | null }>;
   onImported: (result: ImportModpackResult) => void;
+  embedded?: boolean;
+  onBackToChoice?: () => void;
+  onCloseBlockedChange?: (blocked: boolean) => void;
 }
 
 type Step = 'select' | 'review';
@@ -38,6 +41,9 @@ export function ImportModpackDialog({
   onScan,
   onImport,
   onImported,
+  embedded = false,
+  onBackToChoice,
+  onCloseBlockedChange,
 }: ImportModpackDialogProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('select');
@@ -52,6 +58,11 @@ export function ImportModpackDialog({
   const [isInstalling, setIsInstalling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ModpackInstallProgressEvent | null>(null);
+
+  useEffect(() => {
+    onCloseBlockedChange?.(isInstalling);
+    return () => onCloseBlockedChange?.(false);
+  }, [isInstalling, onCloseBlockedChange]);
 
   useEffect(() => {
     if (!open) {
@@ -164,21 +175,20 @@ export function ImportModpackDialog({
         return;
       }
       onImported(response.result);
+      onCloseBlockedChange?.(false);
       onOpenChange(false);
     } finally {
       setIsInstalling(false);
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={(next) => !isInstalling && onOpenChange(next)}>
-      <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-3xl">
+  const shell = (
+    <div className="grid max-h-[94vh] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <WorkspaceDialogHeader
-          icon={PackageOpen}
-          eyebrow={t('modpackImport.eyebrow')}
           title={t('modpackImport.title')}
           description={step === 'select' ? t('modpackImport.selectDescription') : t('modpackImport.reviewDescription')}
-          tone="emerald"
+          onBack={embedded && !isInstalling ? onBackToChoice : undefined}
+          backLabel={t('addServerChoice.backToMethods')}
         />
 
         <WorkspaceDialogBody>
@@ -186,6 +196,7 @@ export function ImportModpackDialog({
           <div className="space-y-3 py-2">
             <Label>{t('modpackImport.file')}</Label>
             <div
+              data-flow-autofocus
               role="button"
               tabIndex={0}
               aria-label={t('modpackImport.dropzoneLabel')}
@@ -205,7 +216,7 @@ export function ImportModpackDialog({
               }}
               onDrop={handleDroppedFile}
               className={cn(
-                'group relative flex min-h-56 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed px-6 py-8 text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                'group relative flex min-h-56 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed px-6 py-8 text-center transition-[background-color,border-color,box-shadow,transform] [transition-duration:var(--motion-panel)] [transition-timing-function:var(--ease-interface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transform-none',
                 isDragging
                   ? 'scale-[1.01] border-primary bg-primary/10 shadow-lg shadow-primary/10'
                   : archivePath
@@ -215,7 +226,7 @@ export function ImportModpackDialog({
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_55%)]" />
               <div className={cn(
-                'relative mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-sm transition-all duration-200 group-hover:-translate-y-0.5',
+                'relative mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-sm transition-[background-color,border-color] [transition-duration:var(--motion-standard)]',
                 archivePath
                   ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
                   : 'border-primary/20 bg-primary/10 text-primary'
@@ -369,6 +380,17 @@ export function ImportModpackDialog({
             </Button>
           )}
         </WorkspaceDialogFooter>
+    </div>
+  );
+
+  if (embedded) {
+    return open ? shell : null;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !isInstalling && onOpenChange(next)}>
+      <WorkspaceDialogContent className="max-w-[92vw] sm:max-w-3xl">
+        {shell}
       </WorkspaceDialogContent>
     </Dialog>
   );

@@ -176,7 +176,7 @@ interface SidebarProps {
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
   onGoHome?: () => void;
-  onCreateServer?: () => void;
+  onCreateServer?: (source?: 'pointer' | 'keyboard') => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
   currentView?: 'servers' | 'server-settings' | 'settings' | 'about';
@@ -210,7 +210,7 @@ export function Sidebar({
       // Ctrl/Cmd + N 新增伺服器
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
-        onCreateServer?.();
+        onCreateServer?.('keyboard');
       }
     };
 
@@ -262,7 +262,7 @@ export function Sidebar({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  onClick={onCreateServer}
+                  onClick={() => onCreateServer?.('pointer')}
                   className={cn(
                     'w-full rounded-xl focus-ring transition-[padding] duration-300 ease-out',
                     isCollapsed ? 'h-11 gap-0 px-0' : 'h-11 justify-start gap-2 px-4'

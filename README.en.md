@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="packages/app/resources/icon.png" width="96" alt="Lumix icon" />
+  <img src="icon.png" width="104" alt="New Lumix icon" />
 </p>
 
 <h1 align="center">Lumix</h1>
@@ -56,10 +56,11 @@ Lumix is a Windows-first, open-source Minecraft Server Launcher. It does not rep
 - **Modpack import** — Read Modrinth and CurseForge formats and install their server-side files
 - **Java management** — Detect local Java installations and select a runtime compatible with the Minecraft version
 - **Live console** — Follow server output, send commands, and clear the console
+- **Live load chart** — Track Java process CPU and memory trends in an interactive chart
 - **Visual settings** — Configure memory and commonly used `server.properties` options
 - **Backup and restore** — Manual or scheduled backups, restore preflight, and pre-restore protection
 - **Connection diagnostics** — See localhost, LAN addresses, ports, and guidance for external connections
-- **Desktop experience** — English / Traditional Chinese, light / dark / system themes, and automatic updates
+- **Desktop experience** — English / Traditional Chinese, light / dark / system themes, automatic updates, and in-app release notes
 
 ## Download and install
 

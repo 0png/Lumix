@@ -16,6 +16,7 @@ import type {
   UpdateServerRequest,
   ServerStatusEvent,
   ServerLogEvent,
+  ServerPerformanceSample,
   ServerReadyEvent,
   ConnectionInfoDto,
   ServerProperties,
@@ -215,6 +216,17 @@ function registerHandlers(): void {
     }
   );
 
+  ipcMain.handle(
+    ServerChannels.GET_PERFORMANCE_HISTORY,
+    async (_, id: string): Promise<IpcResult<ServerPerformanceSample[]>> => {
+      try {
+        return { success: true, data: serverManager!.getPerformanceHistory(id) };
+      } catch (error) {
+        return { success: false, error: formatError(error) };
+      }
+    }
+  );
+
   // GET_PLAYERS - 取得玩家清單與管理狀態
   ipcMain.handle(
     ServerChannels.GET_PLAYERS,
@@ -385,6 +397,10 @@ function setupEventForwarding(): void {
   // 轉發日誌事件到所有視窗
   serverManager.on('log-entry', (event: ServerLogEvent) => {
     broadcastToAllWindows(ServerChannels.LOG_ENTRY, event);
+  });
+
+  serverManager.on('performance-sample', (event: ServerPerformanceSample) => {
+    broadcastToAllWindows(ServerChannels.PERFORMANCE_SAMPLE, event);
   });
 
   // 轉發服務器就緒事件到所有視窗

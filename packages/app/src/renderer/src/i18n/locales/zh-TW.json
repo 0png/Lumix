@@ -152,6 +152,21 @@
     "serverPropertiesPending": "server.properties 尚未生成。請先成功啟動一次伺服器，之後再回來調整遊戲規則、世界與網路設定。",
     "consoleFullscreen": "全螢幕",
     "consoleExitFullscreen": "關閉全螢幕",
+    "performance": {
+      "title": "即時負載",
+      "description": "追蹤這台伺服器 Java 程序的 CPU 與記憶體使用趨勢。",
+      "live": "即時",
+      "cpu": "CPU",
+      "memory": "記憶體",
+      "average": "平均 {{value}}",
+      "rangeLabel": "選擇時間範圍",
+      "last5Minutes": "最近 5 分鐘",
+      "last15Minutes": "最近 15 分鐘",
+      "last30Minutes": "最近 30 分鐘",
+      "chartLabel": "Java 伺服器程序的 CPU 與記憶體即時圖表",
+      "stopped": "啟動伺服器後，負載趨勢會顯示在這裡。",
+      "waiting": "正在等待第一筆效能資料…"
+    },
     "connection": {
       "title": "連線資訊與診斷",
       "bentoDescription": "快速複製常用位址，並檢查監聽、綁定與防火牆狀態。",
@@ -281,18 +296,28 @@
     }
   },
   "onboarding": {
-    "title": "Next Steps",
-    "description": "伺服器已建立完成。接下來用這份清單快速確認資料夾、設定、連線資訊與第一份備份。",
+    "title": "伺服器準備",
+    "description": "依序確認執行環境、首次啟動、連線與備份，讓伺服器達到可正式使用的狀態。",
     "dismissedDescription": "你已關閉首次導覽，但仍可隨時重新打開，完成剩餘的伺服器準備步驟。",
     "completedDescription": "這台伺服器的首次建立導覽已完成。",
     "progress": "已完成 {{completed}} / {{total}}",
     "done": "已完成",
-    "reopen": "重新開啟 Next Steps",
+    "reopen": "繼續設定",
     "continue": "繼續設定",
-    "viewChecklist": "查看完整清單",
-    "modalTitle": "{{server}} 的首次啟動清單",
-    "dismiss": "先關閉導覽",
+    "viewChecklist": "查看全部",
+    "modalTitle": "設定 {{server}}",
+    "modalDescription": "完成第一次正式啟動前的必要檢查",
+    "dismiss": "暫時隱藏",
     "markComplete": "標記完成",
+    "next": "下一個建議",
+    "setup": "設定流程",
+    "progressLabel": "整體進度",
+    "stepNumber": "步驟 {{current}} / {{total}}",
+    "blocked": "尚不可執行",
+    "action": "可執行操作",
+    "resolve": "前往修正",
+    "backupCreated": "第一份備份已建立",
+    "backupFailed": "無法建立備份",
     "state": {
       "completed": "已完成",
       "blocked": "已阻擋",
@@ -362,10 +387,10 @@
     }
   },
   "onboardingPrompt": {
-    "title": "要查看建立後教學嗎？",
-    "description": "Lumix 可以帶你走一次新伺服器的首次設定流程，包含資料夾、設定、連線說明與第一份備份。",
-    "open": "查看教學",
-    "neverAskAgain": "以後不要再問"
+    "title": "完成伺服器設定？",
+    "description": "用一份精簡流程確認 Java、第一次啟動、連線資訊與備份；Lumix 會自動記錄進度。",
+    "open": "開始設定",
+    "neverAskAgain": "略過這個提示"
   },
   "players": {
     "title": "玩家管理",
@@ -441,24 +466,25 @@
     }
   },
   "addServerChoice": {
-    "eyebrow": "伺服器工作區",
-    "title": "你想從哪裡開始？",
-    "description": "選擇建立方式，Lumix 會帶你完成版本、執行環境與伺服器內容設定。",
-    "recommended": "一般使用",
+    "eyebrow": "新增伺服器",
+    "title": "選擇建立方式",
+    "description": "從空白建立，或匯入現有的伺服器與模組包。",
+    "recommended": "推薦",
+    "backToMethods": "返回建立方式",
     "options": {
       "standard": {
         "title": "建立新伺服器",
-        "description": "從 Vanilla、Paper、Purpur、Fabric、Forge 或 NeoForge 建立乾淨的伺服器。",
+        "description": "選擇遊戲版本與核心，從零開始設定。",
         "action": "選擇核心與版本"
       },
       "modpack": {
-        "title": "從模組包建立",
-        "description": "匯入 .mrpack 或 .zip，自動安裝模組、設定與 Loader。",
+        "title": "匯入模組包",
+        "description": "從 .mrpack 或 .zip 自動建立伺服器。",
         "action": "選擇或拖入模組包"
       },
       "existing": {
         "title": "匯入既有伺服器",
-        "description": "將已經存在的伺服器資料夾加入 Lumix 管理。",
+        "description": "加入電腦上現有的伺服器資料夾。",
         "action": "掃描伺服器資料夾"
       }
     }
@@ -797,6 +823,30 @@
     "availableBadge": "可更新",
     "currentBadge": "目前版本",
     "copyrightNotice": "© 2026 0png"
+  },
+  "whatsNew": {
+    "title": "最新功能",
+    "description": "看看 Lumix 最近有哪些改進。",
+    "aboutDescription": "瀏覽目前版本與過往更新內容",
+    "open": "查看更新",
+    "releaseHistory": "版本紀錄",
+    "currentVersion": "目前版本",
+    "prerelease": "預覽版本",
+    "viewOnGitHub": "在 GitHub 查看",
+    "retry": "重新載入",
+    "loadErrorTitle": "無法載入更新內容",
+    "loadErrorDescription": "目前無法連線至 GitHub Releases。請檢查網路後再試一次。",
+    "currentReleaseMissing": "GitHub 尚未提供目前版本 {{version}} 的 Release；以下顯示最近的版本紀錄。",
+    "emptyRelease": "這個版本尚未提供更新說明。",
+    "emptyTitle": "目前沒有版本紀錄",
+    "emptyDescription": "GitHub Releases 尚未發布可顯示的更新內容。",
+    "alerts": {
+      "note": "備註",
+      "tip": "提示",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "注意"
+    }
   },
   "update": {
     "available": {

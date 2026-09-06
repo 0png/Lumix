@@ -259,6 +259,13 @@ export interface ServerLogEvent {
   entry: LogEntryDto;
 }
 
+export interface ServerPerformanceSample {
+  serverId: string;
+  timestamp: string;
+  cpuPercent: number;
+  memoryBytes: number;
+}
+
 export interface PlayerDto {
   name: string;
   uuid?: string;
@@ -586,6 +593,22 @@ export interface UpdateErrorEvent {
 
 export interface UpdateDownloadedEvent {
   version: string;
+}
+
+export interface ReleaseNoteDto {
+  version: string;
+  tagName: string;
+  title: string;
+  publishedAt: string;
+  body: string;
+  htmlUrl: string;
+  prerelease: boolean;
+}
+
+export interface ReleaseNotesResult {
+  currentVersion: string;
+  currentRelease: ReleaseNoteDto | null;
+  releases: ReleaseNoteDto[];
 }
 
 // ============================================================================
