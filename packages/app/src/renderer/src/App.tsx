@@ -102,7 +102,6 @@ function AppContent() {
 
   const [selectedServerId, setSelectedServerId] = useState<string | undefined>();
   const [showAddServerDialog, setShowAddServerDialog] = useState(false);
-  const [addServerOpenedFromKeyboard, setAddServerOpenedFromKeyboard] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('servers');
   const [isCreating, setIsCreating] = useState(false);
@@ -358,8 +357,7 @@ function AppContent() {
     }
   }, []);
 
-  const handleOpenAddServer = useCallback((source: 'pointer' | 'keyboard' = 'pointer') => {
-    setAddServerOpenedFromKeyboard(source === 'keyboard');
+  const handleOpenAddServer = useCallback(() => {
     setShowAddServerDialog(true);
   }, []);
 
@@ -547,7 +545,6 @@ function AppContent() {
       <AddServerDialog
         open={showAddServerDialog}
         onOpenChange={setShowAddServerDialog}
-        instantOpen={addServerOpenedFromKeyboard}
         renderCreateStandard={({ open, onOpenChange, onBackToChoice }) => (
           <CreateServerDialog
             open={open}

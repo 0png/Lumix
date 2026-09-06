@@ -5,7 +5,6 @@
 
 import { Plus, Settings, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -113,14 +112,12 @@ function SidebarButton({
   onClick,
   isCollapsed,
   isActive,
-  shortcut,
 }: {
   icon: typeof Settings;
   label: string;
   onClick?: () => void;
   isCollapsed: boolean;
   isActive?: boolean;
-  shortcut?: string;
 }) {
   const content = (
     <Button
@@ -157,15 +154,14 @@ function SidebarButton({
     </Button>
   );
 
+  if (!isCollapsed) {
+    return content;
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>{content}</TooltipTrigger>
-      {isCollapsed && (
-        <TooltipContent side="right" className="flex items-center gap-2">
-          {label}
-          {shortcut && <kbd className="text-[10px] bg-muted px-1 py-0.5 rounded">{shortcut}</kbd>}
-        </TooltipContent>
-      )}
+      <TooltipContent side="right">{label}</TooltipContent>
     </Tooltip>
   );
 }
@@ -176,7 +172,7 @@ interface SidebarProps {
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
   onGoHome?: () => void;
-  onCreateServer?: (source?: 'pointer' | 'keyboard') => void;
+  onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
   currentView?: 'servers' | 'server-settings' | 'settings' | 'about';
@@ -204,19 +200,6 @@ export function Sidebar({
   const brandTextClass = isCollapsed
     ? 'pointer-events-none max-w-0 -translate-x-2 opacity-0'
     : 'max-w-[160px] translate-x-0 opacity-100';
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + N 新增伺服器
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        onCreateServer?.('keyboard');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCreateServer]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -262,7 +245,7 @@ export function Sidebar({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  onClick={() => onCreateServer?.('pointer')}
+                  onClick={onCreateServer}
                   className={cn(
                     'w-full rounded-xl focus-ring transition-[padding] duration-300 ease-out',
                     isCollapsed ? 'h-11 gap-0 px-0' : 'h-11 justify-start gap-2 px-4'
@@ -275,12 +258,7 @@ export function Sidebar({
                   </span>
                 </Button>
               </TooltipTrigger>
-              {isCollapsed && (
-                <TooltipContent side="right" className="flex items-center gap-2">
-                  {t('sidebar.addServer')}
-                  <kbd className="rounded bg-muted px-1 py-0.5 text-[10px]">Ctrl+N</kbd>
-                </TooltipContent>
-              )}
+              {isCollapsed && <TooltipContent side="right">{t('sidebar.addServer')}</TooltipContent>}
             </Tooltip>
 
           </div>
@@ -361,7 +339,6 @@ export function Sidebar({
                 onClick={onOpenSettings}
                 isCollapsed={isCollapsed}
                 isActive={currentView === 'settings'}
-                shortcut="Ctrl+,"
               />
               <SidebarButton
                 icon={Info}

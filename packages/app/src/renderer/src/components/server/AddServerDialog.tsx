@@ -19,7 +19,6 @@ export interface EmbeddedServerFlowProps {
 interface AddServerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  instantOpen?: boolean;
   renderCreateStandard: (props: EmbeddedServerFlowProps) => ReactNode;
   renderImportModpack: (props: EmbeddedServerFlowProps) => ReactNode;
   renderImportExisting: (props: EmbeddedServerFlowProps) => ReactNode;
@@ -41,7 +40,6 @@ const routeWidths: Record<AddServerRoute, string> = {
 export function AddServerDialog({
   open,
   onOpenChange,
-  instantOpen = false,
   renderCreateStandard,
   renderImportModpack,
   renderImportExisting,
@@ -155,10 +153,8 @@ export function AddServerDialog({
     <Dialog open={open} onOpenChange={closeFlow}>
       <WorkspaceDialogContent
         ref={contentRef}
-        overlayClassName={instantOpen ? 'data-[state=open]:animate-none' : undefined}
         className={cn(
           'w-[calc(100vw-2rem)] [--tw-enter-scale:.98] [--tw-enter-translate-x:0] [--tw-enter-translate-y:0]',
-          instantOpen && 'data-[state=open]:animate-none',
           routeWidths[route]
         )}
         onOpenAutoFocus={(event) => {

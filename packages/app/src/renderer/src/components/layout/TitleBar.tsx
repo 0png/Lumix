@@ -35,9 +35,8 @@ export function TitleBar({ isSidebarCollapsed, onToggleSidebar }: TitleBarProps)
                 <PanelLeft className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="flex items-center gap-2">
+            <TooltipContent side="bottom">
               {isSidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-              <kbd className="rounded bg-muted px-1 py-0.5 text-[10px]">Ctrl+B</kbd>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

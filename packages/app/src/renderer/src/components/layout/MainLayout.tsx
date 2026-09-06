@@ -21,7 +21,7 @@ interface MainLayoutProps {
   selectedServerId?: string;
   onSelectServer?: (id: string) => void;
   onGoHome?: () => void;
-  onCreateServer?: (source?: 'pointer' | 'keyboard') => void;
+  onCreateServer?: () => void;
   onOpenSettings?: () => void;
   onOpenAbout?: () => void;
   currentView?: 'servers' | 'server-settings' | 'settings' | 'about';
@@ -57,18 +57,6 @@ export function MainLayout({
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed(previous => !previous);
   }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
-        event.preventDefault();
-        toggleSidebar();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleSidebar]);
 
   // 各主視圖共用同一個 ScrollArea。切頁前重設位置，避免沿用長頁面的
   // scrollTop 後，新頁面停在內容之外而呈現空白畫面。
