@@ -21,13 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked server creation, import, console, settings, onboarding, sidebar, and dialog interactions for a more consistent desktop workflow
 - Expanded Traditional Chinese and English interface copy for the new workflows and operational states
 
-### Technical
-- Added five-second Java process telemetry sampling with normalized whole-machine CPU percentages and a bounded 30-minute in-memory history
-- Added typed IPC history queries and live performance events between Electron main, preload, and renderer processes
-- Bundled the process telemetry runtime into the main-process output and added interactive chart rendering through Recharts
-- Added automated coverage for telemetry normalization, lifecycle cleanup, onboarding state, release-note fetching, and What's New visibility
-- Verified the release candidate with typecheck, lint, 60 automated tests, and the production bundle gate
-
 ## [1.1.1] - 2026-08-16
 
 ### Fixed
