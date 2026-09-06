@@ -8,6 +8,7 @@ import { FileManager } from '../src/main/services/file-manager';
 import { ImportRegistry } from '../src/main/services/import-registry';
 import { ImportScanner } from '../src/main/services/import-scanner';
 import { ServerManager } from '../src/main/services/server-manager';
+import { createFakeJavaDetector } from './test-helpers';
 
 class FakeProcessManager extends EventEmitter {
   spawn() {
@@ -51,6 +52,7 @@ describe('ServerManager connection info', () => {
       importScanner: new ImportScanner(),
       processManager: processManager as never,
       defaultJavaPath: 'java',
+      javaDetector: createFakeJavaDetector(),
     });
   });
 

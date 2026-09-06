@@ -10,7 +10,7 @@ import { ImportScanner } from '../src/main/services/import-scanner';
 import { ServerManager } from '../src/main/services/server-manager';
 import { ManagedServerRegistry } from '../src/main/services/managed-server-registry';
 import { SettingsService } from '../src/main/services/settings-service';
-import type { JavaDetector } from '../src/main/services/java-detector';
+import { createFakeJavaDetector } from './test-helpers';
 
 class FakeProcessManager extends EventEmitter {
   public spawnCalls: unknown[] = [];
@@ -39,25 +39,6 @@ class FakeProcessManager extends EventEmitter {
   killAll(): void {}
 }
 
-function createFakeJavaDetector(): JavaDetector {
-  const installation = {
-    path: 'java',
-    version: '21.0.0',
-    majorVersion: 21,
-    isValid: true,
-  };
-  return {
-    detectAll: async () => [installation],
-    selectForMinecraft: async () => installation,
-    validateForMinecraft: async (javaPath: string) => ({
-      installation: { ...installation, path: javaPath },
-      requiredMajor: 21,
-      compatible: true,
-      reason: 'test Java',
-    }),
-  } as unknown as JavaDetector;
-}
-
 describe('ServerManager process lifecycle', () => {
   let rootDir: string;
   let processManager: FakeProcessManager;
@@ -72,6 +53,7 @@ describe('ServerManager process lifecycle', () => {
       importScanner: new ImportScanner(),
       processManager: processManager as never,
       defaultJavaPath: 'java',
+      javaDetector: createFakeJavaDetector(),
     });
   });
 
