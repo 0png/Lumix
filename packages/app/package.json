@@ -7,7 +7,8 @@
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build && pnpm verify:main-bundle",
+    "generate:icons": "node scripts/generate-icon.mjs",
+    "build": "pnpm generate:icons && electron-vite build && pnpm verify:main-bundle",
     "build:win": "pnpm build && electron-builder --win --config --publish never",
     "preview": "electron-vite preview",
     "verify:main-bundle": "node scripts/verify-main-bundle.cjs",
@@ -40,7 +41,7 @@
       "repo": "Lumix"
     },
     "win": {
-      "icon": "resources/icon.png",
+      "icon": "resources/icon.ico",
       "target": [
         {
           "target": "nsis",

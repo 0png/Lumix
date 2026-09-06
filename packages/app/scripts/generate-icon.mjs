@@ -1,59 +1,58 @@
-/**
- * 生成帶圓角的應用程式 icon
- * 使用方式: node scripts/generate-icon.mjs
- */
-
+/** Generate all app icons from the SVG master. */
 import sharp from 'sharp';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { mkdirSync, existsSync } from 'fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { mkdirSync, writeFileSync } from 'node:fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = join(__dirname, '..');
-const inputPath = join(rootDir, '../../icon.png');
-const outputDir = join(rootDir, 'resources');
-const outputPath = join(outputDir, 'icon.png');
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const appDir = join(scriptDir, '..');
+const sourcePath = join(appDir, 'resources', 'icon.svg');
+const repositoryPngPath = join(appDir, '..', '..', 'icon.png');
+const resourcePngPath = join(appDir, 'resources', 'icon.png');
+const windowsIconPath = join(appDir, 'resources', 'icon.ico');
+const rendererIconPath = join(appDir, 'src', 'renderer', 'src', 'assets', 'icon.png');
+const windowsSizes = [16, 20, 24, 32, 40, 48, 64, 128, 256];
 
-// 確保 resources 目錄存在
-if (!existsSync(outputDir)) {
-  mkdirSync(outputDir, { recursive: true });
+async function renderPng(size) {
+  const pipeline = sharp(sourcePath, { density: 1200 })
+    .resize(size, size, { fit: 'fill', kernel: sharp.kernel.lanczos3 });
+  if (size <= 48) pipeline.sharpen({ sigma: 0.45 });
+  return pipeline.png({ compressionLevel: 9, adaptiveFiltering: true }).toBuffer();
 }
 
-// 圓角半徑（相對於 256x256 的圖片）
-const size = 256;
-const radius = 48; // 約 19% 的圓角
-
-// 建立圓角遮罩 SVG
-const roundedMask = Buffer.from(
-  `<svg width="${size}" height="${size}">
-    <rect x="0" y="0" width="${size}" height="${size}" rx="${radius}" ry="${radius}" fill="white"/>
-  </svg>`
-);
-
-async function generateIcon() {
-  try {
-    console.log('讀取原始圖片:', inputPath);
-    
-    // 讀取並調整大小
-    const resized = await sharp(inputPath)
-      .resize(size, size, { fit: 'cover' })
-      .toBuffer();
-
-    // 套用圓角遮罩
-    const rounded = await sharp(resized)
-      .composite([{
-        input: roundedMask,
-        blend: 'dest-in'
-      }])
-      .png()
-      .toFile(outputPath);
-
-    console.log('圓角 icon 已生成:', outputPath);
-    console.log('尺寸:', rounded.width, 'x', rounded.height);
-  } catch (error) {
-    console.error('生成 icon 失敗:', error);
-    process.exit(1);
-  }
+function createIco(images) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(images.length, 4);
+  let offset = 6 + 16 * images.length;
+  const entries = images.map(({ size, png }) => {
+    const entry = Buffer.alloc(16);
+    entry.writeUInt8(size === 256 ? 0 : size, 0);
+    entry.writeUInt8(size === 256 ? 0 : size, 1);
+    entry.writeUInt16LE(1, 4);
+    entry.writeUInt16LE(32, 6);
+    entry.writeUInt32LE(png.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    offset += png.length;
+    return entry;
+  });
+  return Buffer.concat([header, ...entries, ...images.map(({ png }) => png)]);
 }
 
-generateIcon();
+async function generateIcons() {
+  mkdirSync(dirname(rendererIconPath), { recursive: true });
+  const appPng = await renderPng(1024);
+  writeFileSync(repositoryPngPath, appPng);
+  writeFileSync(resourcePngPath, appPng);
+  writeFileSync(rendererIconPath, appPng);
+  const images = await Promise.all(
+    windowsSizes.map(async (size) => ({ size, png: await renderPng(size) })),
+  );
+  writeFileSync(windowsIconPath, createIco(images));
+  console.log(`Generated 1024 px PNG and ${windowsSizes.length}-layer Windows ICO`);
+}
+
+generateIcons().catch((error) => {
+  console.error('Icon generation failed:', error);
+  process.exitCode = 1;
+});
