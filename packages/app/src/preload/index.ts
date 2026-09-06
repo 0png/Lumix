@@ -1,7 +1,7 @@
 // Preload Script
 // 使用 contextBridge 安全地暴露 IPC API 給 Renderer Process
 
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import {
   ServerChannels,
   ModpackChannels,
@@ -238,6 +238,8 @@ const electronAPI = {
   // App
   // --------------------------------------------------------------------------
   app: {
+    getPathForFile: (file: File): string => webUtils.getPathForFile(file),
+
     getVersion: (): Promise<IpcResult<string>> =>
       ipcRenderer.invoke(AppChannels.GET_VERSION),
 

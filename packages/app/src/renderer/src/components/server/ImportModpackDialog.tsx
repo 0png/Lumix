@@ -119,7 +119,7 @@ export function ImportModpackDialog({
     setIsDragging(false);
     const file = event.dataTransfer.files[0];
     if (!file) return;
-    const filePath = file.path;
+    const filePath = window.electronAPI.app.getPathForFile(file);
     if (!filePath || !isSupportedModpackPath(filePath)) {
       setError(t('modpackImport.errors.unsupportedFile'));
       return;

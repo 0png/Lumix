@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import extract from 'extract-zip';
+import extract from '@electron-internal/extract-zip';
 import { downloadFile } from './http-client';
 import type {
   CoreType,
@@ -141,18 +141,13 @@ export class ModpackService {
 
     const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'lumix-modpack-'));
     try {
-      let extractedBytes = 0;
-      let entryCount = 0;
       await extract(resolvedArchive, {
         dir: stagingDir,
-        onEntry: (entry) => {
-          entryCount += 1;
-          extractedBytes += entry.uncompressedSize;
-          if (entryCount > MAX_ARCHIVE_ENTRIES || extractedBytes > MAX_EXTRACTED_BYTES) {
-            throw this.error(IpcErrorCode.MODPACK_INVALID_ARCHIVE, '模組包解壓後超過安全限制');
-          }
-        },
       });
+      const { entryCount, extractedBytes } = await measureExtractedArchive(stagingDir);
+      if (entryCount > MAX_ARCHIVE_ENTRIES || extractedBytes > MAX_EXTRACTED_BYTES) {
+        throw this.error(IpcErrorCode.MODPACK_INVALID_ARCHIVE, '模組包解壓後超過安全限制');
+      }
       const root = await findPackRoot(stagingDir);
       return await action(root);
     } catch (error) {
@@ -370,6 +365,32 @@ async function findPackRoot(stagingDir: string): Promise<string> {
     candidates = next;
   }
   return stagingDir;
+}
+
+async function measureExtractedArchive(root: string): Promise<{ entryCount: number; extractedBytes: number }> {
+  let entryCount = 0;
+  let extractedBytes = 0;
+  const pending = [root];
+
+  while (pending.length > 0) {
+    const directory = pending.pop();
+    if (!directory) continue;
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      entryCount += 1;
+      if (entryCount > MAX_ARCHIVE_ENTRIES) return { entryCount, extractedBytes };
+
+      const absolutePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(absolutePath);
+      } else if (entry.isFile()) {
+        extractedBytes += (await fs.stat(absolutePath)).size;
+        if (extractedBytes > MAX_EXTRACTED_BYTES) return { entryCount, extractedBytes };
+      }
+    }
+  }
+
+  return { entryCount, extractedBytes };
 }
 
 async function listOverrideFiles(root: string, directories: string[]): Promise<string[]> {

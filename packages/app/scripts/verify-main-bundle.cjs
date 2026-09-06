@@ -10,8 +10,14 @@ const builtinNames = new Set(
 const imports = new Set(
   Array.from(source.matchAll(/require\(["']([^"']+)["']\)/g), (match) => match[1])
 );
+const allowedExternalModules = new Set(['electron', '@electron-internal/extract-zip']);
 const unexpected = Array.from(imports)
-  .filter((name) => name !== 'electron' && !name.startsWith('node:') && !builtinNames.has(name))
+  .filter(
+    (name) =>
+      !allowedExternalModules.has(name) &&
+      !name.startsWith('node:') &&
+      !builtinNames.has(name)
+  )
   .sort();
 
 if (unexpected.length > 0) {
