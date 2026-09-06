@@ -99,7 +99,7 @@
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^13.0.0",
-    "zustand": "^4.4.7"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.0",
