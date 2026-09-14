@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-09-14
+
+### Changed
+- Refined the empty server workspace to emphasize the next action and keep server launch, settings, and backup guidance concise across English and Traditional Chinese
+
+### Fixed
+- Preserved non-ASCII response data when HTTP JSON and text payloads arrive across stream chunks
+- Excluded draft and prerelease GitHub releases from the in-app What's New release list and current-release lookup
+- Kept dialog overlays and content outside the native titlebar drag region so controls remain interactive
+
+### Technical
+- Added coverage for chunk-split UTF-8 HTTP responses, stable release filtering, dialog hit areas, and localized empty-state copy
+- Verified the release candidate with `pnpm typecheck`
+- Verified the release candidate with `pnpm lint`
+- Verified the release candidate with `pnpm test`
+- Verified the release candidate with `pnpm build`
+- Verified the Windows package with `pnpm --filter @lumix/app build:win`
+- Verified the packaged application startup smoke test
+
 ## [1.3.0] - 2026-09-06
 
 ### Added
