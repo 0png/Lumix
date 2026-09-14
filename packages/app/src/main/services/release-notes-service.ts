@@ -61,7 +61,7 @@ export class ReleaseNotesService {
         }
 
         const mapped = releases
-          .filter((release) => !release.draft)
+          .filter((release) => !release.draft && !release.prerelease)
           .map(mapGitHubRelease)
           .slice(0, 10);
 

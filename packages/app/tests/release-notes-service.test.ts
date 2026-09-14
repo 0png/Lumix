@@ -44,18 +44,17 @@ describe('ReleaseNotesService', () => {
     });
   });
 
-  it('filters drafts, preserves prereleases, and selects the exact current version', async () => {
+  it('filters drafts and prereleases, then selects the exact current stable version', async () => {
     vi.mocked(fetchJson).mockResolvedValue([
       githubRelease(),
       githubRelease({ tag_name: 'v1.1.0', name: 'Lumix 1.1.0', prerelease: true }),
       githubRelease({ tag_name: 'v1.2.0', draft: true }),
     ] as never);
 
-    const result = await new ReleaseNotesService().getReleaseNotes('1.1.0');
+    const result = await new ReleaseNotesService().getReleaseNotes('1.1.1');
 
-    expect(result.releases.map((release) => release.version)).toEqual(['1.1.1', '1.1.0']);
-    expect(result.currentRelease?.version).toBe('1.1.0');
-    expect(result.currentRelease?.prerelease).toBe(true);
+    expect(result.releases.map((release) => release.version)).toEqual(['1.1.1']);
+    expect(result.currentRelease?.version).toBe('1.1.1');
   });
 
   it('does not substitute the newest release when the current tag is absent', async () => {

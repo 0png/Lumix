@@ -18,7 +18,7 @@ export interface DownloadProgressCallback {
  */
 export function fetchJson<T>(url: string, redirectCount: number = 0): Promise<T> {
   const MAX_REDIRECTS = 5;
-  
+
   return new Promise((resolve, reject) => {
     if (redirectCount >= MAX_REDIRECTS) {
       reject(new Error(`HTTP_ERROR: 超過最大重定向次數 (${MAX_REDIRECTS}) - ${url}`));
@@ -51,6 +51,7 @@ export function fetchJson<T>(url: string, redirectCount: number = 0): Promise<T>
           return;
         }
 
+        res.setEncoding('utf8');
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
@@ -101,6 +102,7 @@ export function fetchText(url: string, redirectCount: number = 0): Promise<strin
           return;
         }
 
+        res.setEncoding('utf8');
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => resolve(data));
