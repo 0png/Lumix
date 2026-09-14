@@ -71,13 +71,9 @@
     "clearSearch": "清除搜尋",
     "noSearchResults": "找不到符合的伺服器",
     "noSearchResultsDescription": "沒有名稱、版本或核心符合「{{query}}」。",
-    "emptyBadge": "開始建立你的第一個伺服器",
-    "emptyDescription": "Lumix 會協助你選擇 Minecraft 版本、準備 Java 執行環境，並在建立完成後直接進入可管理的伺服器工作流。",
-    "emptySteps": {
-      "version": "選擇 Minecraft 版本與核心類型",
-      "runtime": "確認 Java 與記憶體配置",
-      "launch": "建立伺服器並查看即時輸出"
-    },
+    "emptyEyebrow": "伺服器工作區",
+    "emptyTitle": "你的伺服器會出現在這裡",
+    "emptyDescription": "建立或匯入一台伺服器，Lumix 會在這裡集中管理它的啟動、設定與備份。",
     "stats": {
       "total": "伺服器總數",
       "running": "運行中",

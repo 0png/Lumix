@@ -71,13 +71,9 @@
     "clearSearch": "Clear search",
     "noSearchResults": "No matching servers",
     "noSearchResultsDescription": "No server name, version, or core matches \"{{query}}\".",
-    "emptyBadge": "Create your first server",
-    "emptyDescription": "Lumix helps you choose a Minecraft version, prepare the Java runtime, and move directly into a manageable server workflow after creation.",
-    "emptySteps": {
-      "version": "Choose the Minecraft version and core type",
-      "runtime": "Confirm Java and memory allocation",
-      "launch": "Create the server and inspect live output"
-    },
+    "emptyEyebrow": "SERVER WORKSPACE",
+    "emptyTitle": "Your servers will appear here",
+    "emptyDescription": "Create or import a server, and Lumix will keep its launch, settings, and backups in one place.",
     "stats": {
       "total": "Total Servers",
       "running": "Running",

@@ -10,13 +10,11 @@ import {
   Plus,
   Search,
   Server,
-  Sparkles,
   X,
 } from 'lucide-react';
 import { ServerCard } from './ServerCard';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { CoreType as SharedCoreType } from '../../../../shared/ipc-types';
@@ -68,53 +66,37 @@ function EmptyState({
 }) {
   const { t } = useTranslation();
 
-  const steps = [
-    t('dashboard.emptySteps.version'),
-    t('dashboard.emptySteps.runtime'),
-    t('dashboard.emptySteps.launch'),
-  ];
-
   return (
     <div
-      className="flex-1 rounded-xl border border-dashed border-muted-foreground/25 bg-gradient-subtle animate-fade-in"
+      className="flex min-h-[calc(100vh-8rem)] items-center justify-center rounded-2xl border border-border/60 bg-card/20 px-6 py-12 animate-fade-in motion-reduce:animate-none lg:min-h-[calc(100vh-9rem)]"
       role="region"
-      aria-label={t('welcome.title')}
+      aria-label={t('dashboard.emptyTitle')}
     >
-      <div className="grid min-h-[calc(100vh-8rem)] items-center gap-6 p-6 lg:grid-cols-[0.9fr_1.1fr] lg:p-8">
-        <div className="space-y-6">
-          <div className="relative w-fit">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/10 bg-primary/10 shadow-lg shadow-primary/5">
-              <Server className="h-10 w-10 text-primary/70" aria-hidden="true" />
-            </div>
-            <div className="absolute -right-1 -top-1 rounded-full bg-primary/20 p-1.5 animate-pulse">
-              <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-            </div>
-          </div>
-
-          <div className="max-w-xl space-y-2">
-            <Badge variant="secondary">{t('dashboard.emptyBadge')}</Badge>
-            <h2 className="text-2xl font-semibold tracking-tight">{t('welcome.title')}</h2>
-            <p className="text-sm leading-6 text-muted-foreground">{t('dashboard.emptyDescription')}</p>
-          </div>
-
-          <div>
-            <Button onClick={onCreateServer} className="gap-2 ripple" aria-label={t('sidebar.addServer')}>
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              {t('sidebar.addServer')}
-            </Button>
-          </div>
+      <div className="flex max-w-md flex-col items-center text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/70 bg-muted/40 text-muted-foreground shadow-sm">
+          <Server className="h-5 w-5" aria-hidden="true" />
         </div>
 
-        <div className="grid gap-3">
-          {steps.map((step, index) => (
-            <div key={step} className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/70 p-4">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
-                {index + 1}
-              </span>
-              <p className="text-sm font-medium">{step}</p>
-            </div>
-          ))}
-        </div>
+        <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground/75">
+          {t('dashboard.emptyEyebrow')}
+        </p>
+
+        <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] sm:text-[28px]">
+          {t('dashboard.emptyTitle')}
+        </h2>
+
+        <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+          {t('dashboard.emptyDescription')}
+        </p>
+
+        <Button
+          onClick={onCreateServer}
+          className="mt-6 gap-2 ripple"
+          aria-label={t('sidebar.addServer')}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {t('sidebar.addServer')}
+        </Button>
       </div>
     </div>
   );
